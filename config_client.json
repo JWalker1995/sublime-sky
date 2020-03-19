@@ -1,0 +1,22 @@
+{
+  "username": "Client username",
+  "loadSignalHandler": true,
+  "loadWindow": true,
+  "loadRender": true,
+  "loadNetwork": true,
+  "socketDestroyImmediate": true,
+  "logLevel": "trace",
+  "window": {
+    "title": "Sublime Sky Alpha - Client",
+    "sizeX": 500,
+    "sizeY": 500
+  },
+  "targetFaceCount": 100000,
+  "authority": {
+    "hostname": "localhost",
+    "port": 12345
+  },
+  "closeOnDisconnect": true,
+  "networkChannelQueueCapacity": 15,
+  "uuidReserveSizeLog2": 16
+}

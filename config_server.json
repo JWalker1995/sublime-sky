@@ -1,0 +1,19 @@
+{
+  "username": "Server username",
+  "loadSignalHandler": true,
+  "loadWindow": true,
+  "loadRender": true,
+  "loadNetwork": true,
+  "socketDestroyImmediate": true,
+  "logLevel": "trace",
+  "window": {
+    "title": "Sublime Sky Alpha - Server",
+    "sizeX": 400,
+    "sizeY": 400
+  },
+  "targetFaceCount": 100000,
+  "listenPort": 12345,
+  "networkChannelQueueCapacity": 15,
+  "uuidReserveSizeLog2": 16,
+  "uuidAuthority": true
+}

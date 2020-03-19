@@ -1,0 +1,7 @@
+src/
+third_party/
+build-debug/src/
+src/world
+src/render
+src/pointgen
+src/worldgen

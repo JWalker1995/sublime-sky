@@ -1,0 +1,7 @@
+include_rules
+
+# Compile message schemas
+: foreach $(SRC_PATH)/config/*.fbs |> !flatc |>
+
+# Generate flatbuffers source includes
+: foreach $(SRC_PATH)/config/*.fbs |> xxd -i < %f > %o && echo ",0x00" >> %o |> %b.h $(ROOT)/<gen_headers>

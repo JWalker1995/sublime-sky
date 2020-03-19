@@ -1,0 +1,43 @@
+namespace config;
+
+// Don't supply defaults here. Defaults should be supplied by a base config file
+
+enum LogLevel: byte { trace, debug, info, warning, error, critical, off }
+
+table Window {
+    title: string;
+    sizeX: uint;
+    sizeY: uint;
+}
+
+table RemoteConnectionDetails {
+    hostname: string;
+    port: ushort;
+}
+
+table Client {
+    username: string;
+
+    loadSignalHandler: bool;
+    loadWindow: bool;
+    loadRender: bool;
+    loadNetwork: bool;
+
+    socketDestroyImmediate: bool;
+
+    uuidReserveSizeLog2: uint;
+    uuidAuthority: bool;
+
+    logLevel: LogLevel;
+    window: Window;
+    targetFaceCount: uint;
+
+    listenPort: ushort; // If 0, will choose a random port
+    authority: RemoteConnectionDetails;
+    closeOnDisconnect: bool;
+    networkChannelQueueCapacity: uint;
+
+    playerAllocationSizeLog2: uint;
+}
+
+root_type Client;
