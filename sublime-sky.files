@@ -221,6 +221,9 @@ src/jw_util/workqueue.h
 src/jw_util/workqueuebase.h
 src/jw_util/workqueueinsomniac.h
 src/main.cpp
+src/meshgen/cubichoneycomb.cpp
+src/meshgen/cubichoneycomb.h
+src/meshgen/meshgenerator.h
 src/pointgen/chunk.h
 src/pointgen/chunk.h
 src/pointgen/chunkpointsmanager.cpp
@@ -236,6 +239,11 @@ src/pointgen/pointgenerator.h
 src/pointgen/randomballvectorgenerator.h
 src/pointgen/randomgenerator.h
 src/pointgen/rsquaredgenerator.h
+src/query/allquery.h
+src/query/pointquery.h
+src/query/rayquery.h
+src/query/rectquery.h
+src/query/spherequery.h
 src/render/camera.cpp
 src/render/camera.h
 src/render/cameraflycontroller.cpp
@@ -254,6 +262,8 @@ src/render/imguirenderer.cpp
 src/render/imguirenderer.h
 src/render/menu.cpp
 src/render/menu.h
+src/render/meshupdater.cpp
+src/render/meshupdater.h
 src/render/objectrenderer.h
 src/render/oldobjectrenderer.cpp
 src/render/oldobjectrenderer.h
@@ -283,6 +293,8 @@ src/render/spheretreerenderer.cpp
 src/render/spheretreerenderer.h
 src/render/vao.cpp
 src/render/vao.h
+src/render/vertspatialindex.cpp
+src/render/vertspatialindex.h
 src/render/visibilitymanager.cpp
 src/render/visibilitymanager.h
 src/spatial/alignedcube.h

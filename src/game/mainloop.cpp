@@ -13,6 +13,7 @@
 #include "render/raycaster.h"
 #include "pointgen/cubiclatticegenerator.h"
 #include "worldgen/simplegenerator.h"
+#include "meshgen/cubichoneycomb.h"
 
 namespace game {
 
@@ -36,6 +37,7 @@ void MainLoop::load() {
     context.get<render::RayCaster>();
     context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();
     context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>();
+    context.construct<meshgen::MeshGenerator, meshgen::CubicHoneycomb>();
 }
 
 void MainLoop::run() {

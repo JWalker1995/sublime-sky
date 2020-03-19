@@ -4,6 +4,8 @@
 
 #include "pointgen/chunkpointsmanager.h"
 #include "worldgen/worldgenerator.h"
+#include "render/meshupdater.h"
+#include "query/rectquery.h"
 #include "util/pool.h"
 
 namespace world {
@@ -180,7 +182,44 @@ void HashTreeWorld::finishWorldGen(const WorldGenRequest *worldGenRequest, Space
         context.get<util::Pool<Chunk>>().free(worldGenRequest->getDstChunk());
     }
 
+    glm::vec3 changedMin = worldGenRequest->getCube().getCoord<0, 0, 0>().toPoint();
+    glm::vec3 changedMax = worldGenRequest->getCube().getCoord<1, 1, 1>().toPoint();
+    float pointSpacing = worldGenRequest->getCube().getSize() / Chunk::size;
+    emitMeshUpdate(changedMin, changedMax, pointSpacing);
+
     context.get<util::Pool<WorldGenRequest>>().free(worldGenRequest);
+}
+
+void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing) {
+    std::vector<glm::vec3> separatedPoints[2];
+
+    spatial::UintCoord min = spatial::UintCoord::fromPoint(changedMin - pointSpacing * 2.0f);
+    spatial::UintCoord max = spatial::UintCoord::fromPoint(changedMax + pointSpacing * 2.0f) + spatial::UintCoord(1, 1, 1);
+    query::RectCoordQuery query(min, max);
+
+    Iterator<query::RectCoordQuery, false> i(*this, query);
+    spatial::CellKey initKey = spatial::CellKey::fromCoords(min, max);
+    i.init(initKey);
+
+    while (i.has()) {
+        if (i.get()->second.state == SpaceState::SubdividedAsChunk) {
+            Chunk *chunk = i.get()->second.chunk;
+            const pointgen::Chunk *points = getChunkPoints(i.get());
+
+            for (unsigned int i = 0; i < Chunk::size; i++) {
+                for (unsigned int j = 0; j < Chunk::size; j++) {
+                    for (unsigned int k = 0; k < Chunk::size; k++) {
+                        bool isTransparent = chunk->cells[i][j][k].type.isTransparent();
+                        separatedPoints[isTransparent].push_back(points->points[i][j][k]);
+                    }
+                }
+            }
+        }
+
+        i.advance();
+    }
+
+    context.get<render::MeshUpdater>().update(changedMin - pointSpacing, changedMax + pointSpacing, separatedPoints[0], separatedPoints[1]);
 }
 
 }

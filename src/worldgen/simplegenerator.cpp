@@ -15,7 +15,7 @@ void SimpleGenerator::generate(Request *request) {
         for (unsigned int j = 0; j < world::Chunk::size; j++) {
             for (unsigned int k = 0; k < world::Chunk::size; k++) {
                 glm::vec3 point = points->points[i][j][k];
-                world::SpaceState type = point.z < 0.0f ? static_cast<world::SpaceState::Value>(100) : world::SpaceState::Air;
+                world::SpaceState type = point.z < point.y / 4.0f + point.z / 7.0f ? static_cast<world::SpaceState::Value>(100) : world::SpaceState::Air;
                 dstChunk->cells[i][j][k].type = type;
             }
         }

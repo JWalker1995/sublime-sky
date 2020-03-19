@@ -117,6 +117,8 @@ private:
 
     void requestWorldGen(Cell *cell);
     void finishWorldGen(const WorldGenRequest *worldGenRequest, SpaceState chunkState);
+
+    void emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing);
 };
 
 }

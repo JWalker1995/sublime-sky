@@ -5,3 +5,5 @@ src/world
 src/render
 src/pointgen
 src/worldgen
+src/meshgen
+src/query

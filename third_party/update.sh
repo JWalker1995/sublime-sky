@@ -53,4 +53,9 @@ rm -r spdlog_131.zip spdlog-1.3.1
 
 curl -Lo staticsort/staticsort.h https://raw.githubusercontent.com/Vectorized/Static-Sort/56da540e3ba322effd2985083b0801cdfb9b1fe7/static_sort.h
 
+git clone git@github.com:tuxalin/THST.git
+pushd THST
+git apply ../THST_bbox.patch
+popd
+
 popd > /dev/null

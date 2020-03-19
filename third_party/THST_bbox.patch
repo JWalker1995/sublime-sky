@@ -1,0 +1,25 @@
+From e75bae5e5443a1b3174af39932d79397451193cf Mon Sep 17 00:00:00 2001
+From: Joel Walker <joelwalker1995@gmail.com>
+Date: Thu, 19 Mar 2020 13:32:34 -0500
+Subject: [PATCH] Fixed bbox.h compile bug
+
+---
+ bbox.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/bbox.h b/bbox.h
+index 8962e9f..d603a14 100644
+--- a/bbox.h
++++ b/bbox.h
+@@ -149,7 +149,7 @@ namespace spatial {
+ 	}
+ 
+ 	BBOX_TEMPLATE
+-		typename BBOX_QUAL::BoundingBox
++                BBOX_QUAL
+ 		BBOX_QUAL::extended(const BoundingBox &obbox) const {
+ 		checkValid();
+ 
+-- 
+2.21.1 (Apple Git-122.3)
+
