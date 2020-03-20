@@ -2,6 +2,7 @@
 
 #include "util/pool.h"
 #include "render/hashtreevertindex.h"
+#include "render/camera.h"
 
 namespace render {
 
@@ -13,6 +14,9 @@ MeshUpdater::MeshUpdater(game::GameContext &context)
 
 void MeshUpdater::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
+
+    SceneManager::MeshMutator meshMutator = meshHandle.mutateMesh();
+    meshMutator.shared.transform = context.get<render::Camera>().getTransform();
 }
 
 void MeshUpdater::update(glm::vec3 aabbMin, glm::vec3 aabbMax, const std::vector<glm::vec3> &internalPoints, const std::vector<glm::vec3> &externalPoints) {
@@ -21,6 +25,11 @@ void MeshUpdater::update(glm::vec3 aabbMin, glm::vec3 aabbMax, const std::vector
 }
 
 void MeshUpdater::finishMeshGen(MeshGenRequest *meshGenRequest) {
+    static unsigned int t = 0;
+    if (t++) {
+        return;
+    }
+
     static thread_local std::unordered_map<glm::vec3, unsigned int> vertIndexMap;
     assert(vertIndexMap.empty());
 
@@ -65,6 +74,8 @@ void MeshUpdater::finishMeshGen(MeshGenRequest *meshGenRequest) {
             meshHandle.readVert(found->second).local.facesVec.push_back(facesVecManager, face.index);
         }
     }
+
+    vertIndexMap.clear();
 }
 
 }

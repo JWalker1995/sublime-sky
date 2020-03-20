@@ -14,6 +14,11 @@ RayCaster::RayCaster(game::GameContext &context)
 void RayCaster::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
 
+    static unsigned int t = 0;
+    if (t++ > 10) {
+        return;
+    }
+
     truncateRetries();
     castRetries();
     castNew();

@@ -9,7 +9,7 @@
 #include "application/syncpoint.h"
 #include "application/signalhandler.h"
 #include "application/window.h"
-#include "network/network.h"
+#include "render/scenerenderer.h"
 #include "render/raycaster.h"
 #include "pointgen/cubiclatticegenerator.h"
 #include "worldgen/simplegenerator.h"
@@ -32,6 +32,9 @@ void MainLoop::load() {
     }
     if (config.loadWindow()) {
         context.get<application::Window>();
+    }
+    if (config.loadRender()) {
+        context.get<render::SceneRenderer>();
     }
 
     context.get<render::RayCaster>();

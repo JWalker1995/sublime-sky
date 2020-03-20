@@ -10,12 +10,6 @@
 #include "graphics/gl.h"
 
 namespace game { class GameContext; }
-namespace config { struct Window; }
-namespace logger { class Logger; }
-namespace render { class SphereTreeRenderer; }
-namespace spheretree { class TemporalInterpolation; }
-namespace spheretree { class State; }
-namespace spheretree { class SphereTree; }
 
 namespace application {
 

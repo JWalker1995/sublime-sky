@@ -49,11 +49,24 @@ void CubicHoneycomb::generate(Request *request) {
         i++;
     }
 
+    glm::vec3 pos;
     for (unsigned int x = 0; x < sizeX; x++) {
+        pos.x = static_cast<signed int>(minX + x);
         for (unsigned int y = 0; y < sizeY; y++) {
+            pos.y = static_cast<signed int>(minY + y);
             for (unsigned int z = 0; z < sizeZ; z++) {
+                pos.z = static_cast<signed int>(minZ + z);
+
                 unsigned int index = x * sizeYZ + y * sizeZ + z;
                 bool ii = ins[index];
+
+                if (ii) {
+                    Request::Face face;
+                    face.vertPositions[0] = pos + glm::vec3(0.75f, 0.25f, 0.25f);
+                    face.vertPositions[1] = pos + glm::vec3(0.25f, 0.75f, 0.25f);
+                    face.vertPositions[2] = pos + glm::vec3(0.25f, 0.25f, 0.75f);
+                    request->getDstFacesArray().push_back(face);
+                }
 
                 if (x > 0) {
                     bool ix = ins[index - sizeYZ];
@@ -65,9 +78,6 @@ void CubicHoneycomb::generate(Request *request) {
         }
     }
 
-
-
-
     /*
 
         virtual glm::vec3 getRequestAabbMin() const = 0;
@@ -78,6 +88,8 @@ void CubicHoneycomb::generate(Request *request) {
         virtual std::vector<Face> &getDstFacesArray() const = 0;
 
     */
+
+    request->onComplete();
 }
 
 }
