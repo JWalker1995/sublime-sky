@@ -40,6 +40,7 @@ class HashTreeVertIndex : private spatial::HashTree<HashTreeVertIndex, CellValue
 
 public:
     HashTreeVertIndex(game::GameContext &gameContext);
+    ~HashTreeVertIndex();
 
     template <typename CreateFunc, typename DestroyFunc>
     void updateRegion(glm::vec3 min, glm::vec3 max, std::unordered_map<glm::vec3, unsigned int> &desiredVerts, CreateFunc createFunc, DestroyFunc destroyFunc) {

@@ -3,7 +3,7 @@ DEFINES_CONFIG_FILE = $(ROOT)/defines.cfg
 SRC_PATH = $(ROOT)/src/
 THIRD_PARTY_PATH = $(ROOT)/third_party/
 
-BIN_TARGET = $(ROOT)/sublime_sky
+BIN_TARGET = $(ROOT)/sublime-sky
 
 C = clang
 CXX = clang++

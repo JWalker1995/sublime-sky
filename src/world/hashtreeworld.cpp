@@ -55,7 +55,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 
             while (i != cellQueue.end()) {
                 float surfaceDist = 0.5f * (curDistPrpSq + curDistPll * curDistPll - i->distPerpendicularSq - i->distParallel * i->distParallel) / (curDistPll - i->distParallel);
 
-                if (surfaceDist < prevSurfaceDist) {
+                if (surfaceDist < prevSurfaceDist || surfaceDist < curDistPll) {
                     *i = cellQueue.back();
                     cellQueue.pop_back();
                     continue;
@@ -83,7 +83,6 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 
             }
 
             assert(minCell->distParallel > curDistPll);
-            assert(minCell->distParallel - curDistPll <= maxDistanceChange);
 
             curDistPll = minCell->distParallel;
             curDistPrpSq = minCell->distPerpendicularSq;
@@ -191,7 +190,9 @@ void HashTreeWorld::finishWorldGen(const WorldGenRequest *worldGenRequest, Space
 }
 
 void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing) {
-    std::vector<glm::vec3> separatedPoints[2];
+    static thread_local std::vector<std::pair<unsigned int, glm::vec3>> separatedPoints[2];
+    assert(separatedPoints[0].empty());
+    assert(separatedPoints[1].empty());
 
     spatial::UintCoord min = spatial::UintCoord::fromPoint(changedMin - pointSpacing * 2.0f);
     spatial::UintCoord max = spatial::UintCoord::fromPoint(changedMax + pointSpacing * 2.0f) + spatial::UintCoord(1, 1, 1);
@@ -209,8 +210,9 @@ void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, f
             for (unsigned int i = 0; i < Chunk::size; i++) {
                 for (unsigned int j = 0; j < Chunk::size; j++) {
                     for (unsigned int k = 0; k < Chunk::size; k++) {
-                        bool isTransparent = chunk->cells[i][j][k].type.isTransparent();
-                        separatedPoints[isTransparent].push_back(points->points[i][j][k]);
+                        SpaceState type = chunk->cells[i][j][k].type;
+                        bool isTransparent = type.isTransparent();
+                        separatedPoints[isTransparent].emplace_back(type.value, points->points[i][j][k]);
                     }
                 }
             }
@@ -220,6 +222,9 @@ void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, f
     }
 
     context.get<render::MeshUpdater>().update(changedMin - pointSpacing, changedMax + pointSpacing, separatedPoints[0], separatedPoints[1]);
+
+    separatedPoints[0].clear();
+    separatedPoints[1].clear();
 }
 
 }

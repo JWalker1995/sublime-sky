@@ -14,6 +14,8 @@ public:
 
 private:
     game::GameContext &context;
+
+    world::SpaceState getState(glm::vec3 point);
 };
 
 }

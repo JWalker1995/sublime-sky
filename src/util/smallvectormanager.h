@@ -15,16 +15,17 @@ public:
     public:
         Ref() {}
         ~Ref() {
-            assert(vec.empty());
+            assert(vec.capacity() == 0);
         }
 
         void alloc(SmallVectorManager<DataType> &manager) {
             (void) manager;
         }
 
-        void free(SmallVectorManager<DataType> &manager) {
+        void release(SmallVectorManager<DataType> &manager) {
             (void) manager;
             vec.clear();
+            vec.shrink_to_fit();
         }
 
         const DataType *data(const SmallVectorManager<DataType> &manager) const {

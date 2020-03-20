@@ -10,6 +10,7 @@
 #include "application/signalhandler.h"
 #include "application/window.h"
 #include "render/scenerenderer.h"
+#include "game/cameraflycontroller.h"
 #include "render/raycaster.h"
 #include "pointgen/cubiclatticegenerator.h"
 #include "worldgen/simplegenerator.h"
@@ -36,6 +37,8 @@ void MainLoop::load() {
     if (config.loadRender()) {
         context.get<render::SceneRenderer>();
     }
+
+    context.get<CameraFlyController>();
 
     context.get<render::RayCaster>();
     context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();

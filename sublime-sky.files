@@ -19,6 +19,8 @@ src/config/client.fbs
 src/config/configsupplier.h
 src/config/game.fbs
 src/config/illegalconfigexception.h
+src/game/cameraflycontroller.cpp
+src/game/cameraflycontroller.h
 src/game/debuginfo.cpp
 src/game/debuginfo.h
 src/game/gamecontext.cpp
@@ -142,6 +144,13 @@ src/render/vao.cpp
 src/render/vao.h
 src/render/vertspatialindex.cpp
 src/render/vertspatialindex.h
+src/shaders/Tupfile
+src/shaders/frag_counter.comp.glsl
+src/shaders/gather_emittance.comp.glsl
+src/shaders/main.frag.glsl
+src/shaders/main.vert.glsl
+src/shaders/spheres.frag.glsl
+src/shaders/spheres.geom.glsl
 src/spatial/alignedcube.h
 src/spatial/cellkey.h
 src/spatial/hashtree.h

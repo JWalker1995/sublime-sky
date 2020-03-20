@@ -16,10 +16,11 @@ namespace render {
 class MeshUpdater : public game::TickerContext::TickableBase<MeshUpdater> {
 public:
     MeshUpdater(game::GameContext &context);
+    ~MeshUpdater();
 
     void tick(game::TickerContext &tickerContext);
 
-    void update(glm::vec3 aabbMin, glm::vec3 aabbMax, const std::vector<glm::vec3> &internalPoints, const std::vector<glm::vec3> &externalPoints);
+    void update(glm::vec3 aabbMin, glm::vec3 aabbMax, std::vector<std::pair<unsigned int, glm::vec3> > &internalPoints, std::vector<std::pair<unsigned int, glm::vec3> > &externalPoints);
 
     render::SceneManager::MeshHandle getMeshHandle() const {
         return meshHandle;
@@ -28,7 +29,7 @@ public:
 private:
     class MeshGenRequest : public meshgen::MeshGenerator::Request {
     public:
-        MeshGenRequest(MeshUpdater &meshUpdater, glm::vec3 requestAabbMin, glm::vec3 requestAabbMax, std::vector<glm::vec3> internalPoints, std::vector<glm::vec3> externalPoints)
+        MeshGenRequest(MeshUpdater &meshUpdater, glm::vec3 requestAabbMin, glm::vec3 requestAabbMax, std::vector<std::pair<unsigned int, glm::vec3>> &internalPoints, std::vector<std::pair<unsigned int, glm::vec3>> &externalPoints)
             : meshUpdater(meshUpdater)
             , requestAabbMin(requestAabbMin)
             , requestAabbMax(requestAabbMax)
@@ -42,10 +43,10 @@ private:
         glm::vec3 getRequestAabbMax() const {
             return requestAabbMax;
         }
-        const std::vector<glm::vec3> &getInternalPoints() const {
+        const std::vector<std::pair<unsigned int, glm::vec3>> &getInternalPoints() const {
             return internalPoints;
         };
-        const std::vector<glm::vec3> &getExternalPoints() const {
+        const std::vector<std::pair<unsigned int, glm::vec3>> &getExternalPoints() const {
             return externalPoints;
         }
         std::vector<Face> &getDstFacesArray() {
@@ -60,8 +61,8 @@ private:
         MeshUpdater &meshUpdater;
         glm::vec3 requestAabbMin;
         glm::vec3 requestAabbMax;
-        std::vector<glm::vec3> internalPoints;
-        std::vector<glm::vec3> externalPoints;
+        std::vector<std::pair<unsigned int, glm::vec3>> internalPoints;
+        std::vector<std::pair<unsigned int, glm::vec3>> externalPoints;
         std::vector<Face> dstFaces;
     };
 

@@ -14,6 +14,13 @@ public:
         Generating = 64,
         SubdividedAsBranch,
         SubdividedAsChunk,
+
+        Dirt,
+        Rock,
+        Water,
+        TreeTrunk,
+        TreeLeaf,
+        Cloud,
     };
 
     SpaceState() {}
@@ -26,11 +33,11 @@ public:
         return value < 64;
     }
 
-    bool operator==(const Value other) const {
-        return value == other;
+    bool operator==(const SpaceState other) const {
+        return value == other.value;
     }
-    bool operator!=(const Value other) const {
-        return value != other;
+    bool operator!=(const SpaceState other) const {
+        return value != other.value;
     }
 
     Value value;

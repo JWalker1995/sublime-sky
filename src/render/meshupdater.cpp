@@ -12,6 +12,16 @@ MeshUpdater::MeshUpdater(game::GameContext &context)
     , meshHandle(context.get<render::SceneManager>().createMesh())
 {}
 
+MeshUpdater::~MeshUpdater() {
+    SceneManager::VertBuffer &vertBuffer = meshHandle.getSceneManager().getVertBuffer();
+    for (std::size_t i = 0; i < vertBuffer.getExtentSize(); i++) {
+        SceneManager::VertReader vert = vertBuffer.read(i);
+        if (vert.shared.meshIndex == meshHandle.getMeshIndex()) {
+            vert.local.facesVec.release(facesVecManager);
+        }
+    }
+}
+
 void MeshUpdater::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
 
@@ -19,17 +29,12 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
     meshMutator.shared.transform = context.get<render::Camera>().getTransform();
 }
 
-void MeshUpdater::update(glm::vec3 aabbMin, glm::vec3 aabbMax, const std::vector<glm::vec3> &internalPoints, const std::vector<glm::vec3> &externalPoints) {
+void MeshUpdater::update(glm::vec3 aabbMin, glm::vec3 aabbMax, std::vector<std::pair<unsigned int, glm::vec3>> &internalPoints, std::vector<std::pair<unsigned int, glm::vec3>> &externalPoints) {
     MeshGenRequest *request = context.get<util::Pool<MeshGenRequest>>().alloc(*this, aabbMin, aabbMax, internalPoints, externalPoints);
     context.get<meshgen::MeshGenerator>().generate(request);
 }
 
 void MeshUpdater::finishMeshGen(MeshGenRequest *meshGenRequest) {
-    static unsigned int t = 0;
-    if (t++) {
-        return;
-    }
-
     static thread_local std::unordered_map<glm::vec3, unsigned int> vertIndexMap;
     assert(vertIndexMap.empty());
 

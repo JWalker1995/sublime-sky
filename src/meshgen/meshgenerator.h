@@ -18,14 +18,15 @@ public:
     public:
         struct Face {
             glm::vec3 vertPositions[3];
+            unsigned int internalPointId;
         };
 
         virtual ~Request() {}
 
         virtual glm::vec3 getRequestAabbMin() const = 0;
         virtual glm::vec3 getRequestAabbMax() const = 0;
-        virtual const std::vector<glm::vec3> &getInternalPoints() const = 0;
-        virtual const std::vector<glm::vec3> &getExternalPoints() const = 0;
+        virtual const std::vector<std::pair<unsigned int, glm::vec3>> &getInternalPoints() const = 0;
+        virtual const std::vector<std::pair<unsigned int, glm::vec3>> &getExternalPoints() const = 0;
         virtual std::vector<Face> &getDstFacesArray() = 0;
 
         virtual void onComplete() = 0;

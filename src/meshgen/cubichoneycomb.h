@@ -13,7 +13,7 @@ public:
     void generate(Request *request);
 
 private:
-    void createFace(Request *request);
+    static void createFace(Request *request, unsigned int internalPointId, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3);
 };
 
 }
