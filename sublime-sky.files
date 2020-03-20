@@ -169,10 +169,6 @@ src/graphics/glvao.h
 src/graphics/gpuprogram.cpp
 src/graphics/gpuprogram.h
 src/graphics/iterator/vertcirculator.h
-src/graphics/meshholepatcher.cpp
-src/graphics/meshholepatcher.h
-src/graphics/meshholepuncher.cpp
-src/graphics/meshholepuncher.h
 src/graphics/scenemanager.cpp
 src/graphics/scenemanager.h
 src/graphics/scenevalidator.cpp
@@ -256,6 +252,8 @@ src/render/fragcounter.cpp
 src/render/fragcounter.h
 src/render/ghostobjectrenderer.cpp
 src/render/ghostobjectrenderer.h
+src/render/hashtreevertindex.cpp
+src/render/hashtreevertindex.h
 src/render/icospheremesh.cpp
 src/render/icospheremesh.h
 src/render/imguirenderer.cpp
@@ -320,6 +318,7 @@ src/util/indexconnector.cpp
 src/util/indexconnector.h
 src/util/pool.h
 src/util/reflist.h
+src/util/smallvectormanager.h
 src/world/chunk.cpp
 src/world/chunk.h
 src/world/hashtreeworld.cpp

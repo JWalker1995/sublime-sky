@@ -4,7 +4,7 @@
 #include <glm/vec3.hpp>
 
 #include "graphics/gl.h"
-#include "graphics/circulararray.h"
+#include "util/smallvectormanager.h"
 
 namespace graphics {
 
@@ -51,13 +51,7 @@ public:
 
 class VertLocal {
 public:
-    unsigned int someFaceIndex = static_cast<unsigned int>(-1);
-
-    signed char isoCubeRadiusLog2;
-    unsigned char isoCubeMask;
-
-    bool temp_IcosphereTracer_destroy = false;
-    bool temp_IcosphereTracer_edge = false;
+    util::SmallVectorManager<unsigned int>::Ref facesVec;
 };
 
 }

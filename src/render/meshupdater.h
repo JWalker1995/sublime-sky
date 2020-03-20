@@ -7,6 +7,7 @@
 
 #include "game/tickercontext.h"
 #include "meshgen/meshgenerator.h"
+#include "render/scenemanager.h"
 
 namespace game { class GameContext; }
 
@@ -19,6 +20,10 @@ public:
     void tick(game::TickerContext &tickerContext);
 
     void update(glm::vec3 aabbMin, glm::vec3 aabbMax, const std::vector<glm::vec3> &internalPoints, const std::vector<glm::vec3> &externalPoints);
+
+    render::SceneManager::MeshHandle getMeshHandle() const {
+        return meshHandle;
+    }
 
 private:
     class MeshGenRequest : public meshgen::MeshGenerator::Request {
@@ -43,9 +48,6 @@ private:
         const std::vector<glm::vec3> &getExternalPoints() const {
             return externalPoints;
         }
-        std::vector<glm::vec3> &getDstVerticesArray() {
-            return dstVertices;
-        }
         std::vector<Face> &getDstFacesArray() {
             return dstFaces;
         }
@@ -60,11 +62,13 @@ private:
         glm::vec3 requestAabbMax;
         std::vector<glm::vec3> internalPoints;
         std::vector<glm::vec3> externalPoints;
-        std::vector<glm::vec3> dstVertices;
         std::vector<Face> dstFaces;
     };
 
     void finishMeshGen(MeshGenRequest *meshGenRequest);
+
+    util::SmallVectorManager<unsigned int> &facesVecManager;
+    render::SceneManager::MeshHandle meshHandle;
 };
 
 }

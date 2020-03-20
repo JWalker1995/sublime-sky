@@ -72,7 +72,7 @@ public:
             sceneManager.faceBuffer.destroy(index);
 
             // Make triangle degenerate:
-            mutateFace(index).shared.verts.set(0, 0, 0);
+            std::fill_n(mutateFace(index).shared.verts, 3, 0);
         }
         FaceReader readFace(unsigned int index) const {
             return sceneManager.faceBuffer.read(index);

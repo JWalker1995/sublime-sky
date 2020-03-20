@@ -17,7 +17,7 @@ public:
     class Request {
     public:
         struct Face {
-            unsigned int vertIndices[3];
+            glm::vec3 vertPositions[3];
         };
 
         virtual ~Request() {}
@@ -26,7 +26,6 @@ public:
         virtual glm::vec3 getRequestAabbMax() const = 0;
         virtual const std::vector<glm::vec3> &getInternalPoints() const = 0;
         virtual const std::vector<glm::vec3> &getExternalPoints() const = 0;
-        virtual std::vector<glm::vec3> &getDstVerticesArray() = 0;
         virtual std::vector<Face> &getDstFacesArray() = 0;
 
         virtual void onComplete() = 0;

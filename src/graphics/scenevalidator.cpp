@@ -23,11 +23,6 @@ void SceneValidator::validateActiveFace(SceneManager::FaceBuffer::Viewer face) {
     assert(isVertActive(vert1.index));
     assert(isVertActive(vert2.index));
 
-    // Opposite faces are active
-    assert(isFaceActive(face.local.oppositeFaces[0]));
-    assert(isFaceActive(face.local.oppositeFaces[1]));
-    assert(isFaceActive(face.local.oppositeFaces[2]));
-
     // Verts are distinct
     assert(vert0.index != vert1.index);
     assert(vert0.index != vert2.index);
@@ -37,23 +32,6 @@ void SceneValidator::validateActiveFace(SceneManager::FaceBuffer::Viewer face) {
     assert(vert0.shared.meshIndex == vert1.shared.meshIndex);
     assert(vert0.shared.meshIndex == vert2.shared.meshIndex);
     assert(vert1.shared.meshIndex == vert2.shared.meshIndex);
-
-    // Opposite faces are distinct
-    assert(face.local.oppositeFaces[0] != face.local.oppositeFaces[1]);
-    assert(face.local.oppositeFaces[0] != face.local.oppositeFaces[2]);
-    assert(face.local.oppositeFaces[1] != face.local.oppositeFaces[2]);
-
-    // Opposite faces refer back to it and have the same vertices
-    for (unsigned int i = 0; i < 3; i++) {
-        SceneManager::FaceBuffer::Viewer oppositeFace = sceneManager.getFaceBuffer().view(face.local.oppositeFaces[i]);
-        unsigned int dir = oppositeFace.local.oppositeFaces.find(face.index).get();
-        assert(dir >= 0 && dir < 3);
-        assert(face.shared.verts[(i + 1) % 3] == oppositeFace.shared.verts[(dir + 2) % 3]);
-        assert(face.shared.verts[(i + 2) % 3] == oppositeFace.shared.verts[(dir + 1) % 3]);
-    }
-
-    // The destroyVertFlags flags are cleared;
-    assert(face.local.destroyedVertsMask == 0);
 
     /*
     // Vert normals are kind of in the right direction
