@@ -42,7 +42,7 @@ void RayCaster::castRetries() {
 }
 
 void RayCaster::castNew() {
-    static constexpr unsigned int count = 1;
+    static constexpr unsigned int count = 16;
 
     std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 

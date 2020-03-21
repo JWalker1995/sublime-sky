@@ -71,6 +71,7 @@ public:
         spatial::CellKey maxKey = spatial::CellKey::fromCoord(spatial::UintCoord::fromPoint(max), exp_2);
 
         spatial::CellKey key;
+        key.sizeLog2 = exp_2;
         for (key.cellCoord.x = minKey.cellCoord.x; key.cellCoord.x <= maxKey.cellCoord.x; key.cellCoord.x++) {
             for (key.cellCoord.y = minKey.cellCoord.y; key.cellCoord.y <= maxKey.cellCoord.y; key.cellCoord.y++) {
                 for (key.cellCoord.z = minKey.cellCoord.z; key.cellCoord.z <= maxKey.cellCoord.z; key.cellCoord.z++) {

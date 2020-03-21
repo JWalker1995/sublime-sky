@@ -153,6 +153,35 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 
     return res;
 }
 
+SpaceState &HashTreeWorld::getClosestPointState(glm::vec3 point) {
+    spatial::UintCoord coord = spatial::UintCoord::fromPoint(point);
+
+    float minDistSq = std::numeric_limits<float>::infinity();
+    SpaceState *res;
+
+    // TODO: I know this isn't right; need to make it work with more LODs
+    for (signed int i = -1; i <= 1; i++) {
+        for (signed int j = -1; j <= 1; j++) {
+            for (signed int k = -1; k <= 1; k++) {
+                spatial::UintCoord offsetCoord = coord + spatial::UintCoord(i, j, k);
+                Cell *leafNode = getLeafContaining(offsetCoord, Chunk::sizeLog2);
+                unsigned int x = offsetCoord.x % Chunk::size;
+                unsigned int y = offsetCoord.y % Chunk::size;
+                unsigned int z = offsetCoord.z % Chunk::size;
+                glm::vec3 cellPoint = getChunkPoints(leafNode)->points[x][y][z];
+                float distSq = glm::distance2(point, cellPoint);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    assert(leafNode->second.state == SpaceState::SubdividedAsChunk);
+                    res = &leafNode->second.chunk->cells[x][y][z].type;
+                }
+            }
+        }
+    }
+
+    return *res;
+}
+
 const pointgen::Chunk *HashTreeWorld::getChunkPoints(Cell *cell) {
     pointgen::ChunkPointsManager &chunkPointsManager = context.get<pointgen::ChunkPointsManager>();
     if (!cell->second.points) {

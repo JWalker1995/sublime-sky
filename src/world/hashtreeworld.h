@@ -55,6 +55,10 @@ public:
     };
     RaytestResult testRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit);
 
+    SpaceState &getClosestPointState(glm::vec3 point);
+
+    void emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing);
+
 private:
     class WorldGenRequest : public worldgen::WorldGenerator::Request {
     public:
@@ -117,8 +121,6 @@ private:
 
     void requestWorldGen(Cell *cell);
     void finishWorldGen(const WorldGenRequest *worldGenRequest, SpaceState chunkState);
-
-    void emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing);
 };
 
 }

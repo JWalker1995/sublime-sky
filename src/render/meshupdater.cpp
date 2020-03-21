@@ -64,6 +64,8 @@ void MeshUpdater::finishMeshGen(MeshGenRequest *meshGenRequest) {
             }
             meshHandle.destroyFace(f);
         }
+
+        vert.local.facesVec.release(facesVecManager);
     };
 
     glm::vec3 min = meshGenRequest->getRequestAabbMin();

@@ -96,6 +96,10 @@ src/main.cpp
 src/meshgen/cubichoneycomb.cpp
 src/meshgen/cubichoneycomb.h
 src/meshgen/meshgenerator.h
+src/particle/particle.cpp
+src/particle/particle.h
+src/particle/particlemanager.cpp
+src/particle/particlemanager.h
 src/pointgen/chunk.h
 src/pointgen/chunkpointsmanager.cpp
 src/pointgen/chunkpointsmanager.h
@@ -175,6 +179,8 @@ src/world/voronoicell.cpp
 src/world/voronoicell.h
 src/worldgen/simplegenerator.cpp
 src/worldgen/simplegenerator.h
+src/worldgen/simplexnoise.cpp
+src/worldgen/simplexnoise.h
 src/worldgen/worldgenerator.h
 sublime-sky.cflags
 sublime-sky.cxxflags
