@@ -46,7 +46,7 @@ void MeshUpdater::finishMeshGen(MeshGenRequest *meshGenRequest) {
 
     auto createFunc = [](SceneManager::VertMutator vert) {
         vert.shared.setNormal(glm::vec3(0.0f));
-        vert.shared.setColor(255, 0, 0, 255);
+        vert.shared.setColor(188,143,143, 255);
     };
 
     auto destroyFunc = [this](SceneManager::VertReader vert) {

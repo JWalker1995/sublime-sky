@@ -19,6 +19,8 @@ private:
     GLuint showTrianglesLocation;
     bool showTrianglesValue = false;
     bool showTrianglesDirty = true;
+
+    GLuint eyePosLocation;
 };
 
 }

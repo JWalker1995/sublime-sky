@@ -227,6 +227,10 @@ void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, f
     spatial::UintCoord max = spatial::UintCoord::fromPoint(changedMax + pointSpacing * 2.0f) + spatial::UintCoord(1, 1, 1);
     query::RectCoordQuery query(min, max);
 
+    std::size_t sizeGuess = (max.x - min.x) * (max.y - min.y) * (max.z - min.z);
+    separatedPoints[0].resize(sizeGuess);
+    separatedPoints[1].resize(sizeGuess);
+
     Iterator<query::RectCoordQuery, false> i(*this, query);
     spatial::CellKey initKey = spatial::CellKey::fromCoords(min, max);
     i.init(initKey);

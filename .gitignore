@@ -32,3 +32,10 @@ imgui.ini
 *.gen.cpp
 
 recording_*
+
+third_party/flatbuffers/
+third_party/imgui/
+third_party/readerwriterqueue/
+third_party/spdlog/
+third_party/Static-Sort/
+third_party/THST/

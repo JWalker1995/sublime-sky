@@ -1,6 +1,7 @@
 #include "drawcolorprogram.h"
 
 #include "imgui/imgui.h"
+#include "render/camera.h"
 
 namespace render {
 
@@ -21,6 +22,9 @@ void DrawColorProgram::linkProgram() {
 
     showTrianglesLocation = glGetUniformLocation(getProgramId(), "showTriangles");
     graphics::GL::catchErrors();
+
+    eyePosLocation = glGetUniformLocation(getProgramId(), "eyePos");
+    graphics::GL::catchErrors();
 }
 
 void DrawColorProgram::bind() {
@@ -40,6 +44,9 @@ void DrawColorProgram::bind() {
 
         showTrianglesDirty = false;
     }
+
+    glm::vec3 eyePos = context.get<render::Camera>().getEyePos();
+    glUniform3f(eyePosLocation, eyePos.x, eyePos.y, eyePos.z);
 }
 
 }
