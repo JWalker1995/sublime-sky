@@ -62,13 +62,12 @@ void main(void) {
         float specular = 0.0;
 
         if (lambertian > 0.0) {
-
           vec3 viewDir = normalize(-orig_position);
 
           if (blinn) {
-              vec3 halfDir = normalize(lightDir + viewDir);
-              float specAngle = max(dot(halfDir, faceNormal), 0.0);
-              specular = pow(specAngle, shininess);
+            vec3 halfDir = normalize(lightDir + viewDir);
+            float specAngle = max(dot(halfDir, faceNormal), 0.0);
+            specular = pow(specAngle, shininess);
           } else {
             vec3 reflectDir = reflect(-lightDir, faceNormal);
             float specAngle = max(dot(reflectDir, viewDir), 0.0);

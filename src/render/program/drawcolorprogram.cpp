@@ -1,6 +1,6 @@
 #include "drawcolorprogram.h"
 
-#include "imgui/imgui.h"
+#include "graphics/imgui.h"
 #include "render/camera.h"
 
 namespace render {

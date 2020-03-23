@@ -1,13 +1,16 @@
 #pragma once
 
 #include <vector>
+#include <queue>
 
 #include "graphics/glm.h"
 #include <glm/vec3.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include "game/tickercontext.h"
 #include "meshgen/meshgenerator.h"
 #include "render/scenemanager.h"
+#include "spatial/uintcoord.h"
 
 namespace game { class GameContext; }
 
@@ -69,7 +72,29 @@ private:
     void finishMeshGen(MeshGenRequest *meshGenRequest);
 
     util::SmallVectorManager<unsigned int> &facesVecManager;
-    render::SceneManager::MeshHandle meshHandle;
+    SceneManager::MeshHandle meshHandle;
+
+
+
+
+    std::unordered_map<glm::vec3, unsigned int> vertIndices;
+
+    struct HoleEdge {
+        unsigned int faceIndex;
+        unsigned int edgeDir;
+    };
+    std::queue<HoleEdge> holeEdges;
+
+    void fillHoles();
+
+    template <unsigned int neighborIndex>
+    spatial::UintCoord getConnectedCellCoord(spatial::UintCoord base, std::uint32_t connectedCellLsbs) {
+        spatial::UintCoord res;
+        res.x = base.x + static_cast<spatial::UintCoord::AxisType>((connectedCellLsbs >> (neighborIndex * 8 + 0)) & 3) - 1;
+        res.y = base.y + static_cast<spatial::UintCoord::AxisType>((connectedCellLsbs >> (neighborIndex * 8 + 2)) & 3) - 1;
+        res.z = base.z + static_cast<spatial::UintCoord::AxisType>((connectedCellLsbs >> (neighborIndex * 8 + 4)) & 3) - 1;
+        return res;
+    }
 };
 
 }

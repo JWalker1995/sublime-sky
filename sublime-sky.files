@@ -44,6 +44,7 @@ src/graphics/glvao.cpp
 src/graphics/glvao.h
 src/graphics/gpuprogram.cpp
 src/graphics/gpuprogram.h
+src/graphics/imgui.h
 src/graphics/iterator/vertcirculator.h
 src/graphics/scenemanager.cpp
 src/graphics/scenemanager.h
@@ -160,6 +161,8 @@ src/spatial/cellkey.h
 src/spatial/hashtree.h
 src/spatial/octree.h
 src/spatial/pointspatialindex.h
+src/spatial/raycastlookuptable.cpp
+src/spatial/raycastlookuptable.h
 src/spatial/uintcoord.h
 src/spatial/uniformpointindexer.h
 src/util/hashforwarder.h

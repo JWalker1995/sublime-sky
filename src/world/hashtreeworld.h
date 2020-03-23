@@ -43,11 +43,84 @@ class HashTreeWorld : private spatial::HashTree<HashTreeWorld, CellValue>, publi
     friend class spatial::HashTree<HashTreeWorld, CellValue>;
 
 public:
+    class PointRead {
+    public:
+        const glm::vec3 point;
+    };
+    class PointMutate {
+    public:
+        PointMutate() {
+            // Not implemented
+            assert(false);
+        }
+    };
+
+    class StateRead {
+    public:
+        SpaceState state;
+    };
+    class StateMutate {
+    public:
+        SpaceState &state;
+    };
+
+    template <typename ... Actions>
+    class CellMutator : public Actions... {
+    public:
+        CellMutator(HashTreeWorld &world)
+            : Actions(world)...
+        {}
+    };
+
+    class CellIterator {
+    public:
+        class ChunkRef {};
+
+        /*
+        void init(spatial::UintCoord coord) {
+
+        }
+
+        ChunkRef &getNearby(spatial::UintCoord coord) {
+            coord -= min;
+            coord.x >>= Chunk::sizeLog2;
+            coord.y >>= Chunk::sizeLog2;
+            coord.z >>= Chunk::sizeLog2;
+            assert(coord.x < (static_cast<spatial::UintCoord::AxisType>(1) << sizeLog2_x));
+            assert(coord.y < (static_cast<spatial::UintCoord::AxisType>(1) << sizeLog2_y));
+            assert(coord.z < (static_cast<spatial::UintCoord::AxisType>(1) << sizeLog2_z));
+
+            unsigned int index = (((coord.x << sizeLog2_y) | coord.y) << sizeLog2_z) | coord.z;
+
+            if (!data[index]) {
+                fillChunkRef(data[index]);
+            }
+
+            return *data[index];
+        }
+        */
+
+    private:
+        spatial::UintCoord min;
+        ChunkRef **data;
+#ifndef NDEBUG
+        unsigned int sizeLog2_x;
+#endif
+        unsigned int sizeLog2_y;
+        unsigned int sizeLog2_z;
+
+        void fillChunkRef(ChunkRef ) {
+
+        }
+    };
+
     HashTreeWorld(game::GameContext &gameContext);
 
     void tick(game::TickerContext &tickerContext);
 
-    CellValue &getCellValueContaining(glm::vec3 point);
+    CellValue &getCellValueContaining(spatial::UintCoord coord);
+    SpaceState getSpaceState(spatial::UintCoord coord);
+    glm::vec3 getPoint(spatial::UintCoord coord);
 
     struct RaytestResult {
         SpaceState state;

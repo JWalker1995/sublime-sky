@@ -1,6 +1,6 @@
 #include "indexconnector.h"
 
-#include "imgui/imgui.h"
+#include "graphics/imgui.h"
 
 #include "game/gamecontext.h"
 #include "render/imguirenderer.h"

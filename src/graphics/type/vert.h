@@ -52,6 +52,18 @@ public:
 class VertLocal {
 public:
     util::SmallVectorManager<unsigned int>::Ref facesVec;
+
+    // Each vert's position comes from the point equidistant to 4 cell points.
+    // Each byte of this 32-bit int defines the cell of one of those 4 points.
+    // Using the UIntCoord of the position as a base, add the first 3 2-bit blocks onto each axis, respectively, and subtract 1.
+    // So, if 01234567 is the byte, bits 01 are added to the X axis, 23 to Y, 45 to Z, and 67 are unused.
+    // As an example, the byte 010010 applied to the coord (10, 20, 30) would result in the coord (10, 19, 31).
+    std::uint32_t connectedCellLsbs;
+
+    // Each vert's position comes from the point equidistant to 4 cell points.
+    // This 32-bit int has 27 defined bits, each relating to a cell in the 3x3x3 grid around the position.
+    // There should be 4 set bits, each relating to a cell point.
+    std::uint32_t connectedCellBitmask;
 };
 
 }

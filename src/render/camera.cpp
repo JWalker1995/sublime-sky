@@ -1,7 +1,7 @@
 #include "camera.h"
 
 #include "render/imguirenderer.h"
-#include "imgui/imgui.h"
+#include "graphics/imgui.h"
 
 namespace render {
 

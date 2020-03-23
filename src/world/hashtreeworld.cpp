@@ -20,8 +20,28 @@ void HashTreeWorld::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
 }
 
-CellValue &HashTreeWorld::getCellValueContaining(glm::vec3 point) {
-    return getLeafContaining(spatial::UintCoord::fromPoint(point), Chunk::sizeLog2)->second;
+CellValue &HashTreeWorld::getCellValueContaining(spatial::UintCoord coord) {
+    return getLeafContaining(coord, Chunk::sizeLog2)->second;
+}
+
+SpaceState HashTreeWorld::getSpaceState(spatial::UintCoord coord) {
+    Cell *leafNode = getLeafContaining(coord, Chunk::sizeLog2);
+    unsigned int x = coord.x % Chunk::size;
+    unsigned int y = coord.y % Chunk::size;
+    unsigned int z = coord.z % Chunk::size;
+    if (leafNode->second.state == SpaceState::SubdividedAsChunk) {
+        return leafNode->second.chunk->cells[x][y][z].type;
+    } else {
+        return leafNode->second.state;
+    }
+}
+
+glm::vec3 HashTreeWorld::getPoint(spatial::UintCoord coord) {
+    Cell *leafNode = getLeafContaining(coord, Chunk::sizeLog2);
+    unsigned int x = coord.x % Chunk::size;
+    unsigned int y = coord.y % Chunk::size;
+    unsigned int z = coord.z % Chunk::size;
+    return getChunkPoints(leafNode)->points[x][y][z];
 }
 
 HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit) {
