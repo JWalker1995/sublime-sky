@@ -25,9 +25,9 @@ endif
 
 ifeq (@(TUP_PLATFORM),macosx)
     CFLAGS += -stdlib=libc++
-    LDFLAGS += -framework OpenGL `pkg-config --static --libs yaml-cpp glfw3 glew`
+    LDFLAGS += -framework OpenGL `pkg-config --static --libs yaml-cpp glfw3 glew nlopt`
 else
-    LDFLAGS += `pkg-config --static --libs yaml-cpp gl glfw3 glew`
+    LDFLAGS += `pkg-config --static --libs yaml-cpp gl glfw3 glew nlopt`
 endif
 
 

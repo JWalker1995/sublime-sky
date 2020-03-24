@@ -39,3 +39,6 @@ third_party/readerwriterqueue/
 third_party/spdlog/
 third_party/Static-Sort/
 third_party/THST/
+
+raycastlookuptable_cache.bin
+

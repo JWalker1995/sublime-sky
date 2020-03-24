@@ -176,25 +176,98 @@ void MeshUpdater::fillHoles() {
 
         glm::vec3 edgeOrigin = v1.shared.getPoint();
         glm::vec3 edgeDir = glm::cross(p2 - p1, p1 - p0);
+        edgeDir /= glm::length(edgeDir);
         assert(glm::dot(edgeDir, edgeOrigin - v0.shared.getPoint()) >= 0.0f); // Cross product might need to be negated if this fails
 
-        struct CandidateCell {
-            spatial::UintCoord coord;
-            float dist;
+        // These all should be pretty close
+        float parallelDist0 = glm::dot(p0 - edgeOrigin, edgeDir);
+        float parallelDist1 = glm::dot(p1 - edgeOrigin, edgeDir);
+        float parallelDist2 = glm::dot(p2 - edgeOrigin, edgeDir);
+        float parallelDist = (parallelDist0 + parallelDist1 + parallelDist2) / 3.0f;
 
-            bool operator<(const CandidateCell &other) const {
-                // We flip this because we want the SMALLEST dist coming first
-                return dist > other.dist;
+        float perpDistSq0 = glm::distance2(p0 - edgeOrigin, parallelDist0 * edgeDir);
+        float perpDistSq1 = glm::distance2(p1 - edgeOrigin, parallelDist1 * edgeDir);
+        float perpDistSq2 = glm::distance2(p2 - edgeOrigin, parallelDist2 * edgeDir);
+        float perpDistSq = (perpDistSq0 + perpDistSq1 + perpDistSq2) / 3.0f;
+
+        float bestSurfaceDistance = std::numeric_limits<float>::infinity();
+        glm::vec3 bestP3;
+
+        const spatial::RaycastLookupTable::SearchSequence &seq = raycastLookupTable.lookup(edgeOrigin, edgeDir, parallelDist, perpDistSq);
+        for (unsigned int i = 0; true; i++) {
+            assert(i < spatial::RaycastLookupTable::sequenceLength);
+            if (i == spatial::RaycastLookupTable::sequenceLength) {
+                break;
+            }
+
+            const spatial::RaycastLookupTable::SearchSequence::Cell cell = seq.cells[i];
+            if (cell.minSurfaceDistance >= bestSurfaceDistance) {
+                break;
+            }
+
+            spatial::UintCoord coord(c1.x + cell.offsetX, c1.y + cell.offsetY, c1.z + cell.offsetZ);
+            glm::vec3 cellPt = hashTreeWorld.getPoint(coord);
+            float surfaceDistance = spatial::RaycastLookupTable::getSurfaceDistanceAlongRay<float>(edgeOrigin, edgeDir, parallelDist, perpDistSq, cellPt);
+            assert(surfaceDistance <= cell.minSurfaceDistance);
+
+            if (surfaceDistance < bestSurfaceDistance) {
+                bestSurfaceDistance = surfaceDistance;
+                bestP3 = cellPt;
+            }
+        }
+
+        // We have a tetrahedron, and we need to find the circumcenter
+        // https://en.wikipedia.org/wiki/Tetrahedron#Circumcenter
+        glm::vec3 tetPoints[4] = { p0, p1, p2, bestP3 };
+
+        // Sort them so we know everything's deterministic
+        auto vecComparator = [](const glm::vec3 &a, const glm::vec3 &b) {
+            if (a.x != b.x) {
+                return a.x < b.x;
+            } else if (a.y != b.y) {
+                return a.y < b.y;
+            } else {
+                return a.z < b.z;
             }
         };
-        std::priority_queue<CandidateCell, std::vector<CandidateCell>> queue;
-        CandidateCell init;
-        init.coord = c0;
+        std::sort(tetPoints, tetPoints + 4, vecComparator);
 
+        glm::mat3x3 A(tetPoints[1] - tetPoints[0], tetPoints[2] - tetPoints[0], tetPoints[3] - tetPoints[0]);
+        float lenSq0 = glm::length2(tetPoints[0]);
+        glm::vec3 b(glm::length2(tetPoints[1]) - lenSq0, glm::length2(tetPoints[2]) - lenSq0, glm::length2(tetPoints[3]) - lenSq0);
+        glm::vec3 circumcenter = glm::inverse(glm::transpose(A)) * b * 0.5f;
 
-        // Find v0 ray intersection
+        float d0 = glm::distance(circumcenter, tetPoints[0]);
+        float d1 = glm::distance(circumcenter, tetPoints[1]);
+        float d2 = glm::distance(circumcenter, tetPoints[2]);
+        float d3 = glm::distance(circumcenter, tetPoints[3]);
+        assert(false);
 
+        // Create triangle between v1, v2, and circumcenter
+        SceneManager::FaceMutator newFace = meshHandle.createFace();
 
+        newFace.shared.verts[0] = v1.index;
+        v1.local.facesVec.push_back(facesVecManager, newFace.index);
+
+        newFace.shared.verts[1] = v2.index;
+        v2.local.facesVec.push_back(facesVecManager, newFace.index);
+
+        std::pair<std::unordered_map<glm::vec3, unsigned int>::iterator, bool> found = vertIndices.emplace(circumcenter, 0);
+        if (found.second) {
+            SceneManager::VertMutator newVert = meshHandle.createVert();
+            newVert.shared.setPoint(circumcenter);
+            newVert.shared.setColor(0, 100, 0, 255);
+
+            found.first->second = newVert.index;
+
+            newFace.shared.verts[2] = newVert.index;
+            newVert.local.facesVec.push_back(facesVecManager, newFace.index);
+        } else {
+            SceneManager::VertReader newVert = meshHandle.readVert(found.first->second);
+
+            newFace.shared.verts[2] = newVert.index;
+            newVert.local.facesVec.push_back(facesVecManager, newFace.index);
+        }
     }
 }
 

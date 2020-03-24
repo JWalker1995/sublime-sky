@@ -1,6 +1,7 @@
 #include "signalhandler.h"
 
 #include <csignal>
+#include <unistd.h>
 
 #include "application/quitexception.h"
 
@@ -9,7 +10,17 @@ namespace {
 static volatile std::sig_atomic_t stopFlag = false;
 
 void handleSignal(int signal) {
-    stopFlag = true;
+    if (stopFlag) {
+        const char *msg = "Caught a second SIGINT; exiting...\n";
+        write(2, msg, strlen(msg));
+
+        std::_Exit(5);
+    } else {
+        const char *msg = "Caught SIGINT; setting stop flag...\n";
+        write(2, msg, strlen(msg));
+
+        stopFlag = true;
+    }
 }
 
 }

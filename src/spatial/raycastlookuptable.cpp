@@ -1,86 +1,91 @@
 #include "raycastlookuptable.h"
 
-#include <queue>
+#include <fstream>
+#include <deque>
+
+#include <nlopt.h>
+
+#include <glm/gtx/norm.hpp>
 
 #include "spdlog/spdlog.h"
 #include "game/gamecontext.h"
 
 namespace spatial {
 
-RaycastLookupTable::RaycastLookupTable(game::GameContext &context) {
-    context.get<spdlog::logger>().debug("Sizeof(RaycastLookupTable) = {}", sizeof(RaycastLookupTable));
+RaycastLookupTable::RaycastLookupTable(game::GameContext &context)
+    : context(context)
+{}
 
-    for (std::size_t i = 0; i < sizeof(sequences) / sizeof(SearchSequence); i++) {
-        SearchSequence &searchSequence = (&sequences[0][0][0][0][0][0][0])[i];
+/*
+static const char *filename = "raycastlookuptable_cache.bin";
 
-        auto cellComp = [](const SearchSequence::Cell &a, const SearchSequence::Cell &b) -> bool {
-            return a.minSurfaceDistance > b.minSurfaceDistance;
-        };
+if (!loadSequences(filename)) {
+    generateSequences();
+    writeSequences(filename);
+}
+*/
 
-        std::vector<SearchSequence::Cell> finishedCells;
-        std::priority_queue<SearchSequence::Cell, std::vector<SearchSequence::Cell>, decltype(cellComp)> cellQueue(cellComp);
+bool RaycastLookupTable::loadSequences(const char *filename) {
+    context.get<spdlog::logger>().info("Attempting to read sequences from file '{}'...", filename);
 
-        float offsets[10];
-        std::fill_n(offsets, 10, 0.5f);
-        glm::vec3 initDir = searchSequenceToLookupQuery(searchSequence, offsets).dir;
+    std::ifstream file;
+    file.open(filename, std::ios::in | std::ios::binary | std::ios::ate);
+    if (file.is_open()) {
+        std::size_t size = file.tellg();
+        if (size == sizeof(sequences)) {
+            file.seekg(0, std::ios::beg);
+            file.read(reinterpret_cast<char *>(sequences), sizeof(sequences));
+            file.close();
 
-        SearchSequence::Cell initialCell;
-        // TODO: make sure queue is unique. Better initialization.
-        initialCell.offsetX = 0.5f + initDir.x * 1.8f;
-        initialCell.offsetY = 0.5f + initDir.y * 1.8f;
-        initialCell.offsetZ = 0.5f + initDir.z * 1.8f;
-        initialCell.minSurfaceDistance = findSmallestSurfaceDistance(searchSequence, initialCell.offsetX, initialCell.offsetY, initialCell.offsetZ);
-        cellQueue.push(initialCell);
-
-        while (!cellQueue.empty()) {
-            SearchSequence::Cell cell = cellQueue.top();
-            cellQueue.pop();
-
-            if (cell.minSurfaceDistance > -1e-3 && cell.minSurfaceDistance < 2.0f) {
-                finishedCells.push_back(cell);
-
-                cell.offsetX--;
-                cell.minSurfaceDistance = findSmallestSurfaceDistance(searchSequence, cell.offsetX, cell.offsetY, cell.offsetZ);
-                cellQueue.push(cell);
-                cell.offsetX++;
-
-                cell.offsetX++;
-                cell.minSurfaceDistance = findSmallestSurfaceDistance(searchSequence, cell.offsetX, cell.offsetY, cell.offsetZ);
-                cellQueue.push(cell);
-                cell.offsetX--;
-
-                cell.offsetY--;
-                cell.minSurfaceDistance = findSmallestSurfaceDistance(searchSequence, cell.offsetX, cell.offsetY, cell.offsetZ);
-                cellQueue.push(cell);
-                cell.offsetY++;
-
-                cell.offsetY++;
-                cell.minSurfaceDistance = findSmallestSurfaceDistance(searchSequence, cell.offsetX, cell.offsetY, cell.offsetZ);
-                cellQueue.push(cell);
-                cell.offsetY--;
-
-                cell.offsetZ--;
-                cell.minSurfaceDistance = findSmallestSurfaceDistance(searchSequence, cell.offsetX, cell.offsetY, cell.offsetZ);
-                cellQueue.push(cell);
-                cell.offsetZ++;
-
-                cell.offsetZ++;
-                cell.minSurfaceDistance = findSmallestSurfaceDistance(searchSequence, cell.offsetX, cell.offsetY, cell.offsetZ);
-                cellQueue.push(cell);
-                cell.offsetZ--;
-            }
+            context.get<spdlog::logger>().info("Read sequences from file '{}'!", filename);
+            return true;
         }
+    }
 
-        sort(finishedCells.begin(), finishedCells.end(), cellComp);
+    context.get<spdlog::logger>().warn("Could not read sequences from file '{}'!", filename);
+    return false;
+}
 
-        // We shouldn't ever get to the end, but if we do, this should stop the loop
-        initialCell.minSurfaceDistance = std::numeric_limits<float>::infinity();
-        finishedCells.resize(sequenceLength, initialCell);
-        std::copy_n(finishedCells.cbegin(), sequenceLength, searchSequence.cells);
+void RaycastLookupTable::writeSequences(const char *filename) {
+    context.get<spdlog::logger>().info("Writing sequences to file '{}'...", filename);
+
+    std::ofstream file;
+    file.open(filename, std::ios::out | std::ios::binary);
+    if (file.is_open()) {
+        file.write(reinterpret_cast<const char *>(sequences), sizeof(sequences));
+        file.close();
+
+        context.get<spdlog::logger>().info("Finished writing sequences to file '{}'!", filename);
+    } else {
+        context.get<spdlog::logger>().warn("Could not write sequences to file '{}'!", filename);
     }
 }
 
-const RaycastLookupTable::SearchSequence &RaycastLookupTable::lookup(glm::vec3 origin, glm::vec3 dir, float parallelDist, float perpDistSq) const {
+void RaycastLookupTable::generateSequences() {
+    context.get<spdlog::logger>().debug("Sizeof(RaycastLookupTable::sequences) = {}", sizeof(sequences));
+
+    static constexpr std::size_t numSequences = sizeof(sequences) / sizeof(SearchSequence);
+    for (std::size_t i = 0; i < numSequences; i++) {
+        if (i % 1000 == 0) {
+            context.get<spdlog::logger>().info("Generated {} / {} sequences...", i, numSequences);
+        }
+
+        generateSingleSequence((&sequences[0][0][0][0][0][0][0])[i]);
+    }
+
+    context.get<spdlog::logger>().info("Done! Generated {} sequences!", numSequences);
+}
+
+const RaycastLookupTable::SearchSequence &RaycastLookupTable::lookup(glm::vec3 origin, glm::vec3 dir, float parallelDist, float perpDistSq) {
+    SearchSequence &res = getSequence(origin, dir, parallelDist, perpDistSq);
+    if (!res.isGenerated()) {
+        generateSingleSequence(res);
+        assert(res.isGenerated());
+    }
+    return res;
+}
+
+RaycastLookupTable::SearchSequence &RaycastLookupTable::getSequence(glm::vec3 origin, glm::vec3 dir, float parallelDist, float perpDistSq) {
     unsigned int osx;
     unsigned int osy;
     unsigned int osz;
@@ -127,7 +132,50 @@ const RaycastLookupTable::SearchSequence &RaycastLookupTable::lookup(glm::vec3 o
     return sequences[osx][osy][osz][dsx][dsy][pls][prs];
 }
 
-RaycastLookupTable::Query RaycastLookupTable::searchSequenceToLookupQuery(const SearchSequence &searchSequence, float offs[7]) const {
+void RaycastLookupTable::generateSingleSequence(SearchSequence &searchSequence) {
+    std::deque<SearchSequence::Cell> cells;
+
+    double offsets[7];
+    std::fill_n(offsets, 7, 0.5);
+    glm::vec3 initDir = searchSequenceToLookupQuery(searchSequence, offsets).dir;
+    SearchSequence::Cell initialCell(0.5f + initDir.x * 1.8f, 0.5f + initDir.y * 1.8f, 0.5f + initDir.z * 1.8f, NAN);
+    cells.push_back(initialCell);
+
+    for (std::size_t j = 0; j < cells.size();) {
+        SearchSequence::Cell &cell = cells[j];
+
+        if (std::find(cells.cbegin(), cells.cbegin() + j, cell) == cells.cbegin() + j) {
+            setMinSurfaceDistance(cell, searchSequence);
+            if (cell.minSurfaceDistance >= surfaceDistanceLowerBound && cell.minSurfaceDistance < surfaceDistanceUpperBound) {
+                cells.emplace_back(cell.offsetX - 1, cell.offsetY, cell.offsetZ, NAN);
+                cells.emplace_back(cell.offsetX + 1, cell.offsetY, cell.offsetZ, NAN);
+                cells.emplace_back(cell.offsetX, cell.offsetY - 1, cell.offsetZ, NAN);
+                cells.emplace_back(cell.offsetX, cell.offsetY + 1, cell.offsetZ, NAN);
+                cells.emplace_back(cell.offsetX, cell.offsetY, cell.offsetZ - 1, NAN);
+                cells.emplace_back(cell.offsetX, cell.offsetY, cell.offsetZ + 1, NAN);
+
+                j++;
+                continue;
+            }
+        }
+
+        // Erase and retry
+        cell = cells.back();
+        cells.pop_back();
+    }
+
+    auto cellComp = [](const SearchSequence::Cell &a, const SearchSequence::Cell &b) -> bool {
+        return a.minSurfaceDistance < b.minSurfaceDistance;
+    };
+    std::sort(cells.begin(), cells.end(), cellComp);
+
+    // Pad with sentinels
+    initialCell.minSurfaceDistance = std::numeric_limits<float>::infinity();
+    cells.resize(sequenceLength, initialCell);
+    std::copy_n(cells.cbegin(), sequenceLength, searchSequence.cells);
+}
+
+RaycastLookupTable::Query RaycastLookupTable::searchSequenceToLookupQuery(const SearchSequence &searchSequence, const double offs[7]) {
     std::size_t index = &searchSequence - &sequences[0][0][0][0][0][0][0];
     unsigned int prs = index % perpDistSplits;
     index /= perpDistSplits;
@@ -150,17 +198,17 @@ RaycastLookupTable::Query RaycastLookupTable::searchSequenceToLookupQuery(const 
     res.origin.y = (osy + offs[1]) / originSplits;
     res.origin.z = (osz + offs[2]) / originSplits;
 
-    float dpx = (dsx + offs[3]) / (0.5f * dirSplits / M_PI) - M_PI;
-    float dpy = (dsy + offs[4]) / (0.5f * dirSplits) - 1.0f;
-    float xyScale = std::sqrtf(1.0f - dpy * dpy);
-    res.dir.x = std::cosf(dpx) * xyScale;
-    res.dir.y = std::sinf(dpx) * xyScale;
+    double dpx = (dsx + offs[3]) / (0.5 * dirSplits / M_PI) - M_PI;
+    double dpy = (dsy + offs[4]) / (0.5 * dirSplits) - 1.0;
+    double xyScale = dpy > -1.0 && dpy < 1.0 ? std::sqrt(1.0 - dpy * dpy) : 0.0;
+    res.dir.x = std::cos(dpx) * xyScale;
+    res.dir.y = std::sin(dpx) * xyScale;
     res.dir.z = dpy;
 
     // This should be pretty normalized, but normalize it again just to make sure.
     // getRayPointDistanceSq depends on it being normalized.
-    float dirLen = glm::length(res.dir);
-    assert(dirLen > 0.999f && dirLen < 1.001f);
+    double dirLen = glm::length(res.dir);
+    assert(dirLen > 0.999 && dirLen < 1.001);
     res.dir /= dirLen;
 
     res.parallelDist = (pls + offs[5]) / (parallelDistSplits / (maxParallelDist - minParallelDist)) + minParallelDist;
@@ -174,64 +222,84 @@ RaycastLookupTable::Query RaycastLookupTable::searchSequenceToLookupQuery(const 
         testLookup &= offs[i] >= 1e-3f && offs[i] < 1 - 1e-3f;
     }
     if (testLookup) {
-        assert(&lookup(res.origin, res.dir, res.parallelDist, res.perpDistSq) == &searchSequence);
+        assert(&getSequence(res.origin, res.dir, res.parallelDist, res.perpDistSq) == &searchSequence);
     }
 #endif
 
     return res;
 }
 
-float RaycastLookupTable::getSurfaceDistanceAlongRay(glm::vec3 origin, glm::vec3 dir, float parallelDist, float perpDistSq, glm::vec3 cellPoint) {
-    cellPoint -= origin;
+void RaycastLookupTable::setMinSurfaceDistance(SearchSequence::Cell &cell, const SearchSequence &searchSequence) {
+    NloptUserData userData;
+    userData.raycastLookupTable = this;
+    userData.searchSequence = &searchSequence;
 
-    float cellDistParallel = glm::dot(cellPoint, dir);
-    float cellDistPerpSq = glm::distance2(cellPoint, cellDistParallel * dir);
-    float surfaceDist = 0.5f * (parallelDist * parallelDist + perpDistSq - cellDistParallel * cellDistParallel - cellDistPerpSq) / (parallelDist - cellDistParallel);
+    nlopt_opt opt = nlopt_create(NLOPT_LD_MMA, nloptArgCount);
+    nlopt_set_min_objective(opt, nloptFunc, &userData);
 
-    return surfaceDist;
-}
+    double lb[nloptArgCount];
+    std::fill_n(lb, nloptArgCount, 0.0);
+    lb[nloptArgCount - 3] = cell.offsetX;
+    lb[nloptArgCount - 2] = cell.offsetY;
+    lb[nloptArgCount - 1] = cell.offsetZ;
+    nlopt_set_lower_bounds(opt, lb);
 
-float RaycastLookupTable::findSmallestSurfaceDistance(const SearchSequence &searchSequence, signed int offsetX, signed int offsetY, signed int offsetZ) {
-    glm::vec3 cellPoint(offsetX, offsetY, offsetZ);
+    double ub[nloptArgCount];
+    std::fill_n(ub, nloptArgCount, 1.0);
+    ub[nloptArgCount - 3] = cell.offsetX + 1;
+    ub[nloptArgCount - 2] = cell.offsetY + 1;
+    ub[nloptArgCount - 1] = cell.offsetZ + 1;
+    nlopt_set_upper_bounds(opt, ub);
 
-    static constexpr float eps = 1e-3f;
-    float offsets[10];
-    std::fill_n(offsets, 10, 0.5f);
+    nlopt_set_stopval(opt, 0.0);
+    nlopt_set_xtol_abs1(opt, 1e-9);
+    nlopt_set_maxeval(opt, 1024);
+//    nlopt_set_maxtime(opt, 1.0);
 
-    float temperature = 100.0f;
-    for (unsigned int j = 0; j < 1024; j++) {
-        Query query = searchSequenceToLookupQuery(searchSequence, offsets);
-        float baseSd = getSurfaceDistanceAlongRay(query.origin, query.dir, query.parallelDist, query.perpDistSq, cellPoint + glm::vec3(offsets[7], offsets[8], offsets[9]));
-        // We don't want to go below zero, so square it.
-        baseSd *= baseSd;
-
-        float ds[10];
-        for (unsigned int k = 0; k < 10; k++) {
-            offsets[k] += eps;
-
-            Query dQuery = searchSequenceToLookupQuery(searchSequence, offsets);
-            float dSd = getSurfaceDistanceAlongRay(dQuery.origin, dQuery.dir, dQuery.parallelDist, dQuery.perpDistSq, cellPoint + glm::vec3(offsets[7], offsets[8], offsets[9]));
-            dSd *= dSd;
-            ds[k] = (dSd - baseSd) / eps;
-
-            offsets[k] -= eps;
-        }
-
-        for (unsigned int k = 0; k < 10; k++) {
-            offsets[k] -= ds[k] * temperature;
-            if (offsets[k] < 0.0f) {
-                offsets[k] = 0.0f;
-            } else if (offsets[k] > 1.0f) {
-                offsets[k] = 1.0f;
-            }
-        }
-
-        temperature *= 0.99f;
+    double x[nloptArgCount];
+    for (unsigned int i = 0; i < nloptArgCount; i++) {
+        x[i] = (lb[i] + ub[i]) * 0.5;
     }
 
-    Query query = searchSequenceToLookupQuery(searchSequence, offsets);
-    float finalSd = getSurfaceDistanceAlongRay(query.origin, query.dir, query.parallelDist, query.perpDistSq, cellPoint);
-    return finalSd;
+    double minVal;
+    nlopt_result res = nlopt_optimize(opt, x, &minVal);
+    if (res < 0) {
+        throw BuildException("Nlopt error! Code is " + std::to_string(res));
+    }
+
+    cell.minSurfaceDistance = getSurfaceDistForParams(x, &userData);
+
+    nlopt_destroy(opt);
+}
+
+double RaycastLookupTable::nloptFunc(unsigned int n, const double *x, double *grad, void *userData) {
+    assert(n == nloptArgCount);
+
+    double sd = getSurfaceDistForParams(x, static_cast<NloptUserData *>(userData));
+
+    // We don't want to go below zero, so square it.
+    double loss = sd * sd;
+
+    if (grad) {
+        static constexpr double eps = 1e-6;
+
+        double xm[nloptArgCount];
+        std::copy_n(x, nloptArgCount, xm);
+
+        for (unsigned int i = 0; i < nloptArgCount; i++) {
+            xm[i] += eps;
+            grad[i] = (nloptFunc(n, xm, 0, userData) - loss) / eps;
+            xm[i] = x[i];
+        }
+    }
+
+    return loss;
+};
+
+double RaycastLookupTable::getSurfaceDistForParams(const double *x, NloptUserData *userData) {
+    assert(nloptArgCount == 10);
+    Query query = userData->raycastLookupTable->searchSequenceToLookupQuery(*userData->searchSequence, x);
+    return userData->raycastLookupTable->getSurfaceDistanceAlongRay<double>(query.origin, query.dir, query.parallelDist, query.perpDistSq, glm::dvec3(x[7], x[8], x[9]));
 }
 
 }
