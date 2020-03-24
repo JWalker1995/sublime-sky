@@ -96,9 +96,9 @@ public:
     static RealType getSurfaceDistanceAlongRay(glm::tvec3<RealType> origin, glm::tvec3<RealType> dir, RealType parallelDist, RealType perpDistSq, glm::tvec3<RealType> cellPoint) {
         cellPoint -= origin;
 
-        double cellDistParallel = glm::dot(cellPoint, dir);
-        double cellDistPerpSq = glm::distance2(cellPoint, cellDistParallel * dir);
-        double surfaceDist = static_cast<RealType>(0.5) * (parallelDist * parallelDist + perpDistSq - cellDistParallel * cellDistParallel - cellDistPerpSq) / (parallelDist - cellDistParallel);
+        RealType cellDistParallel = glm::dot(cellPoint, dir);
+        RealType cellDistPerpSq = glm::distance2(cellPoint, cellDistParallel * dir);
+        RealType surfaceDist = static_cast<RealType>(0.5) * (parallelDist * parallelDist + perpDistSq - cellDistParallel * cellDistParallel - cellDistPerpSq) / (parallelDist - cellDistParallel);
 
         return surfaceDist;
     }

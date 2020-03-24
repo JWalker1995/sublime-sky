@@ -86,6 +86,7 @@ private:
     std::queue<HoleEdge> holeEdges;
 
     void fillHoles();
+    void fillSingleHole(HoleEdge edge);
 
     template <unsigned int neighborIndex>
     spatial::UintCoord getConnectedCellCoord(spatial::UintCoord base, std::uint32_t connectedCellLsbs) {
