@@ -13,6 +13,7 @@
 #include "game/cameraflycontroller.h"
 #include "render/raycaster.h"
 #include "pointgen/cubiclatticegenerator.h"
+#include "pointgen/rsquaredlatticegenerator.h"
 #include "worldgen/simplegenerator.h"
 #include "meshgen/cubichoneycomb.h"
 
@@ -41,7 +42,8 @@ void MainLoop::load() {
     context.get<CameraFlyController>();
 
     context.get<render::RayCaster>();
-    context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();
+//    context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();
+    context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>();
     context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>();
     context.construct<meshgen::MeshGenerator, meshgen::CubicHoneycomb>();
 }

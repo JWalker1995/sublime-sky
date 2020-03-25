@@ -8,6 +8,17 @@ class RSquaredGenerator : private Jitterer {
 public:
     // From http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
 
+    /*
+    TODO: Implement rotation
+    def genSeq(g, off, angle, count):
+      a1 = 1.0/g
+      a2 = 1.0/(g*g)
+      xs = (off + a1 * np.arange(0, count)) % 1 - 0.5
+      ys = (off + a2 * np.arange(0, count)) % 1 - 0.5
+      xs, ys = xs * np.cos(angle) - ys * np.sin(angle), xs * np.sin(angle) + ys * np.cos(angle)
+      return xs % 1, ys % 1
+    */
+
     RSquaredGenerator(glm::vec3 size, unsigned int numPoints, float jitterFactor = 0.38f, unsigned int seed = 6487)
         : Jitterer(size, numPoints, jitterFactor, seed)
         , size(size)

@@ -112,6 +112,8 @@ src/pointgen/pointgenerator.h
 src/pointgen/randomballvectorgenerator.h
 src/pointgen/randomgenerator.h
 src/pointgen/rsquaredgenerator.h
+src/pointgen/rsquaredlatticegenerator.cpp
+src/pointgen/rsquaredlatticegenerator.h
 src/query/allquery.h
 src/query/pointquery.h
 src/query/rayquery.h

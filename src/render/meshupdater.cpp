@@ -99,6 +99,7 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
     cell.init(-2.0, 2.0, -2.0, 2.0, -2.0, 2.0);
 
     glm::vec3 origin = hashTreeWorld.getPoint(coord);
+    assert(!std::isnan(origin.x));
     world::SpaceState originState = hashTreeWorld.getSpaceState(coord);
 
     spatial::UintCoord min = coord - spatial::UintCoord(2);
@@ -111,8 +112,13 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
                     continue;
                 }
 
-                glm::vec3 pt = hashTreeWorld.getPoint(neighborCoord) - origin;
+                glm::vec3 pt = hashTreeWorld.getPoint(neighborCoord);
+                if (std::isnan(pt.x)) {
+                    continue;
+                }
+
                 bool shouldHaveSurface = !originState.isTransparent() && hashTreeWorld.getSpaceState(neighborCoord).isTransparent();
+                pt -= origin;
                 cell.nplane(pt.x, pt.y, pt.z, shouldHaveSurface);
             }
         }

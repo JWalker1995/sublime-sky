@@ -42,6 +42,10 @@ void SimpleGenerator::generate(Request *request) {
 }
 
 world::SpaceState SimpleGenerator::getState(glm::vec3 point) {
+    if (std::isnan(point.x)) {
+        return world::SpaceState::Uninitialized;
+    }
+
 //    glm::vec2 treeCenter(point.x, point.y);
 //    float v = 10.0f;
 //    while (true) {

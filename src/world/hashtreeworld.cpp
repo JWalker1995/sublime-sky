@@ -111,7 +111,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 
                 return res;
             }
 
-            assert(minCell->distParallel > curDistPll);
+//            assert(minCell->distParallel > curDistPll);
 
             curDistPll = minCell->distParallel;
             curDistPrpSq = minCell->distPerpendicularSq;
@@ -194,10 +194,14 @@ spatial::UintCoord HashTreeWorld::getContainingCoord(glm::vec3 point) {
     for (neighborCoord.x = min.x; neighborCoord.x <= max.x; neighborCoord.x++) {
         for (neighborCoord.y = min.y; neighborCoord.y <= max.y; neighborCoord.y++) {
             for (neighborCoord.z = min.z; neighborCoord.z <= max.z; neighborCoord.z++) {
-                float distSq = glm::distance2(point, getPoint(neighborCoord));
-                if (distSq < minDistSq) {
-                    minDistSq = distSq;
-                    closestCoord = neighborCoord;
+                glm::vec3 cellPoint = getPoint(neighborCoord);
+
+                if (!std::isnan(cellPoint.x)) {
+                    float distSq = glm::distance2(point, cellPoint);
+                    if (distSq < minDistSq) {
+                        minDistSq = distSq;
+                        closestCoord = neighborCoord;
+                    }
                 }
             }
         }
@@ -232,13 +236,6 @@ void HashTreeWorld::finishWorldGen(const WorldGenRequest *worldGenRequest, Space
         node->second.chunk = worldGenRequest->getDstChunk();
     } else {
         context.get<util::Pool<Chunk>>().free(worldGenRequest->getDstChunk());
-    }
-
-    if (chunkState == SpaceState::SubdividedAsChunk) {
-        spatial::UintCoord middle = worldGenRequest->getCube().child<1, 1, 1>().getCoord<0, 0, 0>();
-        if (getSpaceState(middle).isTransparent() != getSpaceState(middle + spatial::UintCoord(0, 0, 1)).isTransparent()) {
-            context.get<render::MeshUpdater>().updateCell(middle);
-        }
     }
 
 //    glm::vec3 changedMin = worldGenRequest->getCube().getCoord<0, 0, 0>().toPoint();
