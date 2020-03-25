@@ -25,6 +25,8 @@ public:
 
     void update(glm::vec3 aabbMin, glm::vec3 aabbMax, std::vector<std::pair<unsigned int, glm::vec3> > &internalPoints, std::vector<std::pair<unsigned int, glm::vec3> > &externalPoints);
 
+    void updateCell(spatial::UintCoord coord);
+
     render::SceneManager::MeshHandle getMeshHandle() const {
         return meshHandle;
     }
@@ -74,10 +76,15 @@ private:
     util::SmallVectorManager<unsigned int> &facesVecManager;
     SceneManager::MeshHandle meshHandle;
 
+    // TODO: This doesn't really even have to store the pair.
+    // A vector, that maps a hash to a uint and forces the user to check equality should suffice.
+//    std::unordered_multimap<std::pair<spatial::UintCoord, spatial::UintCoord>, unsigned int> faceIndexMap;
 
 
 
-    std::unordered_map<glm::vec3, unsigned int> vertIndices;
+
+
+    std::unordered_map<glm::vec3, unsigned int> vertIndexMap;
 
     struct HoleEdge {
         unsigned int faceIndex;

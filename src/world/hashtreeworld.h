@@ -120,6 +120,7 @@ public:
 
     CellValue &getCellValueContaining(spatial::UintCoord coord);
     SpaceState getSpaceState(spatial::UintCoord coord);
+    SpaceState &getSpaceStateMutable(spatial::UintCoord coord);
     glm::vec3 getPoint(spatial::UintCoord coord);
 
     struct RaytestResult {
@@ -128,7 +129,7 @@ public:
     };
     RaytestResult testRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit);
 
-    SpaceState &getClosestPointState(glm::vec3 point);
+    spatial::UintCoord getContainingCoord(glm::vec3 point);
 
     void emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing);
 

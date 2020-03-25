@@ -36,6 +36,15 @@ SpaceState HashTreeWorld::getSpaceState(spatial::UintCoord coord) {
     }
 }
 
+SpaceState &HashTreeWorld::getSpaceStateMutable(spatial::UintCoord coord) {
+    Cell *leafNode = getLeafContaining(coord, Chunk::sizeLog2);
+    unsigned int x = coord.x % Chunk::size;
+    unsigned int y = coord.y % Chunk::size;
+    unsigned int z = coord.z % Chunk::size;
+    assert(leafNode->second.state == SpaceState::SubdividedAsChunk);
+    return leafNode->second.chunk->cells[x][y][z].type;
+}
+
 glm::vec3 HashTreeWorld::getPoint(spatial::UintCoord coord) {
     Cell *leafNode = getLeafContaining(coord, Chunk::sizeLog2);
     unsigned int x = coord.x % Chunk::size;
@@ -173,33 +182,28 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 
     return res;
 }
 
-SpaceState &HashTreeWorld::getClosestPointState(glm::vec3 point) {
+spatial::UintCoord HashTreeWorld::getContainingCoord(glm::vec3 point) {
     spatial::UintCoord coord = spatial::UintCoord::fromPoint(point);
 
     float minDistSq = std::numeric_limits<float>::infinity();
-    SpaceState *res;
+    spatial::UintCoord closestCoord;
 
-    // TODO: I know this isn't right; need to make it work with more LODs
-    for (signed int i = -1; i <= 1; i++) {
-        for (signed int j = -1; j <= 1; j++) {
-            for (signed int k = -1; k <= 1; k++) {
-                spatial::UintCoord offsetCoord = coord + spatial::UintCoord(i, j, k);
-                Cell *leafNode = getLeafContaining(offsetCoord, Chunk::sizeLog2);
-                unsigned int x = offsetCoord.x % Chunk::size;
-                unsigned int y = offsetCoord.y % Chunk::size;
-                unsigned int z = offsetCoord.z % Chunk::size;
-                glm::vec3 cellPoint = getChunkPoints(leafNode)->points[x][y][z];
-                float distSq = glm::distance2(point, cellPoint);
+    spatial::UintCoord min = coord - spatial::UintCoord(1);
+    spatial::UintCoord max = coord + spatial::UintCoord(1);
+    spatial::UintCoord neighborCoord;
+    for (neighborCoord.x = min.x; neighborCoord.x <= max.x; neighborCoord.x++) {
+        for (neighborCoord.y = min.y; neighborCoord.y <= max.y; neighborCoord.y++) {
+            for (neighborCoord.z = min.z; neighborCoord.z <= max.z; neighborCoord.z++) {
+                float distSq = glm::distance2(point, getPoint(neighborCoord));
                 if (distSq < minDistSq) {
                     minDistSq = distSq;
-                    assert(leafNode->second.state == SpaceState::SubdividedAsChunk);
-                    res = &leafNode->second.chunk->cells[x][y][z].type;
+                    closestCoord = neighborCoord;
                 }
             }
         }
     }
 
-    return *res;
+    return closestCoord;
 }
 
 const pointgen::Chunk *HashTreeWorld::getChunkPoints(Cell *cell) {
@@ -230,10 +234,17 @@ void HashTreeWorld::finishWorldGen(const WorldGenRequest *worldGenRequest, Space
         context.get<util::Pool<Chunk>>().free(worldGenRequest->getDstChunk());
     }
 
-    glm::vec3 changedMin = worldGenRequest->getCube().getCoord<0, 0, 0>().toPoint();
-    glm::vec3 changedMax = worldGenRequest->getCube().getCoord<1, 1, 1>().toPoint();
-    float pointSpacing = worldGenRequest->getCube().getSize() / Chunk::size;
-    emitMeshUpdate(changedMin, changedMax, pointSpacing);
+    if (chunkState == SpaceState::SubdividedAsChunk) {
+        spatial::UintCoord middle = worldGenRequest->getCube().child<1, 1, 1>().getCoord<0, 0, 0>();
+        if (getSpaceState(middle).isTransparent() != getSpaceState(middle + spatial::UintCoord(0, 0, 1)).isTransparent()) {
+            context.get<render::MeshUpdater>().updateCell(middle);
+        }
+    }
+
+//    glm::vec3 changedMin = worldGenRequest->getCube().getCoord<0, 0, 0>().toPoint();
+//    glm::vec3 changedMax = worldGenRequest->getCube().getCoord<1, 1, 1>().toPoint();
+//    float pointSpacing = worldGenRequest->getCube().getSize() / Chunk::size;
+//    emitMeshUpdate(changedMin, changedMax, pointSpacing);
 
     context.get<util::Pool<WorldGenRequest>>().free(worldGenRequest);
 }

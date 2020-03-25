@@ -1,6 +1,7 @@
 #include "particlemanager.h"
 
 #include "world/hashtreeworld.h"
+#include "render/meshupdater.h"
 
 namespace particle {
 
@@ -19,6 +20,7 @@ void ParticleManager::addBond(Particle &particle, glm::vec3 point) {
 
 void ParticleManager::tick(game::TickerContext &tickerContext) {
     world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
+    render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
 
     std::vector<std::pair<Particle *, glm::vec3>>::const_iterator i = bonds.cbegin();
     while (i != bonds.cend()) {
@@ -36,9 +38,12 @@ void ParticleManager::tick(game::TickerContext &tickerContext) {
             j->velocity /= std::sqrt(lenSq);
         }
 
+        spatial::UintCoord prevCoord = hashTreeWorld.getContainingCoord(j->position);
+
         j->position += j->velocity;
 
-        world::SpaceState &newCell = hashTreeWorld.getClosestPointState(j->position);
+        spatial::UintCoord containingCoord = hashTreeWorld.getContainingCoord(j->position);
+        world::SpaceState &newCell = hashTreeWorld.getSpaceStateMutable(containingCoord);
         if (&newCell != j->cell) {
             if (newCell != world::SpaceState::Air) {
             }
@@ -50,12 +55,8 @@ void ParticleManager::tick(game::TickerContext &tickerContext) {
             }
             j->cell = &newCell;
 
-            glm::vec3 min = j->position;
-            glm::vec3 max = min - j->velocity;
-            if (min.x > max.x) {std::swap(min.x, max.x);}
-            if (min.y > max.y) {std::swap(min.y, max.y);}
-            if (min.z > max.z) {std::swap(min.z, max.z);}
-            hashTreeWorld.emitMeshUpdate(min, max, 1.0f);
+            meshUpdater.updateCell(prevCoord);
+            meshUpdater.updateCell(containingCoord);
         }
 
         j++;

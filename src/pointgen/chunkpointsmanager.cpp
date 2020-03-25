@@ -22,7 +22,7 @@ Chunk *ChunkPointsManager::generate(const spatial::CellKey &cellKey) {
 
         static constexpr unsigned int x = Chunk::size / 2;
         glm::vec3 midpoint = chunk->points[x][x][x];
-        world::CellValue &foundCell = context.get<world::HashTreeWorld>().getCellValueContaining(midpoint);
+        world::CellValue &foundCell = context.get<world::HashTreeWorld>().getCellValueContaining(spatial::UintCoord::fromPoint(midpoint));
         if (foundCell.points != chunk) {
             assert(false);
 

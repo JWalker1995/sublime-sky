@@ -21,6 +21,8 @@ private:
     static constexpr AxisType center = (0x5555555555555555ull & ((1ull << (maxSizeLog2 - 1)) - 1)) | (1ull << (maxSizeLog2 - 2));
 
 public:
+    UintCoord(glm::vec3) = delete;
+
     static AxisType floatToUint(float x) {
         return static_cast<SignedAxisType>(std::floor(x)) + center;
     }

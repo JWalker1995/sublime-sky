@@ -1,5 +1,7 @@
 #include "meshupdater.h"
 
+#include "voro++-0.4.6/src/cell.hh"
+
 #include "util/pool.h"
 #include "render/hashtreevertindex.h"
 #include "render/camera.h"
@@ -14,7 +16,7 @@ MeshUpdater::MeshUpdater(game::GameContext &context)
     , meshHandle(context.get<render::SceneManager>().createMesh())
 {
     // TODO: Remove
-    fillHoles();
+//    fillHoles();
 }
 
 MeshUpdater::~MeshUpdater() {
@@ -89,6 +91,125 @@ void MeshUpdater::finishMeshGen(MeshGenRequest *meshGenRequest) {
 
     vertIndexMap.clear();
 }
+
+void MeshUpdater::updateCell(spatial::UintCoord coord) {
+    world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
+
+    voro::voronoicell_neighbor cell;
+    cell.init(-2.0, 2.0, -2.0, 2.0, -2.0, 2.0);
+
+    glm::vec3 origin = hashTreeWorld.getPoint(coord);
+    world::SpaceState originState = hashTreeWorld.getSpaceState(coord);
+
+    spatial::UintCoord min = coord - spatial::UintCoord(2);
+    spatial::UintCoord max = coord + spatial::UintCoord(2);
+    spatial::UintCoord neighborCoord;
+    for (neighborCoord.x = min.x; neighborCoord.x <= max.x; neighborCoord.x++) {
+        for (neighborCoord.y = min.y; neighborCoord.y <= max.y; neighborCoord.y++) {
+            for (neighborCoord.z = min.z; neighborCoord.z <= max.z; neighborCoord.z++) {
+                if (neighborCoord == coord) {
+                    continue;
+                }
+
+                glm::vec3 pt = hashTreeWorld.getPoint(neighborCoord) - origin;
+                bool shouldHaveSurface = !originState.isTransparent() && hashTreeWorld.getSpaceState(neighborCoord).isTransparent();
+                cell.nplane(pt.x, pt.y, pt.z, shouldHaveSurface);
+            }
+        }
+    }
+
+    std::vector<int> faceVerts;
+    cell.face_vertices(faceVerts);
+
+    std::vector<double> verts;
+    cell.vertices(origin.x, origin.y, origin.z, verts);
+
+    std::vector<int> neighbors;
+    cell.neighbors(neighbors);
+
+    // Lookup vertex indices
+    // Position should be pretty accurate since the calculations were performed as doubles
+    std::vector<unsigned int> vertIndices;
+    std::vector<double>::const_iterator vertsIt = verts.cbegin();
+    while (vertsIt != verts.cend()) {
+        glm::vec3 pt(*vertsIt++, *vertsIt++, *vertsIt++);
+        std::pair<std::unordered_map<glm::vec3, unsigned int>::iterator, bool> insert = vertIndexMap.emplace(pt, 0);
+
+        /*
+        std::unordered_map<glm::vec3, unsigned int>::const_iterator i = vertIndexMap.cbegin();
+        while (i != vertIndexMap.cend()) {
+            glm::vec3 pt2 = i->first;
+            if (glm::distance2(pt2, pt) < 1e-3f) {
+                assert(i == insert.first);
+            }
+            i++;
+        }
+        */
+
+        if (insert.second) {
+            // Create new vert
+            SceneManager::VertMutator newVert = meshHandle.createVert();
+            newVert.shared.setPoint(pt);
+            newVert.shared.setColor(0, 100, 0, 255);
+
+            insert.first->second = newVert.index;
+        }
+        vertIndices.push_back(insert.first->second);
+    }
+    assert(vertIndices.size() * 3 == verts.size());
+
+    std::vector<int>::const_iterator faceVertsIt = faceVerts.cbegin();
+    for (int neighbor : neighbors) {
+        bool shouldHaveFace = neighbor;
+
+        unsigned int numVerts = *faceVertsIt++;
+        assert(numVerts >= 3);
+
+        unsigned int baseVi = vertIndices[*faceVertsIt++];
+        unsigned int prevVi = vertIndices[*faceVertsIt++];
+        for (unsigned int i = 2; i < numVerts; i++) {
+            unsigned int vi = vertIndices[*faceVertsIt++];
+
+            bool hasFace = false;
+
+            util::SmallVectorManager<unsigned int>::Ref &facesVec = meshHandle.readVert(vi).local.facesVec;
+            const unsigned int *faces = facesVec.data(facesVecManager);
+            for (unsigned int j = 0; j < facesVec.size(); j++) {
+                SceneManager::FaceReader face = meshHandle.readFace(faces[j]);
+                unsigned int viPos = std::find(face.shared.verts, face.shared.verts + 3, vi) - face.shared.verts;
+                assert(viPos < 3);
+                if (face.shared.verts[(viPos + 1) % 3] == prevVi) {
+                    hasFace = true;
+                    if (!shouldHaveFace) {
+                        for (unsigned int k = 0; k < 3; k++) {
+                            meshHandle.readVert(face.shared.verts[k]).local.facesVec.remove(facesVecManager, face.index);
+                        }
+
+                        meshHandle.destroyFace(face.index);
+                    }
+                    break;
+                }
+            }
+
+            if (!hasFace && shouldHaveFace) {
+                SceneManager::FaceMutator newFace = meshHandle.createFace();
+                newFace.shared.verts[0] = baseVi;
+                newFace.shared.verts[1] = vi;
+                newFace.shared.verts[2] = prevVi;
+
+                meshHandle.readVert(baseVi).local.facesVec.push_back(facesVecManager, newFace.index);
+                meshHandle.readVert(prevVi).local.facesVec.push_back(facesVecManager, newFace.index);
+                meshHandle.readVert(vi).local.facesVec.push_back(facesVecManager, newFace.index);
+            }
+
+            prevVi = vi;
+        }
+    }
+    assert(faceVertsIt == faceVerts.cend());
+}
+
+
+
 
 void MeshUpdater::fillHoles() {
     while (!holeEdges.empty()) {
@@ -270,7 +391,7 @@ void MeshUpdater::fillSingleHole(HoleEdge edge) {
     newFace.shared.verts[1] = v2.index;
     v2.local.facesVec.push_back(facesVecManager, newFace.index);
 
-    std::pair<std::unordered_map<glm::vec3, unsigned int>::iterator, bool> found = vertIndices.emplace(circumcenter, 0);
+    std::pair<std::unordered_map<glm::vec3, unsigned int>::iterator, bool> found = vertIndexMap.emplace(circumcenter, 0);
     if (found.second) {
         SceneManager::VertMutator newVert = meshHandle.createVert();
         newVert.shared.setPoint(circumcenter);
