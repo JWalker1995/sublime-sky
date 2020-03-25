@@ -238,6 +238,23 @@ void HashTreeWorld::finishWorldGen(const WorldGenRequest *worldGenRequest, Space
         context.get<util::Pool<Chunk>>().free(worldGenRequest->getDstChunk());
     }
 
+    if (node->first.sizeLog2 == 4) {
+        render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
+
+        static constexpr unsigned int padding = 2;
+        for (unsigned int i = padding; i < world::Chunk::size - padding; i++) {
+            for (unsigned int j = padding; j < world::Chunk::size - padding; j++) {
+                for (unsigned int k = padding; k < world::Chunk::size - padding; k++) {
+                    world::SpaceState state = node->second.chunk->cells[i][j][k].type;
+                    if (!state.isTransparent()) {
+                        meshUpdater.updateCell(node->first.getCoord<0, 0, 0>() + spatial::UintCoord(i, j, k));
+                    }
+                }
+            }
+        }
+
+    }
+
 //    glm::vec3 changedMin = worldGenRequest->getCube().getCoord<0, 0, 0>().toPoint();
 //    glm::vec3 changedMax = worldGenRequest->getCube().getCoord<1, 1, 1>().toPoint();
 //    float pointSpacing = worldGenRequest->getCube().getSize() / Chunk::size;

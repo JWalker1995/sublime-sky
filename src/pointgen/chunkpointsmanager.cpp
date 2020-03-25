@@ -20,9 +20,15 @@ Chunk *ChunkPointsManager::generate(const spatial::CellKey &cellKey) {
     } else {
         chunk = mostRecentlyUsed->moreRecentlyUsed;
 
-        static constexpr unsigned int x = Chunk::size / 2;
-        glm::vec3 midpoint = chunk->points[x][x][x];
-        world::CellValue &foundCell = context.get<world::HashTreeWorld>().getCellValueContaining(spatial::UintCoord::fromPoint(midpoint));
+        glm::vec3 somePoint;
+        for (unsigned int i = 0; i < Chunk::size * Chunk::size * Chunk::size; i++) {
+            somePoint = (&chunk->points[0][0][0])[i];
+            if (!std::isnan(somePoint.x)) {
+                break;
+            }
+        }
+
+        world::CellValue &foundCell = context.get<world::HashTreeWorld>().getCellValueContaining(spatial::UintCoord::fromPoint(somePoint));
         if (foundCell.points != chunk) {
             assert(false);
 

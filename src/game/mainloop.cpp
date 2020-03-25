@@ -42,8 +42,8 @@ void MainLoop::load() {
     context.get<CameraFlyController>();
 
     context.get<render::RayCaster>();
-//    context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();
-    context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>();
+    context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();
+//    context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>();
     context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>();
     context.construct<meshgen::MeshGenerator, meshgen::CubicHoneycomb>();
 }

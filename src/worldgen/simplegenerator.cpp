@@ -62,9 +62,9 @@ world::SpaceState SimpleGenerator::getState(glm::vec3 point) {
 //        treeCenter.y += dy * scale;
 //    }
 
-    static constexpr float scaleXY = 1.0f;
+    static constexpr float scaleXY = 0.1f;
     static constexpr float scaleZ = 10.0f;
-    float z = noise.octave_noise_2d(8, 0.5f, 0.001f, point.x / scaleXY, point.y / scaleXY) * scaleZ;
+    float z = noise.octave_noise_2d(8, 0.5f, scaleXY, point.x, point.y) * scaleZ;
 
     if (point.z >= 20.0f && point.z < 22.0f) {
         if (noise.octave_noise_2d(2, 0.5f, 0.1f, point.x, point.y) > 0.6f) {
