@@ -2,7 +2,7 @@
 
 #include <unistd.h>
 
-#include "client_generated.h"
+#include "schemas/config_client_generated.h"
 #include "game/gamecontext.h"
 #include "game/tickercontext.h"
 #include "application/callqueue.h"
@@ -24,7 +24,7 @@ MainLoop::MainLoop(GameContext &context)
 {}
 
 void MainLoop::load() {
-    const config::Client &config = context.get<const config::Client>();
+    const SublimeSky::Config::Client &config = context.get<const SublimeSky::Config::Client>();
 
     context.get<application::CallQueue>();
     context.get<application::SyncPoint>();

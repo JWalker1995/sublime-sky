@@ -3,6 +3,12 @@ include_rules
 # Create config/*.h files from defines.cfg
 run awk '/^[^#]/ { print ": |> echo \"#define "$0"\" > %o |> src/defs/"$1".h $(ROOT)/<gen_headers>" }' $(DEFINES_CONFIG_FILE)
 
+# Compile message schemas
+: foreach $(ROOT)/schemas/*.fbs |> flatc --cpp --gen-name-strings -o src/schemas/ %f |> src/schemas/%B_generated.h $(ROOT)/<gen_headers>
+
+# Generate flatbuffers source includes
+: foreach $(ROOT)/schemas/*.fbs |> xxd -i < %f > %o && echo ",0x00" >> %o |> src/schemas/%b.h $(ROOT)/<gen_headers>
+
 # Compile sources
 : foreach $(SRC_PATH)/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
 : foreach $(SRC_PATH)/application/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
@@ -13,6 +19,7 @@ run awk '/^[^#]/ { print ": |> echo \"#define "$0"\" > %o |> src/defs/"$1".h $(R
 : foreach $(SRC_PATH)/graphics/type/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
 : foreach $(SRC_PATH)/jw_util/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
 : foreach $(SRC_PATH)/meshgen/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
+: foreach $(SRC_PATH)/network/*.cpp | $(ROOT)/<gen_headers> |> !cpp -I$(THIRD_PARTY_PATH)/websocketpp/ |>
 : foreach $(SRC_PATH)/particle/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
 : foreach $(SRC_PATH)/pointgen/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
 : foreach $(SRC_PATH)/render/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>

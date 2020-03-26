@@ -38,4 +38,14 @@ pushd THST
 git apply ../THST_bbox.patch
 popd
 
+git clone git@github.com:zaphoyd/websocketpp.git
+pushd websocketpp
+git checkout 0.8.1
+popd
+
+git clone git@github.com:uriparser/uriparser.git
+pushd uriparser
+git checkout uriparser-0.9.3
+popd
+
 popd > /dev/null

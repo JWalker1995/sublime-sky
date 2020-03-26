@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include "spdlog/spdlog.h"
 
-#include "client_generated.h"
+#include "schemas/config_client_generated.h"
 
 #include "game/gamecontext.h"
 #include "game/tickercontext.h"
@@ -17,7 +17,7 @@ Window::Window(game::GameContext &context)
     dimensions.width = 0;
     dimensions.height = 0;
 
-    const config::Window &config = *context.get<const config::Client>().window();
+    const SublimeSky::Config::Window &config = *context.get<const SublimeSky::Config::Client>().window();
 
     context.get<spdlog::logger>().info("GLFW version: {}", glfwGetVersionString());
 

@@ -187,6 +187,8 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
                 if (face.shared.verts[(viPos + 1) % 3] == prevVi) {
                     hasFace = true;
                     if (!shouldHaveFace) {
+                        // There's some problem here...
+                        // Perhaps try with just particles, and update some cells right outside the boundary?
                         for (unsigned int k = 0; k < 3; k++) {
                             meshHandle.readVert(face.shared.verts[k]).local.facesVec.remove(facesVecManager, face.index);
                         }

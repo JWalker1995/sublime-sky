@@ -97,6 +97,12 @@ src/main.cpp
 src/meshgen/cubichoneycomb.cpp
 src/meshgen/cubichoneycomb.h
 src/meshgen/meshgenerator.h
+src/network/baseconnection.cpp
+src/network/baseconnection.h
+src/network/connectionmanager.cpp
+src/network/connectionmanager.h
+src/network/websocketclient.cpp
+src/network/websocketclient.h
 src/particle/particle.cpp
 src/particle/particle.h
 src/particle/particlemanager.cpp
@@ -182,6 +188,8 @@ src/world/particle.h
 src/world/spacestate.h
 src/world/voronoicell.cpp
 src/world/voronoicell.h
+src/worldgen/externalgenerator.cpp
+src/worldgen/externalgenerator.h
 src/worldgen/simplegenerator.cpp
 src/worldgen/simplegenerator.h
 src/worldgen/simplexnoise.cpp

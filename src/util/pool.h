@@ -6,8 +6,8 @@ namespace game { class GameContext; }
 
 namespace util {
 
-template <typename Type, bool shrink = false, typename ContainerType = std::deque<Type>>
-class Pool : public jw_util::Pool<Type, shrink, ContainerType> {
+template <typename Type>
+class Pool : public jw_util::Pool<Type> {
 public:
     Pool(game::GameContext &context) {
         (void) context;

@@ -1,0 +1,42 @@
+namespace SublimeSky;
+
+struct Vec3_f {
+    x: float;
+    y: float;
+    z: float;
+}
+
+struct Vec3_u32 {
+    x: uint32;
+    y: uint32;
+    z: uint32;
+}
+
+table Cell {
+    position: Vec3_f;
+    type: uint32;
+}
+
+table Particle {
+    position: Vec3_f;
+    velocity: Vec3_f;
+    mass: float;
+
+    type: uint32;
+}
+
+table Chunk {
+    cell_size_log2: uint8;
+    cell_coord: Vec3_u32;
+
+    cells: [Cell]; // Missing cells will be filled from last one
+    particles: [Particle];
+}
+
+union MessageUnion { Chunk }
+
+table Message {
+    message: MessageUnion;
+}
+
+root_type Message;

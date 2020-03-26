@@ -1,4 +1,4 @@
-namespace config;
+namespace SublimeSky.Config;
 
 // Don't supply defaults here. Defaults should be supplied by a base config file
 

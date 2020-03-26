@@ -6,8 +6,8 @@
 
 #include "game/gamecontext.h"
 
-#include "client_generated.h"
-#include "game_generated.h"
+#include "schemas/config_client_generated.h"
+#include "schemas/config_game_generated.h"
 #include "config/configsupplier.h"
 #include "game/mainloop.h"
 #include "application/quitexception.h"
@@ -89,33 +89,33 @@ int main(int argc, char **argv)
     }
 
     const unsigned char clientSchemaStr[] = {
-        #include "client.fbs.h"
+        #include "schemas/config_client.fbs.h"
     };
-    config::ConfigSupplier<config::Client> clientConfigSupplier(context, reinterpret_cast<const char *>(clientSchemaStr));
+    config::ConfigSupplier<SublimeSky::Config::Client> clientConfigSupplier(context, reinterpret_cast<const char *>(clientSchemaStr));
     context.provideInstance(&clientConfigSupplier);
     clientConfigSupplier.loadFromJsonFile(argv[1]);
 
     const unsigned char gameSchemaStr[] = {
-        #include "game.fbs.h"
+        #include "schemas/config_game.fbs.h"
     };
-    config::ConfigSupplier<config::Game> gameConfigSupplier(context, reinterpret_cast<const char *>(gameSchemaStr));
+    config::ConfigSupplier<SublimeSky::Config::Game> gameConfigSupplier(context, reinterpret_cast<const char *>(gameSchemaStr));
     context.provideInstance(&gameConfigSupplier);
     if (argc > 2) {
         gameConfigSupplier.loadFromJsonFile(argv[2]);
     }
 
-    config::LogLevel logLevel = context.get<const config::Client>().logLevel();
-    const char *logLevelStr = config::EnumNameLogLevel(logLevel);
+    SublimeSky::Config::LogLevel logLevel = context.get<const SublimeSky::Config::Client>().logLevel();
+    const char *logLevelStr = SublimeSky::Config::EnumNameLogLevel(logLevel);
     context.get<spdlog::logger>().info("Setting log level to \"{}\"", logLevelStr);
 
     switch (logLevel) {
-        case config::LogLevel_trace: context.get<spdlog::logger>().set_level(spdlog::level::trace); break;
-        case config::LogLevel_debug: context.get<spdlog::logger>().set_level(spdlog::level::debug); break;
-        case config::LogLevel_info: context.get<spdlog::logger>().set_level(spdlog::level::info); break;
-        case config::LogLevel_warning: context.get<spdlog::logger>().set_level(spdlog::level::warn); break;
-        case config::LogLevel_error: context.get<spdlog::logger>().set_level(spdlog::level::err); break;
-        case config::LogLevel_critical: context.get<spdlog::logger>().set_level(spdlog::level::critical); break;
-        case config::LogLevel_off: context.get<spdlog::logger>().set_level(spdlog::level::off); break;
+        case SublimeSky::Config::LogLevel_trace: context.get<spdlog::logger>().set_level(spdlog::level::trace); break;
+        case SublimeSky::Config::LogLevel_debug: context.get<spdlog::logger>().set_level(spdlog::level::debug); break;
+        case SublimeSky::Config::LogLevel_info: context.get<spdlog::logger>().set_level(spdlog::level::info); break;
+        case SublimeSky::Config::LogLevel_warning: context.get<spdlog::logger>().set_level(spdlog::level::warn); break;
+        case SublimeSky::Config::LogLevel_error: context.get<spdlog::logger>().set_level(spdlog::level::err); break;
+        case SublimeSky::Config::LogLevel_critical: context.get<spdlog::logger>().set_level(spdlog::level::critical); break;
+        case SublimeSky::Config::LogLevel_off: context.get<spdlog::logger>().set_level(spdlog::level::off); break;
     }
 
     // Run the game!!!

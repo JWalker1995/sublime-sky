@@ -30,9 +30,6 @@ else
     LDFLAGS += `pkg-config --static --libs yaml-cpp gl glfw3 glew nlopt`
 endif
 
-
-
-!flatc = |> flatc --cpp --gen-name-strings %f |> %B_generated.h $(ROOT)/<gen_headers>
 !cpp = |> $(CXX) $(CFLAGS) $(CFLAGS_%f) -c %f -o %o |> %f.o $(ROOT)/<src_objects>
 # !archive = |> ar rs %o |>
 !link = |> $(CXX) $(LDFLAGS) $(LDFLAGS_$BIN_TARGET) -o $(BIN_TARGET) |>
