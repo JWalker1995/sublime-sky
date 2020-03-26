@@ -5,7 +5,6 @@ config_client.json
 config_game.json
 config_server.json
 defines.cfg
-src/Tupfile
 src/application/callqueue.h
 src/application/gamerecorder.cpp
 src/application/gamerecorder.h
@@ -15,9 +14,7 @@ src/application/signalhandler.h
 src/application/syncpoint.h
 src/application/window.cpp
 src/application/window.h
-src/config/client.fbs
 src/config/configsupplier.h
-src/config/game.fbs
 src/config/illegalconfigexception.h
 src/game/cameraflycontroller.cpp
 src/game/cameraflycontroller.h
@@ -101,6 +98,8 @@ src/network/baseconnection.cpp
 src/network/baseconnection.h
 src/network/connectionmanager.cpp
 src/network/connectionmanager.h
+src/network/messagebuilder.cpp
+src/network/messagebuilder.h
 src/network/websocketclient.cpp
 src/network/websocketclient.h
 src/particle/particle.cpp

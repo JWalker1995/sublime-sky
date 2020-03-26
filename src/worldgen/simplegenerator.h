@@ -11,7 +11,7 @@ class SimpleGenerator : public WorldGenerator {
 public:
     SimpleGenerator(game::GameContext &context);
 
-    void generate(Request *request);
+    void generate(spatial::CellKey cube, const pointgen::Chunk *points);
 
 private:
     game::GameContext &context;

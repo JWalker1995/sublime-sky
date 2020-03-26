@@ -131,39 +131,11 @@ public:
 
     spatial::UintCoord getContainingCoord(glm::vec3 point);
 
+    void finishWorldGen(spatial::CellKey cube, SpaceState chunkState, Chunk *chunk);
+
     void emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing);
 
 private:
-    class WorldGenRequest : public worldgen::WorldGenerator::Request {
-    public:
-        WorldGenRequest(HashTreeWorld &hashTreeWorld, spatial::CellKey cube, const pointgen::Chunk *points, Chunk *dstChunk)
-            : hashTreeWorld(hashTreeWorld)
-            , cube(cube)
-            , points(points)
-            , dstChunk(dstChunk)
-        {}
-
-        spatial::CellKey getCube() const {
-            return cube;
-        }
-        const pointgen::Chunk *getPoints() const {
-            return points;
-        }
-        Chunk *getDstChunk() const {
-            return dstChunk;
-        }
-
-        void onComplete(SpaceState chunkState) {
-            hashTreeWorld.finishWorldGen(this, chunkState);
-        }
-
-    private:
-        HashTreeWorld &hashTreeWorld;
-        spatial::CellKey cube;
-        const pointgen::Chunk *points;
-        Chunk *dstChunk;
-    };
-
     static CellValue makeRootBranch() {
         CellValue res;
         res.setToBranch();
@@ -194,7 +166,6 @@ private:
     const pointgen::Chunk *getChunkPoints(Cell *cell);
 
     void requestWorldGen(Cell *cell);
-    void finishWorldGen(const WorldGenRequest *worldGenRequest, SpaceState chunkState);
 };
 
 }

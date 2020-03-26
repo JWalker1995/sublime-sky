@@ -1,6 +1,8 @@
 #include "simplegenerator.h"
 
+#include "world/hashtreeworld.h"
 #include "particle/particlemanager.h"
+#include "util/pool.h"
 
 namespace worldgen {
 
@@ -9,9 +11,8 @@ SimpleGenerator::SimpleGenerator(game::GameContext &context)
     , noise(123)
 {}
 
-void SimpleGenerator::generate(Request *request) {
-    const pointgen::Chunk *points = request->getPoints();
-    world::Chunk *dstChunk = request->getDstChunk();
+void SimpleGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *points) {
+    world::Chunk *dstChunk = context.get<util::Pool<world::Chunk>>().alloc();
     assert(pointgen::Chunk::size == world::Chunk::size);
 
     bool allSame = true;
@@ -29,7 +30,7 @@ void SimpleGenerator::generate(Request *request) {
     }
 
     glm::vec3 particlePosition(0.0f, 0.0f, 100.0f);
-    if (request->getCube().contains(spatial::UintCoord::fromPoint(particlePosition))) {
+    if (cube.contains(spatial::UintCoord::fromPoint(particlePosition))) {
         particle::Particle &p = context.get<particle::ParticleManager>().createParticle();
         p.position = particlePosition;
         p.velocity = glm::vec3(0.1f, 0.0f, 0.0f);
@@ -38,7 +39,13 @@ void SimpleGenerator::generate(Request *request) {
     }
 
     allSame = false;
-    request->onComplete(allSame ? allState : world::SpaceState::SubdividedAsChunk);
+
+    if (allSame) {
+        context.get<util::Pool<world::Chunk>>().free(dstChunk);
+        context.get<world::HashTreeWorld>().finishWorldGen(cube, allState, 0);
+    } else {
+        context.get<world::HashTreeWorld>().finishWorldGen(cube, world::SpaceState::SubdividedAsChunk, dstChunk);
+    }
 }
 
 world::SpaceState SimpleGenerator::getState(glm::vec3 point) {

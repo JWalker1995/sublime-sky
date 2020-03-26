@@ -5,7 +5,7 @@ THIRD_PARTY_PATH = $(ROOT)/third_party/
 
 BIN_TARGET = $(ROOT)/sublime-sky
 
-C = clang
+CC = clang
 CXX = clang++
 
 CFLAGS += -std=c++14

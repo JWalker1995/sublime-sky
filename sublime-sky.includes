@@ -1,7 +1,4 @@
 src/
 third_party/
-third_party/websocketpp/
 build-debug/src/
 /Users/joel/source/tonk/
-src/network
-src/worldgen

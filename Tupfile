@@ -28,6 +28,7 @@ run awk '/^[^#]/ { print ": |> echo \"#define "$0"\" > %o |> src/defs/"$1".h $(R
 : foreach $(SRC_PATH)/util/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
 : foreach $(SRC_PATH)/world/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
 : foreach $(SRC_PATH)/worldgen/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
+
 # : foreach $(THIRD_PARTY_PATH)/flatbuffers/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
 : foreach $(THIRD_PARTY_PATH)/imgui/*.cpp | $(ROOT)/<gen_headers> |> !cpp |>
 : $(THIRD_PARTY_PATH)/imgui/examples/imgui_impl_glfw.cpp | $(ROOT)/<gen_headers> |> !cpp -I$(THIRD_PARTY_PATH)/imgui/ |>

@@ -36,11 +36,12 @@ public:
 
     BaseConnection *addConnection(const std::string &uriStr);
 
-    void send(const char *data, std::size_t size);
+    void setReady(BaseConnection *connection, bool ready);
+
+    void send(const std::uint8_t *data, std::size_t size);
 
 private:
     std::vector<BaseConnection *> connections;
-
     std::vector<BaseConnection *> activeConnections;
 
     unsigned int nextSendIndex = 0;

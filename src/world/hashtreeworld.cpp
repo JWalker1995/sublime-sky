@@ -221,21 +221,19 @@ const pointgen::Chunk *HashTreeWorld::getChunkPoints(Cell *cell) {
 
 void HashTreeWorld::requestWorldGen(Cell *cell) {
     // TODO: Hopefully the point chunk doesn't get re-allocated before the request is finished
-
-    Chunk *chunk = context.get<util::Pool<Chunk>>().alloc();
-    WorldGenRequest *request = context.get<util::Pool<WorldGenRequest>>().alloc(*this, cell->first, getChunkPoints(cell), chunk);
-    context.get<worldgen::WorldGenerator>().generate(request);
+    context.get<worldgen::WorldGenerator>().generate(cell->first, getChunkPoints(cell));
 }
 
-void HashTreeWorld::finishWorldGen(const WorldGenRequest *worldGenRequest, SpaceState chunkState) {
-    Cell *node = getNodeContaining(worldGenRequest->getCube());
+void HashTreeWorld::finishWorldGen(spatial::CellKey cube, SpaceState chunkState, Chunk *chunk) {
+    Cell *node = getNodeContaining(cube);
     assert(node->second.state == SpaceState::Generating);
 
     node->second.state = chunkState;
     if (chunkState == SpaceState::SubdividedAsChunk) {
-        node->second.chunk = worldGenRequest->getDstChunk();
+        assert(chunk);
+        node->second.chunk = chunk;
     } else {
-        context.get<util::Pool<Chunk>>().free(worldGenRequest->getDstChunk());
+        assert(!chunk);
     }
 
     if (node->first.sizeLog2 == 4) {
@@ -259,8 +257,6 @@ void HashTreeWorld::finishWorldGen(const WorldGenRequest *worldGenRequest, Space
 //    glm::vec3 changedMax = worldGenRequest->getCube().getCoord<1, 1, 1>().toPoint();
 //    float pointSpacing = worldGenRequest->getCube().getSize() / Chunk::size;
 //    emitMeshUpdate(changedMin, changedMax, pointSpacing);
-
-    context.get<util::Pool<WorldGenRequest>>().free(worldGenRequest);
 }
 
 void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing) {

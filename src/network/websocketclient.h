@@ -1,5 +1,6 @@
 #pragma once
 
+#define ASIO_STANDALONE
 #include "websocketpp/client.hpp"
 #include "websocketpp/config/asio_no_tls_client.hpp"
 
@@ -47,7 +48,7 @@ public:
             handle = conn->get_handle();
         }
 
-        void send(const char *data, std::size_t size) {
+        void send(const std::uint8_t *data, std::size_t size) {
             websocketpp::lib::error_code ec;
             context.get<WebSocketClient>().m_endpoint.send(handle, data, size, websocketpp::frame::opcode::binary, ec);
             if (ec) {
