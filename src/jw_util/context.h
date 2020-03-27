@@ -73,9 +73,6 @@ public:
 
     template <typename InterfaceType>
     bool has() {
-        // Not even trace level
-        // emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::has<" + getTypeName<InterfaceType>() + ">()");
-
         return classMap.find(std::type_index(typeid(InterfaceType))) != classMap.end();
     }
 
@@ -94,9 +91,6 @@ public:
 
     template <typename InterfaceType, typename ImplementationType = InterfaceType, typename... ArgTypes>
     InterfaceType &get(ArgTypes... args) {
-        // Not even trace level
-        // emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::get<" + getTypeName<InterfaceType>() + ">()");
-
         return internalGet<InterfaceType, ImplementationType, ArgTypes...>(0, std::forward<ArgTypes>(args)...);
     }
 
@@ -118,42 +112,6 @@ public:
         }
         return res;
     }
-
-    /*
-    void createSomething() {
-        // This method is kind of hacky
-        assert(false);
-
-        assert(!classMap.empty());
-
-        // Any iteration over a std::unordered_map will be in an implementation-dependent order,
-        // So we explicitly randomize it here so we don't get weird edge cases.
-        static std::random_device randomDevice;
-        static std::mt19937 randomEngine(randomDevice());
-        unsigned int index = std::uniform_int_distribution<unsigned int>(0, classMap.size() - 1)(randomEngine);
-        if (DEBUG_CONTEXT) {
-            // std::cout << getTypeName<DerivedType>() + "::createSomething: rand(" << classMap.size() << ") -> " << index << std::endl;
-        }
-
-        auto offset = std::next(classMap.begin(), index);
-        auto i = offset;
-        do {
-            if (!i->second.hasInstance()) {
-                i->second.createManagedInstance(*this);
-                classOrder.push_back(&i->second);
-                return;
-            }
-
-            i++;
-            if (i == classMap.end()) {
-                i = classMap.begin();
-            }
-        } while (i != offset);
-
-        // If we get here, there is a circular dependency
-        assert(false);
-    }
-    */
 
     void reset() {
         runDestructors();
@@ -219,6 +177,8 @@ private:
 
         template <typename ReturnType, typename ManagedType, typename... ArgTypes>
         void createManagedInstance(Context *context, ArgTypes... args) {
+            context->emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::createManagedInstance<" + getTypeName<ReturnType>() + ", " + getTypeName<ManagedType>() + ">()");
+
             assert(!returnInstance);
             assert(!managedInstance);
             assert(!destroyPtr);
@@ -301,10 +261,17 @@ private:
         file.close();
 #endif
 
+#ifndef NDEBUG
+        std::size_t initialSize = classOrder.size();
+#endif
+
         typename std::vector<ClassEntry *>::reverse_iterator i = classOrder.rbegin();
         while (i != classOrder.rend()) {
             ClassEntry &entry = **i;
             entry.release(this);
+
+            assert(classOrder.size() == initialSize);
+
             i++;
         }
     }

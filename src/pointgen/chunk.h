@@ -5,6 +5,8 @@
 
 #include "world/chunk.h"
 
+namespace game { class GameContext; }
+
 namespace pointgen {
 
 class Chunk {
@@ -15,6 +17,8 @@ public:
     glm::vec3 points[size][size][size];
     Chunk *moreRecentlyUsed;
     Chunk *lessRecentlyUsed;
+
+    static void initializeDependencies(game::GameContext &context) {}
 };
 
 }

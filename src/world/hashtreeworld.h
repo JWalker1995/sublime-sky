@@ -133,7 +133,7 @@ public:
 
     void finishWorldGen(spatial::CellKey cube, SpaceState chunkState, Chunk *chunk);
 
-    void emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing);
+//    void emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing);
 
 private:
     static CellValue makeRootBranch() {

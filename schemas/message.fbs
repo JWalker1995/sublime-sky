@@ -1,4 +1,15 @@
-namespace SublimeSky;
+namespace SsProtocol;
+
+enum Capabilities: uint64 (bit_flags) {
+    GenerateChunk,
+    Connected = 63,
+}
+
+table InitRequest {}
+
+table InitResponse {
+    capabilities: uint64;
+}
 
 struct Vec3_f {
     x: float;
@@ -10,11 +21,6 @@ struct Vec3_u32 {
     x: uint32;
     y: uint32;
     z: uint32;
-}
-
-table Cell {
-    position: Vec3_f;
-    type: uint32;
 }
 
 table Particle {
@@ -29,11 +35,12 @@ table Chunk {
     cell_size_log2: uint8;
     cell_coord: Vec3_u32;
 
-    cells: [Cell]; // Missing cells will be filled from last one
+    cellPositions: [Vec3_f];
+    cellTypes: [uint32];
     particles: [Particle];
 }
 
-union MessageUnion { Chunk }
+union MessageUnion { InitRequest, InitResponse, Chunk }
 
 table Message {
     message: MessageUnion;

@@ -259,6 +259,7 @@ void HashTreeWorld::finishWorldGen(spatial::CellKey cube, SpaceState chunkState,
 //    emitMeshUpdate(changedMin, changedMax, pointSpacing);
 }
 
+/*
 void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing) {
     static thread_local std::vector<std::pair<unsigned int, glm::vec3>> separatedPoints[2];
     assert(separatedPoints[0].empty());
@@ -300,5 +301,6 @@ void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, f
     separatedPoints[0].clear();
     separatedPoints[1].clear();
 }
+*/
 
 }

@@ -98,6 +98,9 @@ src/network/baseconnection.cpp
 src/network/baseconnection.h
 src/network/connectionmanager.cpp
 src/network/connectionmanager.h
+src/network/connectionpoolbase.cpp
+src/network/connectionpoolbase.h
+src/network/connectionpoolspecialized.h
 src/network/messagebuilder.cpp
 src/network/messagebuilder.h
 src/network/websocketclient.cpp
@@ -177,6 +180,7 @@ src/util/indexconnector.cpp
 src/util/indexconnector.h
 src/util/pool.h
 src/util/reflist.h
+src/util/refset.h
 src/util/smallvectormanager.h
 src/world/chunk.cpp
 src/world/chunk.h

@@ -3,58 +3,40 @@
 #define ASIO_STANDALONE
 #include "websocketpp/client.hpp"
 #include "websocketpp/config/asio_no_tls_client.hpp"
+#include "websocketpp/concurrency/none.hpp"
 
 #include "jw_util/baseexception.h"
 
-#include "game/gamecontext.h"
+#include "game/tickercontext.h"
 #include "network/baseconnection.h"
 
 namespace network {
 
-class WebSocketClient {
+class WebSocketClient : game::TickerContext::TickableBase<WebSocketClient> {
 public:
-    typedef websocketpp::client<websocketpp::config::asio_client> Client;
+    struct WsppClientConfig : public websocketpp::config::asio_client {
+        typedef websocketpp::concurrency::none concurrency_type;
+
+        static bool const enable_multithreading = false;
+
+        struct transport_config : public websocketpp::config::asio_client::transport_config {
+            static bool const enable_multithreading = false;
+        };
+
+        typedef websocketpp::transport::asio::endpoint<transport_config> transport_type;
+    };
+    typedef websocketpp::client<WsppClientConfig> Client;
 
     class Connection : public BaseConnection {
     public:
-        Connection(game::GameContext &context, const std::string &uri)
-            : BaseConnection(context)
-        {
-            WebSocketClient &wsClient = context.get<WebSocketClient>();
+        Connection(game::GameContext &context, const std::string &uri);
+        ~Connection();
 
-            websocketpp::lib::error_code ec;
-            Client::connection_ptr conn = wsClient.m_endpoint.get_connection(uri, ec);
-            if (ec) {
-                throw ConnectionException("Could not connect to " + uri + ": " + ec.message());
-            }
+        static void initializeDependencies(game::GameContext &context);
 
-            conn->set_open_handler([this](websocketpp::connection_hdl hdl) {
-                setReady(true);
+        void send(const std::uint8_t *data, std::size_t size);
 
-                Client::connection_ptr con = this->context.get<WebSocketClient>().m_endpoint.get_con_from_hdl(hdl);
-//                con->get_response_header("Server");
-            });
-            conn->set_fail_handler([this, uri](websocketpp::connection_hdl hdl) {
-                Client::connection_ptr con = this->context.get<WebSocketClient>().m_endpoint.get_con_from_hdl(hdl);
-                throw ConnectionException("Could not connect to " + uri + ": " + con->get_ec().message());
-            });
-
-            conn->set_close_handler([this](websocketpp::connection_hdl hdl) {
-                setReady(false);
-            });
-
-            wsClient.m_endpoint.connect(conn);
-
-            handle = conn->get_handle();
-        }
-
-        void send(const std::uint8_t *data, std::size_t size) {
-            websocketpp::lib::error_code ec;
-            context.get<WebSocketClient>().m_endpoint.send(handle, data, size, websocketpp::frame::opcode::binary, ec);
-            if (ec) {
-                throw SendException("Could not send message: " + ec.message());
-            }
-        }
+        void close();
 
     private:
         websocketpp::connection_hdl handle;
@@ -69,12 +51,13 @@ public:
         {}
     };
 
+    WebSocketClient(game::GameContext &context);
+    ~WebSocketClient();
 
-    WebSocketClient();
+    void tick(game::TickerContext &tickerContext);
 
 private:
     Client m_endpoint;
-    websocketpp::lib::shared_ptr<websocketpp::lib::thread> m_thread;
 };
 
 }

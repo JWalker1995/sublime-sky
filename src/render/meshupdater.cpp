@@ -36,11 +36,7 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
     meshMutator.shared.transform = context.get<render::Camera>().getTransform();
 }
 
-void MeshUpdater::update(glm::vec3 aabbMin, glm::vec3 aabbMax, std::vector<std::pair<unsigned int, glm::vec3>> &internalPoints, std::vector<std::pair<unsigned int, glm::vec3>> &externalPoints) {
-    MeshGenRequest *request = context.get<util::Pool<MeshGenRequest>>().alloc(*this, aabbMin, aabbMax, internalPoints, externalPoints);
-    context.get<meshgen::MeshGenerator>().generate(request);
-}
-
+/*
 void MeshUpdater::finishMeshGen(MeshGenRequest *meshGenRequest) {
     static thread_local std::unordered_map<glm::vec3, unsigned int> vertIndexMap;
     assert(vertIndexMap.empty());
@@ -91,6 +87,7 @@ void MeshUpdater::finishMeshGen(MeshGenRequest *meshGenRequest) {
 
     vertIndexMap.clear();
 }
+*/
 
 void MeshUpdater::updateCell(spatial::UintCoord coord) {
     world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();

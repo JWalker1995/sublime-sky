@@ -17,7 +17,7 @@ Window::Window(game::GameContext &context)
     dimensions.width = 0;
     dimensions.height = 0;
 
-    const SublimeSky::Config::Window &config = *context.get<const SublimeSky::Config::Client>().window();
+    const SsProtocol::Config::Window &config = *context.get<const SsProtocol::Config::Client>().window();
 
     context.get<spdlog::logger>().info("GLFW version: {}", glfwGetVersionString());
 

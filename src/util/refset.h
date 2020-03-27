@@ -1,30 +1,30 @@
 #pragma once
 
 #include <assert.h>
-#include <vector>
+#include <unordered_set>
 
 #include "game/gamecontext.h"
 
 namespace util {
 
-template <typename Type, typename ContainerType = std::vector<Type *>>
-class RefList {
+template <typename Type, typename ContainerType = std::unordered_set<Type *>>
+class RefSet {
 public:
     typedef typename ContainerType::iterator iterator;
     typedef typename ContainerType::const_iterator const_iterator;
 
-    RefList(game::GameContext &context) {
+    RefSet(game::GameContext &context) {
         (void) context;
     }
 
     void add(Type *inst) {
-        data.push_back(inst);
+        bool inserted = data.insert(inst).second;
+        assert(inserted);
     }
 
     void remove(Type *inst) {
-        typename ContainerType::const_iterator found = std::find(data.cbegin(), data.cend(), inst);
-        assert(found != data.cend());
-        data.erase(found);
+        bool removed = data.erase(inst);
+        assert(removed);
     }
 
     iterator begin() { return data.begin(); }
@@ -38,9 +38,9 @@ public:
         Invoker() = delete;
 
         template <void (Type::*Method)(ArgTypes...)>
-        static void call(RefList &refList, ArgTypes... args) {
-            typename ContainerType::const_iterator i = refList.data.cbegin();
-            while (i != refList.data.cend()) {
+        static void call(RefSet &refSet, ArgTypes... args) {
+            typename ContainerType::const_iterator i = refSet.data.cbegin();
+            while (i != refSet.data.cend()) {
                 ((*i)->*Method)(std::forward<ArgTypes>(args)...);
                 i++;
             }

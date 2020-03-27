@@ -8,18 +8,11 @@
 namespace network {
 
 class BaseConnection;
+class ConnectionPoolBase;
 
 class ConnectionManager : public game::TickerContext::TickableBase<ConnectionManager> {
+private:
 public:
-    class UriFormatException : public jw_util::BaseException {
-        friend class ConnectionManager;
-
-    private:
-        UriFormatException(const std::string &msg)
-            : BaseException(msg)
-        {}
-    };
-
     class UnexpectedUriSchemaException : public jw_util::BaseException {
         friend class ConnectionManager;
 
@@ -29,22 +22,11 @@ public:
         {}
     };
 
-
     ConnectionManager(game::GameContext &context);
 
     void tick(game::TickerContext &tickerContext);
 
-    BaseConnection *addConnection(const std::string &uriStr);
-
-    void setReady(BaseConnection *connection, bool ready);
-
-    void send(const std::uint8_t *data, std::size_t size);
-
-private:
-    std::vector<BaseConnection *> connections;
-    std::vector<BaseConnection *> activeConnections;
-
-    unsigned int nextSendIndex = 0;
+    BaseConnection *createConnection(const std::string &uriStr);
 };
 
 }

@@ -32,47 +32,6 @@ public:
     }
 
 private:
-    class MeshGenRequest : public meshgen::MeshGenerator::Request {
-    public:
-        MeshGenRequest(MeshUpdater &meshUpdater, glm::vec3 requestAabbMin, glm::vec3 requestAabbMax, std::vector<std::pair<unsigned int, glm::vec3>> &internalPoints, std::vector<std::pair<unsigned int, glm::vec3>> &externalPoints)
-            : meshUpdater(meshUpdater)
-            , requestAabbMin(requestAabbMin)
-            , requestAabbMax(requestAabbMax)
-            , internalPoints(std::move(internalPoints))
-            , externalPoints(std::move(externalPoints))
-        {}
-
-        glm::vec3 getRequestAabbMin() const {
-            return requestAabbMin;
-        }
-        glm::vec3 getRequestAabbMax() const {
-            return requestAabbMax;
-        }
-        const std::vector<std::pair<unsigned int, glm::vec3>> &getInternalPoints() const {
-            return internalPoints;
-        };
-        const std::vector<std::pair<unsigned int, glm::vec3>> &getExternalPoints() const {
-            return externalPoints;
-        }
-        std::vector<Face> &getDstFacesArray() {
-            return dstFaces;
-        }
-
-        void onComplete() {
-            meshUpdater.finishMeshGen(this);
-        }
-
-    private:
-        MeshUpdater &meshUpdater;
-        glm::vec3 requestAabbMin;
-        glm::vec3 requestAabbMax;
-        std::vector<std::pair<unsigned int, glm::vec3>> internalPoints;
-        std::vector<std::pair<unsigned int, glm::vec3>> externalPoints;
-        std::vector<Face> dstFaces;
-    };
-
-    void finishMeshGen(MeshGenRequest *meshGenRequest);
-
     util::SmallVectorManager<unsigned int> &facesVecManager;
     SceneManager::MeshHandle meshHandle;
 

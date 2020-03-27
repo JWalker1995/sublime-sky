@@ -1,8 +1,6 @@
 #!/bin/sh
 
-rm -rf generated
+rm -rf SsProtocol
 
 # Compile message schemas
-flatc --python -o generated/ ../schemas/worldgen.fbs
-
-touch generated/__init__.py
+flatc --python ../schemas/message.fbs

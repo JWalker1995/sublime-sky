@@ -11,11 +11,15 @@
 #include "application/window.h"
 #include "render/scenerenderer.h"
 #include "game/cameraflycontroller.h"
+#include "network/connectionmanager.h"
 #include "render/raycaster.h"
 #include "pointgen/cubiclatticegenerator.h"
 #include "pointgen/rsquaredlatticegenerator.h"
 #include "worldgen/simplegenerator.h"
+#include "worldgen/externalgenerator.h"
 #include "meshgen/cubichoneycomb.h"
+#include "network/baseconnection.h"
+#include "util/refset.h"
 
 namespace game {
 
@@ -24,7 +28,7 @@ MainLoop::MainLoop(GameContext &context)
 {}
 
 void MainLoop::load() {
-    const SublimeSky::Config::Client &config = context.get<const SublimeSky::Config::Client>();
+    const SsProtocol::Config::Client &config = context.get<const SsProtocol::Config::Client>();
 
     context.get<application::CallQueue>();
     context.get<application::SyncPoint>();
@@ -39,12 +43,17 @@ void MainLoop::load() {
         context.get<render::SceneRenderer>();
     }
 
+    // TODO: Not sure why we have to have this
+//    context.get<util::RefSet<network::BaseConnection>>();
+
     context.get<CameraFlyController>();
 
+    context.get<network::ConnectionManager>().createConnection("ws://127.0.0.1:8765/");
     context.get<render::RayCaster>();
     context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();
 //    context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>();
-    context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>();
+//    context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>();
+    context.construct<worldgen::WorldGenerator, worldgen::ExternalGenerator>();
     context.construct<meshgen::MeshGenerator, meshgen::CubicHoneycomb>();
 }
 

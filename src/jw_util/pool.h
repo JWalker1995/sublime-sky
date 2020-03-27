@@ -21,17 +21,17 @@ public:
     ~Pool() {
         std::sort(freed.begin(), freed.end());
 
+        for (std::size_t i = 0; i < size; i++) {
+            std::size_t blockIndex = i / numItems;
+            Type *ptr = static_cast<Type *>(blocks[blockIndex]) + (i % numItems);
+            if (!std::binary_search(freed.cbegin(), freed.cend(), ptr)) {
+                ptr->Type::~Type();
+            }
+        }
+
         std::vector<void *>::const_iterator i = blocks.cbegin();
         while (i != blocks.cend()) {
-            Type *b = static_cast<Type *>(*i);
-            for (std::size_t j = 0; j < numItems; j++) {
-                if (!std::binary_search(freed.cbegin(), freed.cend(), b + j)) {
-                    b[j].Type::~Type();
-                }
-            }
-
             ::free(*i);
-
             i++;
         }
     }
@@ -39,15 +39,17 @@ public:
     template <typename... ArgTypes>
     Type *alloc(ArgTypes &&... args) {
         if (freed.empty()) {
-            std::size_t blockIndex = size++ / numItems;
+            std::size_t blockIndex = size / numItems;
             if (blockIndex == blocks.size()) {
                 blocks.push_back(::malloc(numItems * sizeof(Type)));
             }
-            return new(blocks[blockIndex]) Type(std::forward<ArgTypes>(args)...);
+            Type *ptr = static_cast<Type *>(blocks[blockIndex]) + (size % numItems);
+            size++;
+            return new(ptr) Type(std::forward<ArgTypes>(args)...);
         } else {
-            Type *res = freed.back();
+            Type *ptr = freed.back();
             freed.pop_back();
-            return new (res) Type(std::forward<ArgTypes>(args)...);
+            return new (ptr) Type(std::forward<ArgTypes>(args)...);
         }
     }
 
@@ -61,7 +63,7 @@ public:
 
 private:
     std::vector<void *> blocks;
-    std::size_t size;
+    std::size_t size = 0;
     std::vector<Type *> freed;
 };
 
