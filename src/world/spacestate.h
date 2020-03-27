@@ -7,15 +7,15 @@ namespace world {
 class SpaceState {
 public:
     enum Value : std::uint8_t {
-        Uninitialized, // TODO: Remove; might never be used?
-        Empty, // No point in this cell; closest point must come from another cell
-        Air,
+        Uninitialized = 0, // TODO: Remove; might never be used?
+        Empt = 1, // No point in this cell; closest point must come from another cell
+        Air = 2,
 
         Generating = 64,
         SubdividedAsBranch,
         SubdividedAsChunk,
 
-        Dirt,
+        Dirt = 100,
         Rock,
         Water,
         TreeTrunk,

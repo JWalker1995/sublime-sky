@@ -9,11 +9,12 @@ namespace worldgen {
 SimpleGenerator::SimpleGenerator(game::GameContext &context)
     : context(context)
     , noise(123)
-{}
+{
+    assert(pointgen::Chunk::size == world::Chunk::size);
+}
 
 void SimpleGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *points) {
     world::Chunk *dstChunk = context.get<util::Pool<world::Chunk>>().alloc();
-    assert(pointgen::Chunk::size == world::Chunk::size);
 
     bool allSame = true;
     world::SpaceState allState = getState(points->points[0][0][0]);

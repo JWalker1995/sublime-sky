@@ -35,8 +35,8 @@ table Chunk {
     cell_size_log2: uint8;
     cell_coord: Vec3_u32;
 
-    cellPositions: [Vec3_f];
-    cellTypes: [uint32];
+    cell_positions: [Vec3_f];
+    cell_types: [uint32];
     particles: [Particle];
 }
 
