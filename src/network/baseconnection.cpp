@@ -1,5 +1,7 @@
 #include "baseconnection.h"
 
+#include "spdlog/spdlog.h"
+
 #include "game/gamecontext.h"
 #include "network/connectionpoolbase.h"
 #include "util/refset.h"
@@ -23,6 +25,28 @@ BaseConnection::~BaseConnection() {
 
 void BaseConnection::initializeDependencies(game::GameContext &context) {
     context.get<util::RefSet<BaseConnection>>();
+}
+
+void BaseConnection::tick() {
+    if (capabilities == 0) {
+        if (waitTicks) {
+            waitTicks--;
+        } else {
+            waitTicksBackoff *= 2;
+            waitTicks = waitTicksBackoff;
+
+            callConnect();
+        }
+    }
+}
+
+void BaseConnection::callConnect() {
+    try {
+        context.get<spdlog::logger>().info("Attempting connection to {}...", uri);
+        connect(uri);
+    } catch (const ConnectionException &ex) {
+        context.get<spdlog::logger>().error("Failed connecting to {}: {}", uri, ex.what());
+    }
 }
 
 void BaseConnection::setCapabilities(std::uint64_t newCapabilities) {

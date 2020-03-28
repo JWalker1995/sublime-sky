@@ -29,14 +29,14 @@ def CellPositionsAsNumpy(chunk):
 
 async def connection_loop(conn, path):
     print('Received connection from {}'.format(conn.remote_address))
-    builder = flatbuffers.Builder(1024)
     try:
         while True:
             buf = await conn.recv()
             msg = SsMessage.Message.GetRootAsMessage(buf, 0)
             msg_type = msg.MessageType()
-            print('Received message of type {}'.format(msg_type))
             if msg_type == SsMessageUnion.MessageUnion.InitRequest:
+                builder = flatbuffers.Builder(1024)
+                
                 SsInitResponse.InitResponseStart(builder)
                 SsInitResponse.InitResponseAddCapabilities(builder, SsCapabilities.Capabilities.GenerateChunk)
                 init_response = SsInitResponse.InitResponseEnd(builder)
@@ -49,6 +49,8 @@ async def connection_loop(conn, path):
                 builder.Finish(message)
                 await conn.send(builder.Output())
             elif msg_type == SsMessageUnion.MessageUnion.Chunk:
+                builder = flatbuffers.Builder(1024)
+
                 chunk = SsChunk.Chunk()
                 chunk.Init(msg.Message().Bytes, msg.Message().Pos)
                 cell_positions = CellPositionsAsNumpy(chunk)

@@ -168,10 +168,20 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
         unsigned int numVerts = *faceVertsIt++;
         assert(numVerts >= 3);
 
-        unsigned int baseVi = vertIndices[*faceVertsIt++];
-        unsigned int prevVi = vertIndices[*faceVertsIt++];
-        for (unsigned int i = 2; i < numVerts; i++) {
-            unsigned int vi = vertIndices[*faceVertsIt++];
+        unsigned int minI;
+        unsigned int minVi = static_cast<unsigned int>(-1);
+        for (unsigned int i = 0; i < numVerts; i++) {
+            unsigned int vi = vertIndices[faceVertsIt[i]];
+            if (vi < minVi) {
+                minI = i;
+                minVi = vi;
+            }
+        }
+
+        unsigned int baseVi = vertIndices[faceVertsIt[minI + 0]];
+        unsigned int prevVi = vertIndices[faceVertsIt[minI + 1 == numVerts ? 0 : minI + 1]];
+        for (unsigned int i = minI + 2; i < numVerts; i++) {
+            unsigned int vi = vertIndices[faceVertsIt[i]];
 
             bool hasFace = false;
 
@@ -179,13 +189,9 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
             const unsigned int *faces = facesVec.data(facesVecManager);
             for (unsigned int j = 0; j < facesVec.size(); j++) {
                 SceneManager::FaceReader face = meshHandle.readFace(faces[j]);
-                unsigned int viPos = std::find(face.shared.verts, face.shared.verts + 3, vi) - face.shared.verts;
-                assert(viPos < 3);
-                if (face.shared.verts[(viPos + 1) % 3] == prevVi) {
+                if (face.shared.verts[0] == baseVi && face.shared.verts[1] == vi && face.shared.verts[2] == prevVi) {
                     hasFace = true;
                     if (!shouldHaveFace) {
-                        // There's some problem here...
-                        // Perhaps try with just particles, and update some cells right outside the boundary?
                         for (unsigned int k = 0; k < 3; k++) {
                             meshHandle.readVert(face.shared.verts[k]).local.facesVec.remove(facesVecManager, face.index);
                         }
@@ -209,6 +215,44 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
 
             prevVi = vi;
         }
+
+        for (unsigned int i = minI + 1 == numVerts ? 1 : 0; i < minI; i++) {
+            unsigned int vi = vertIndices[faceVertsIt[i]];
+
+            bool hasFace = false;
+
+            util::SmallVectorManager<unsigned int>::Ref &facesVec = meshHandle.readVert(vi).local.facesVec;
+            const unsigned int *faces = facesVec.data(facesVecManager);
+            for (unsigned int j = 0; j < facesVec.size(); j++) {
+                SceneManager::FaceReader face = meshHandle.readFace(faces[j]);
+                if (face.shared.verts[0] == baseVi && face.shared.verts[1] == vi && face.shared.verts[2] == prevVi) {
+                    hasFace = true;
+                    if (!shouldHaveFace) {
+                        for (unsigned int k = 0; k < 3; k++) {
+                            meshHandle.readVert(face.shared.verts[k]).local.facesVec.remove(facesVecManager, face.index);
+                        }
+
+                        meshHandle.destroyFace(face.index);
+                    }
+                    break;
+                }
+            }
+
+            if (!hasFace && shouldHaveFace) {
+                SceneManager::FaceMutator newFace = meshHandle.createFace();
+                newFace.shared.verts[0] = baseVi;
+                newFace.shared.verts[1] = vi;
+                newFace.shared.verts[2] = prevVi;
+
+                meshHandle.readVert(baseVi).local.facesVec.push_back(facesVecManager, newFace.index);
+                meshHandle.readVert(prevVi).local.facesVec.push_back(facesVecManager, newFace.index);
+                meshHandle.readVert(vi).local.facesVec.push_back(facesVecManager, newFace.index);
+            }
+
+            prevVi = vi;
+        }
+
+        faceVertsIt += numVerts;
     }
     assert(faceVertsIt == faceVerts.cend());
 }

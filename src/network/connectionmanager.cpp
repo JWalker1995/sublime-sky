@@ -4,6 +4,7 @@
 
 #include "network/websocketclient.h"
 #include "util/pool.h"
+#include "util/refset.h"
 
 namespace network {
 
@@ -13,6 +14,8 @@ ConnectionManager::ConnectionManager(game::GameContext &context)
 
 void ConnectionManager::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
+
+    util::RefSet<BaseConnection>::Invoker<>::call<&BaseConnection::tick>(context.get<util::RefSet<BaseConnection>>());
 }
 
 BaseConnection *ConnectionManager::createConnection(const std::string &uriStr) {

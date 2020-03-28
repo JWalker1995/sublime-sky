@@ -50,8 +50,8 @@ void MainLoop::load() {
 
     context.get<network::ConnectionManager>().createConnection("ws://127.0.0.1:8765/");
     context.get<render::RayCaster>();
-    context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();
-//    context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>();
+//    context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();
+    context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>();
 //    context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>();
     context.construct<worldgen::WorldGenerator, worldgen::ExternalGenerator>();
     context.construct<meshgen::MeshGenerator, meshgen::CubicHoneycomb>();

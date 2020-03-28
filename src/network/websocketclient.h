@@ -34,21 +34,14 @@ public:
 
         static void initializeDependencies(game::GameContext &context);
 
+        void connect(const std::string &uri);
+
         void send(const std::uint8_t *data, std::size_t size);
 
         void close();
 
     private:
         websocketpp::connection_hdl handle;
-    };
-
-    class ConnectionException : public jw_util::BaseException {
-        friend class WebSocketClient::Connection;
-
-    private:
-        ConnectionException(const std::string &msg)
-            : BaseException(msg)
-        {}
     };
 
     WebSocketClient(game::GameContext &context);

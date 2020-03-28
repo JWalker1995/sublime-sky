@@ -5,7 +5,11 @@
 #include "schemas/message_generated.h"
 #include "network/connectionpoolspecialized.h"
 #include "world/hashtreeworld.h"
+#include "particle/particlemanager.h"
 #include "util/pool.h"
+
+// TODO: Remove
+#include "render/meshupdater.h"
 
 namespace worldgen {
 
@@ -53,6 +57,22 @@ void ExternalGenerator::handleResponse(const SsProtocol::Chunk *chunk) {
             }
         }
     }
+
+//    spatial::UintCoord coord = spatial::UintCoord::fromPoint(glm::vec3(5.0f, 5.0f, 20.0f));
+
+//    static unsigned int t = 0;
+//    if (t) {
+//        t++;
+//        if (t == 100) {
+//            coord.x++;
+//            context.get<render::MeshUpdater>().updateCell(coord);
+//        }
+//    }
+
+//    if (cube.contains(coord)) {
+//        dstChunk->cells[coord.x % world::Chunk::size][coord.y % world::Chunk::size][coord.z % world::Chunk::size].type = world::SpaceState::Dirt;
+//        t++;
+//    }
 
     context.get<world::HashTreeWorld>().finishWorldGen(cube, world::SpaceState::SubdividedAsChunk, dstChunk);
 }

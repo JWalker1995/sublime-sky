@@ -5,7 +5,9 @@ enum Capabilities: uint64 (bit_flags) {
     Connected = 63,
 }
 
-table InitRequest {}
+table InitRequest {
+    // seed: uint64;
+}
 
 table InitResponse {
     capabilities: uint64;

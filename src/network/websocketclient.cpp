@@ -22,12 +22,30 @@ WebSocketClient::~WebSocketClient() {
 void WebSocketClient::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
 
-    m_endpoint.poll();
+    try {
+        std::size_t numEvents = m_endpoint.poll();
+        if (numEvents > 100) {
+            context.get<spdlog::logger>().warn("Whoa! Asio poll handled more than 100 events in a single tick! It actually handled {}. This might mean a connected server is sending too much data.", numEvents);
+        }
+    } catch (const Connection::ConnectionException &ex) {
+        context.get<spdlog::logger>().error("Asio poll failed: {}", ex.what());
+    }
 }
 
 WebSocketClient::Connection::Connection(game::GameContext &context, const std::string &uri)
     : BaseConnection(context, uri)
-{
+{}
+
+WebSocketClient::Connection::~Connection() {
+    close();
+}
+
+void WebSocketClient::Connection::initializeDependencies(game::GameContext &context) {
+    BaseConnection::initializeDependencies(context);
+    context.get<WebSocketClient>();
+}
+
+void WebSocketClient::Connection::connect(const std::string &uri) {
     WebSocketClient &wsClient = context.get<WebSocketClient>();
 
     websocketpp::lib::error_code ec;
@@ -37,6 +55,8 @@ WebSocketClient::Connection::Connection(game::GameContext &context, const std::s
     }
 
     conn->set_open_handler([this](websocketpp::connection_hdl hdl) {
+        if (hdl.lock() != handle.lock()) { return; }
+
         setCapabilities(getCapabilities() | SsProtocol::Capabilities_Connected);
         sendInitRequest();
 
@@ -44,6 +64,8 @@ WebSocketClient::Connection::Connection(game::GameContext &context, const std::s
 //        con->get_response_header("Server");
     });
     conn->set_fail_handler([this, uri](websocketpp::connection_hdl hdl) {
+        if (hdl.lock() != handle.lock()) { return; }
+
         assert((getCapabilities() & SsProtocol::Capabilities_Connected) == 0);
 
         Client::connection_ptr con = this->context.get<WebSocketClient>().m_endpoint.get_con_from_hdl(hdl);
@@ -51,27 +73,22 @@ WebSocketClient::Connection::Connection(game::GameContext &context, const std::s
     });
 
     conn->set_message_handler([this](websocketpp::connection_hdl hdl, WsppClientConfig::message_type::ptr message) {
+        if (hdl.lock() != handle.lock()) { return; }
+
         if (message->get_opcode() == websocketpp::frame::opcode::binary) {
             recv(reinterpret_cast<const std::uint8_t *>(message->get_payload().data()), message->get_payload().size());
         }
     });
 
     conn->set_close_handler([this](websocketpp::connection_hdl hdl) {
+        if (hdl.lock() != handle.lock()) { return; }
+
         setCapabilities(getCapabilities() & ~SsProtocol::Capabilities_Connected);
     });
 
     wsClient.m_endpoint.connect(conn);
 
     handle = conn->get_handle();
-}
-
-WebSocketClient::Connection::~Connection() {
-    close();
-}
-
-void WebSocketClient::Connection::initializeDependencies(game::GameContext &context) {
-    BaseConnection::initializeDependencies(context);
-    context.get<WebSocketClient>();
 }
 
 void WebSocketClient::Connection::send(const std::uint8_t *data, std::size_t size) {

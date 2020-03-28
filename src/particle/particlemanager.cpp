@@ -22,6 +22,8 @@ void ParticleManager::tick(game::TickerContext &tickerContext) {
     world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
     render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
 
+    return;
+
     std::vector<std::pair<Particle *, glm::vec3>>::const_iterator i = bonds.cbegin();
     while (i != bonds.cend()) {
         i->first->velocity += (i->second - i->first->position) * 1e-3f;
