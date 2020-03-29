@@ -57,6 +57,79 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 
     dir /= glm::length(dir);
     glm::vec3 invDir = 1.0f / dir;
 
+    auto calcStep = [](float originX, float dirX) {
+        float t = std::floor(originX) - originX;
+        if (dirX >= 0.0f) {
+            t += 1.0f;
+        }
+        return t / dirX;
+    };
+
+    spatial::UintCoord coord = spatial::UintCoord::fromPoint(origin);
+    glm::vec3 stepTime(calcStep(origin.x, dir.x), calcStep(origin.y, dir.y), calcStep(origin.z, dir.z));
+
+    while (true) {
+        if (stepTime.x < stepTime.y) {
+            if (stepTime.x < stepTime.z) {
+                if (dir.x >= 0.0f) {
+                    coord.x++;
+                    stepTime.x += invDir.x;
+                } else {
+                    coord.x--;
+                    stepTime.x -= invDir.x;
+                }
+                if (stepTime.x > distanceLimit) { break; }
+            } else {
+                if (dir.z >= 0.0f) {
+                    coord.z++;
+                    stepTime.z += invDir.z;
+                } else {
+                    coord.z--;
+                    stepTime.z -= invDir.z;
+                }
+                if (stepTime.z > distanceLimit) { break; }
+            }
+        } else {
+            if (stepTime.y < stepTime.z) {
+                if (dir.y >= 0.0f) {
+                    coord.y++;
+                    stepTime.y += invDir.y;
+                } else {
+                    coord.y--;
+                    stepTime.y -= invDir.y;
+                }
+                if (stepTime.y > distanceLimit) { break; }
+            } else {
+                if (dir.z >= 0.0f) {
+                    coord.z++;
+                    stepTime.z += invDir.z;
+                } else {
+                    coord.z--;
+                    stepTime.z -= invDir.z;
+                }
+                if (stepTime.z > distanceLimit) { break; }
+            }
+        }
+
+        SpaceState state = getSpaceState(coord);
+        if (!state.isTransparent()) {
+            RaytestResult res;
+            res.state = state;
+            res.pointDistance = std::min({ stepTime.x, stepTime.y, stepTime.z });
+            return res;
+        }
+    }
+
+    RaytestResult res;
+    res.state = SpaceState::Air;
+    res.pointDistance = distanceLimit;
+    return res;
+}
+
+HashTreeWorld::RaytestResult HashTreeWorld::testRaySlow(glm::vec3 origin, glm::vec3 dir, float distanceLimit) {
+    dir /= glm::length(dir);
+    glm::vec3 invDir = 1.0f / dir;
+
     spatial::UintCoord coord = spatial::UintCoord::fromPoint(origin);
 
     struct EnqueuedCell {

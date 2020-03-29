@@ -128,6 +128,7 @@ public:
         float pointDistance;
     };
     RaytestResult testRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit);
+    RaytestResult testRaySlow(glm::vec3 origin, glm::vec3 dir, float distanceLimit);
 
     spatial::UintCoord getContainingCoord(glm::vec3 point);
 
