@@ -53,6 +53,14 @@ glm::vec3 HashTreeWorld::getPoint(spatial::UintCoord coord) {
     return getChunkPoints(leafNode)->points[x][y][z];
 }
 
+bool &HashTreeWorld::getNeedsRegen(spatial::UintCoord coord) {
+    Cell *leafNode = getLeafContaining(coord, Chunk::sizeLog2);
+    unsigned int x = coord.x % Chunk::size;
+    unsigned int y = coord.y % Chunk::size;
+    unsigned int z = coord.z % Chunk::size;
+    return leafNode->second.needsRegen[x][y][z];
+}
+
 HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit) {
     dir /= glm::length(dir);
     glm::vec3 invDir = 1.0f / dir;
@@ -114,6 +122,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 
         SpaceState state = getSpaceState(coord);
         if (!state.isTransparent()) {
             RaytestResult res;
+            res.hitCoord = coord;
             res.state = state;
             res.pointDistance = std::min({ stepTime.x, stepTime.y, stepTime.z });
             return res;
@@ -121,6 +130,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 
     }
 
     RaytestResult res;
+    res.hitCoord = spatial::UintCoord(0);
     res.state = SpaceState::Air;
     res.pointDistance = distanceLimit;
     return res;
@@ -178,6 +188,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRaySlow(glm::vec3 origin, glm::v
 
             if (!minCell->state.isTransparent()) {
                 RaytestResult res;
+                res.hitCoord = minCell->fromCell;
                 res.state = minCell->state;
                 // res.surfaceDistance = minSurfaceDist; // Not giving this means we can skip uniform chunks.
                 res.pointDistance = minCell->distParallel;
@@ -250,6 +261,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRaySlow(glm::vec3 origin, glm::v
     }
 
     RaytestResult res;
+    res.hitCoord = spatial::UintCoord(0);
     res.state = SpaceState::Air;
     res.pointDistance = distanceLimit;
     return res;
@@ -309,6 +321,9 @@ void HashTreeWorld::finishWorldGen(spatial::CellKey cube, SpaceState chunkState,
         assert(!chunk);
     }
 
+    std::fill_n(&node->second.needsRegen[0][0][0], Chunk::size * Chunk::size * Chunk::size, true);
+
+    /*
     if (node->first.sizeLog2 == 4) {
         render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
 
@@ -318,13 +333,13 @@ void HashTreeWorld::finishWorldGen(spatial::CellKey cube, SpaceState chunkState,
                 for (unsigned int k = padding; k < world::Chunk::size - padding; k++) {
                     world::SpaceState state = node->second.chunk->cells[i][j][k].type;
                     if (!state.isTransparent()) {
-                        meshUpdater.updateCell(node->first.getCoord<0, 0, 0>() + spatial::UintCoord(i, j, k));
+                        meshUpdater.updateCell<false>(node->first.getCoord<0, 0, 0>() + spatial::UintCoord(i, j, k));
                     }
                 }
             }
         }
-
     }
+    */
 
 //    glm::vec3 changedMin = worldGenRequest->getCube().getCoord<0, 0, 0>().toPoint();
 //    glm::vec3 changedMax = worldGenRequest->getCube().getCoord<1, 1, 1>().toPoint();

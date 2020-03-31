@@ -17,7 +17,7 @@ public:
 
 private:
     std::mt19937 rngGen;
-    int numRays = 1;
+    int numRays = 16;
 
     std::vector<std::pair<glm::vec3, glm::vec3>> retryRays;
 

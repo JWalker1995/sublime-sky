@@ -189,6 +189,8 @@ src/world/hashtreeworld.h
 src/world/particle.cpp
 src/world/particle.h
 src/world/spacestate.h
+src/world/timemanager.cpp
+src/world/timemanager.h
 src/world/voronoicell.cpp
 src/world/voronoicell.h
 src/worldgen/externalgenerator.cpp

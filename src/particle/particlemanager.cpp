@@ -57,8 +57,8 @@ void ParticleManager::tick(game::TickerContext &tickerContext) {
             }
             j->cell = &newCell;
 
-            meshUpdater.updateCell(prevCoord);
-            meshUpdater.updateCell(containingCoord);
+            meshUpdater.updateCell<true>(prevCoord);
+            meshUpdater.updateCell<true>(containingCoord);
         }
 
         j++;

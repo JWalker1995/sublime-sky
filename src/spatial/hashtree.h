@@ -110,11 +110,14 @@ public:
         return getCellContaining<true, false, ExtraArgs...>(cellKey.getCoord<0, 0, 0>(), cellKey.sizeLog2, std::forward<ExtraArgs>(args)...);
     }
 
-    template <bool dx, bool dy, bool dz, typename... ExtraArgs>
-    Cell *getBranchChild(Cell *branch, ExtraArgs... args) {
-        assert(!branch->second.isLeaf());
-        CellKey cellKey = branch->first.template child<dx, dy, dz>();
-        return getCellContaining<false, false, ExtraArgs...>(cellKey.getCoord<0, 0, 0>(), cellKey.sizeLog2, std::forward<ExtraArgs>(args)...);
+    template <typename... ExtraArgs>
+    Cell *findNodeMatching(CellKey cellKey) {
+        typename std::unordered_map<CellKey, CellValue, CellKeyHasher>::iterator insert = cellGrid.find(cellKey);
+        if (insert == cellGrid.end()) {
+            return 0;
+        } else {
+            return &*insert;
+        }
     }
 
     std::unordered_map<CellKey, CellValue, CellKeyHasher> &getMap() {

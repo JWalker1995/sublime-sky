@@ -34,58 +34,32 @@ public:
     }
 
     // TODO: state could be represented as sentinel values of chunk
+//    unsigned int chunkId;
     SpaceState state;
     Chunk *chunk;
     pointgen::Chunk *points = 0;
+    bool needsRegen[Chunk::size][Chunk::size][Chunk::size] = {{{0}}};
 };
 
 class HashTreeWorld : private spatial::HashTree<HashTreeWorld, CellValue>, public game::TickerContext::TickableBase<HashTreeWorld> {
     friend class spatial::HashTree<HashTreeWorld, CellValue>;
 
 public:
-    class PointRead {
-    public:
-        const glm::vec3 point;
-    };
-    class PointMutate {
-    public:
-        PointMutate() {
-            // Not implemented
-            assert(false);
-        }
-    };
-
-    class StateRead {
-    public:
-        SpaceState state;
-    };
-    class StateMutate {
-    public:
-        SpaceState &state;
-    };
-
-    template <typename ... Actions>
-    class CellMutator : public Actions... {
-    public:
-        CellMutator(HashTreeWorld &world)
-            : Actions(world)...
-        {}
-    };
-
+    template <bool populateState, bool populatePoints>
     class CellIterator {
     public:
-        class ChunkRef {};
-
-        /*
         void init(spatial::UintCoord coord) {
 
         }
 
-        ChunkRef &getNearby(spatial::UintCoord coord) {
+        CellValue &getNearby(spatial::UintCoord coord) {
+            unsigned int cellIndex = coord.x % Chunk::size;
+
+            coord.x /= Chunk::size;
+            coord.y /= Chunk::size;
+            coord.z /= Chunk::size;
+
             coord -= min;
-            coord.x >>= Chunk::sizeLog2;
-            coord.y >>= Chunk::sizeLog2;
-            coord.z >>= Chunk::sizeLog2;
             assert(coord.x < (static_cast<spatial::UintCoord::AxisType>(1) << sizeLog2_x));
             assert(coord.y < (static_cast<spatial::UintCoord::AxisType>(1) << sizeLog2_y));
             assert(coord.z < (static_cast<spatial::UintCoord::AxisType>(1) << sizeLog2_z));
@@ -93,24 +67,30 @@ public:
             unsigned int index = (((coord.x << sizeLog2_y) | coord.y) << sizeLog2_z) | coord.z;
 
             if (!data[index]) {
-                fillChunkRef(data[index]);
+                fillChunkRef(coord , data[index]);
             }
 
             return *data[index];
         }
-        */
 
     private:
+        HashTreeWorld &hashTreeWorld;
+
         spatial::UintCoord min;
-        ChunkRef **data;
+        CellValue **data;
 #ifndef NDEBUG
         unsigned int sizeLog2_x;
 #endif
         unsigned int sizeLog2_y;
         unsigned int sizeLog2_z;
 
-        void fillChunkRef(ChunkRef ) {
+        void fillChunkRef(spatial::UintCoord chunkCoord, CellValue *&cellValue) {
+            spatial::CellKey cellKey(min + chunkCoord, Chunk::sizeLog2);
+            cellValue = hashTreeWorld.findNodeMatching(cellKey);
 
+            if (populateState) {
+
+            }
         }
     };
 
@@ -122,8 +102,10 @@ public:
     SpaceState getSpaceState(spatial::UintCoord coord);
     SpaceState &getSpaceStateMutable(spatial::UintCoord coord);
     glm::vec3 getPoint(spatial::UintCoord coord);
+    bool &getNeedsRegen(spatial::UintCoord coord);
 
     struct RaytestResult {
+        spatial::UintCoord hitCoord;
         SpaceState state;
         float pointDistance;
     };

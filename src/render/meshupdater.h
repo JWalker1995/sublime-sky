@@ -23,8 +23,9 @@ public:
 
     void tick(game::TickerContext &tickerContext);
 
-    void update(glm::vec3 aabbMin, glm::vec3 aabbMax, std::vector<std::pair<unsigned int, glm::vec3> > &internalPoints, std::vector<std::pair<unsigned int, glm::vec3> > &externalPoints);
+    void enqueueCellUpdate(spatial::UintCoord coord, bool enableDestroyGeometry);
 
+    template <bool enableDestroyGeometry>
     void updateCell(spatial::UintCoord coord);
 
     render::SceneManager::MeshHandle getMeshHandle() const {
@@ -34,6 +35,8 @@ public:
 private:
     util::SmallVectorManager<unsigned int> &facesVecManager;
     SceneManager::MeshHandle meshHandle;
+
+    std::queue<std::pair<spatial::UintCoord, bool>> cellUpdateQueue;
 
     // TODO: This doesn't really even have to store the pair.
     // A vector, that maps a hash to a uint and forces the user to check equality should suffice.

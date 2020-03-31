@@ -5,7 +5,9 @@
 
 #include "graphics/imgui.h"
 #include "render/camera.h"
+#include "render/meshupdater.h"
 #include "world/hashtreeworld.h"
+#include "world/timemanager.h"
 
 namespace render {
 
@@ -22,12 +24,16 @@ void RayCaster::tick(game::TickerContext &tickerContext) {
 }
 
 void RayCaster::truncateRetries() {
-    static constexpr unsigned int retryLimit = 128;
+    static constexpr unsigned int retryLimit = 0;
 
-    while (retryRays.size() > retryLimit) {
-        unsigned int remove = rand() % retryRays.size();
-        retryRays[remove] = retryRays.back();
-        retryRays.pop_back();
+    if (retryLimit > 0) {
+        while (retryRays.size() > retryLimit) {
+            unsigned int remove = rand() % retryRays.size();
+            retryRays[remove] = retryRays.back();
+            retryRays.pop_back();
+        }
+    } else {
+        retryRays.clear();
     }
 }
 
@@ -77,6 +83,9 @@ void RayCaster::castRay(glm::vec3 origin, glm::vec3 dir) {
 
     if (res.state == world::SpaceState::Generating) {
         retryRays.emplace_back(origin + dir * (res.pointDistance - 1.0f), dir);
+    } else {
+        context.get<world::TimeManager>().incTimeAround(res.hitCoord, 1.0f);
+        context.get<render::MeshUpdater>().enqueueCellUpdate(res.hitCoord, false);
     }
 }
 

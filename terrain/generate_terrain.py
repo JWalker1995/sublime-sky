@@ -19,6 +19,6 @@ def generate_terrain(points):
 	res = np.full(points.shape[:1], 2, dtype=np.uint32)
 
 	# Assign dirt
-	res[points[:, 2] + noise_values * 10 < 5.0] = 100
+	res[points[:, 2] + noise_values * 40 < 5.0] = 100
 
 	return res

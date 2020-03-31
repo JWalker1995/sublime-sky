@@ -34,6 +34,22 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
 
     SceneManager::MeshMutator meshMutator = meshHandle.mutateMesh();
     meshMutator.shared.transform = context.get<render::Camera>().getTransform();
+
+    static constexpr unsigned int maxCellUpdatesPerTick = 256;
+    for (unsigned int i = 0; i < maxCellUpdatesPerTick; i++) {
+        if (cellUpdateQueue.empty()) {
+            break;
+        }
+
+        std::pair<spatial::UintCoord, bool> front = cellUpdateQueue.front();
+        cellUpdateQueue.pop();
+
+        if (front.second) {
+            updateCell<true>(front.first);
+        } else {
+            updateCell<false>(front.first);
+        }
+    }
 }
 
 /*
@@ -89,15 +105,36 @@ void MeshUpdater::finishMeshGen(MeshGenRequest *meshGenRequest) {
 }
 */
 
+void MeshUpdater::enqueueCellUpdate(spatial::UintCoord coord, bool enableDestroyGeometry) {
+    context.get<world::HashTreeWorld>().getNeedsRegen(coord) = true;
+    cellUpdateQueue.emplace(coord, enableDestroyGeometry);
+}
+
+template <bool enableDestroyGeometry>
 void MeshUpdater::updateCell(spatial::UintCoord coord) {
     world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
+
+    bool &needsRegen = hashTreeWorld.getNeedsRegen(coord);
+    if (needsRegen) {
+        needsRegen = false;
+    } else {
+        return;
+    }
+
+    world::SpaceState originState = hashTreeWorld.getSpaceState(coord);
+    if (!enableDestroyGeometry && originState.isTransparent()) {
+        return;
+    }
+
+    glm::vec3 origin = hashTreeWorld.getPoint(coord);
+    assert(!std::isnan(origin.x));
 
     voro::voronoicell_neighbor cell;
     cell.init(-2.0, 2.0, -2.0, 2.0, -2.0, 2.0);
 
-    glm::vec3 origin = hashTreeWorld.getPoint(coord);
-    assert(!std::isnan(origin.x));
-    world::SpaceState originState = hashTreeWorld.getSpaceState(coord);
+    glm::vec3 transparentPosSum(0.0f);
+    float transparentCount = 0.0f;
+    bool hasSurface = false;
 
     spatial::UintCoord min = coord - spatial::UintCoord(2);
     spatial::UintCoord max = coord + spatial::UintCoord(2);
@@ -114,10 +151,35 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
                     continue;
                 }
 
-                bool shouldHaveSurface = !originState.isTransparent() && hashTreeWorld.getSpaceState(neighborCoord).isTransparent();
+                bool isTransp = hashTreeWorld.getSpaceState(neighborCoord).isTransparent();
+                bool shouldHaveSurface = !originState.isTransparent() && isTransp;
+                hasSurface |= shouldHaveSurface;
+
+                if (shouldHaveSurface) {
+                    transparentPosSum += pt;
+                    transparentCount += 1.0f;
+                }
+
                 pt -= origin;
                 cell.nplane(pt.x, pt.y, pt.z, shouldHaveSurface);
             }
+        }
+    }
+
+    if (!enableDestroyGeometry && !hasSurface) {
+        return;
+    }
+
+    if (!originState.isTransparent()) {
+        transparentPosSum /= transparentCount;
+        glm::vec3 camPos = context.get<render::Camera>().getEyePos();
+        if (hashTreeWorld.testRay(transparentPosSum, camPos - transparentPosSum, 100.0f).pointDistance > 99.0f) {
+            cellUpdateQueue.emplace(coord - spatial::UintCoord(1, 0, 0), enableDestroyGeometry);
+            cellUpdateQueue.emplace(coord - spatial::UintCoord(0, 1, 0), enableDestroyGeometry);
+            cellUpdateQueue.emplace(coord - spatial::UintCoord(0, 0, 1), enableDestroyGeometry);
+            cellUpdateQueue.emplace(coord + spatial::UintCoord(1, 0, 0), enableDestroyGeometry);
+            cellUpdateQueue.emplace(coord + spatial::UintCoord(0, 1, 0), enableDestroyGeometry);
+            cellUpdateQueue.emplace(coord + spatial::UintCoord(0, 0, 1), enableDestroyGeometry);
         }
     }
 
@@ -185,20 +247,22 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
 
             bool hasFace = false;
 
-            util::SmallVectorManager<unsigned int>::Ref &facesVec = meshHandle.readVert(vi).local.facesVec;
-            const unsigned int *faces = facesVec.data(facesVecManager);
-            for (unsigned int j = 0; j < facesVec.size(); j++) {
-                SceneManager::FaceReader face = meshHandle.readFace(faces[j]);
-                if (face.shared.verts[0] == baseVi && face.shared.verts[1] == vi && face.shared.verts[2] == prevVi) {
-                    hasFace = true;
-                    if (!shouldHaveFace) {
-                        for (unsigned int k = 0; k < 3; k++) {
-                            meshHandle.readVert(face.shared.verts[k]).local.facesVec.remove(facesVecManager, face.index);
-                        }
+            if (enableDestroyGeometry) {
+                util::SmallVectorManager<unsigned int>::Ref &facesVec = meshHandle.readVert(vi).local.facesVec;
+                const unsigned int *faces = facesVec.data(facesVecManager);
+                for (unsigned int j = 0; j < facesVec.size(); j++) {
+                    SceneManager::FaceReader face = meshHandle.readFace(faces[j]);
+                    if (face.shared.verts[0] == baseVi && face.shared.verts[1] == vi && face.shared.verts[2] == prevVi) {
+                        hasFace = true;
+                        if (!shouldHaveFace) {
+                            for (unsigned int k = 0; k < 3; k++) {
+                                meshHandle.readVert(face.shared.verts[k]).local.facesVec.remove(facesVecManager, face.index);
+                            }
 
-                        meshHandle.destroyFace(face.index);
+                            meshHandle.destroyFace(face.index);
+                        }
+                        break;
                     }
-                    break;
                 }
             }
 
@@ -221,20 +285,22 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
 
             bool hasFace = false;
 
-            util::SmallVectorManager<unsigned int>::Ref &facesVec = meshHandle.readVert(vi).local.facesVec;
-            const unsigned int *faces = facesVec.data(facesVecManager);
-            for (unsigned int j = 0; j < facesVec.size(); j++) {
-                SceneManager::FaceReader face = meshHandle.readFace(faces[j]);
-                if (face.shared.verts[0] == baseVi && face.shared.verts[1] == vi && face.shared.verts[2] == prevVi) {
-                    hasFace = true;
-                    if (!shouldHaveFace) {
-                        for (unsigned int k = 0; k < 3; k++) {
-                            meshHandle.readVert(face.shared.verts[k]).local.facesVec.remove(facesVecManager, face.index);
-                        }
+            if (enableDestroyGeometry) {
+                util::SmallVectorManager<unsigned int>::Ref &facesVec = meshHandle.readVert(vi).local.facesVec;
+                const unsigned int *faces = facesVec.data(facesVecManager);
+                for (unsigned int j = 0; j < facesVec.size(); j++) {
+                    SceneManager::FaceReader face = meshHandle.readFace(faces[j]);
+                    if (face.shared.verts[0] == baseVi && face.shared.verts[1] == vi && face.shared.verts[2] == prevVi) {
+                        hasFace = true;
+                        if (!shouldHaveFace) {
+                            for (unsigned int k = 0; k < 3; k++) {
+                                meshHandle.readVert(face.shared.verts[k]).local.facesVec.remove(facesVecManager, face.index);
+                            }
 
-                        meshHandle.destroyFace(face.index);
+                            meshHandle.destroyFace(face.index);
+                        }
+                        break;
                     }
-                    break;
                 }
             }
 
@@ -256,10 +322,10 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
     }
     assert(faceVertsIt == faceVerts.cend());
 }
+template void MeshUpdater::updateCell<false>(spatial::UintCoord coord);
+template void MeshUpdater::updateCell<true>(spatial::UintCoord coord);
 
-
-
-
+/*
 void MeshUpdater::fillHoles() {
     while (!holeEdges.empty()) {
         HoleEdge edge = holeEdges.front();
@@ -466,5 +532,6 @@ void MeshUpdater::fillSingleHole(HoleEdge edge) {
     newEdge.edgeDir = 1;
     holeEdges.push(newEdge);
 }
+*/
 
 }
