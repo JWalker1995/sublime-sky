@@ -2,7 +2,8 @@
 
 # namespace: SsProtocol
 
-class Capabilities(object):
-    GenerateTerrainChunk = 1
-    Connected = 9223372036854775808
+class MaterialModel(object):
+    Invisible = 0
+    Phong = 1
+    Blinn = 2
 

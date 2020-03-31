@@ -63,6 +63,8 @@ table ObjectHeirarchy {
 }
 
 table Game {
+    seed: uint64;
+
     joinSpawner: Spawner;
 
     initialCheckpointCapacity: uint;

@@ -61,6 +61,14 @@ bool &HashTreeWorld::getNeedsRegen(spatial::UintCoord coord) {
     return leafNode->second.needsRegen[x][y][z];
 }
 
+unsigned int HashTreeWorld::getCellId(spatial::UintCoord coord) {
+    Cell *leafNode = getLeafContaining(coord, Chunk::sizeLog2);
+    unsigned int x = coord.x % Chunk::size;
+    unsigned int y = coord.y % Chunk::size;
+    unsigned int z = coord.z % Chunk::size;
+    return leafNode->second.chunkId + ((x * Chunk::size) + y) * Chunk::size + z;
+}
+
 HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit) {
     dir /= glm::length(dir);
     glm::vec3 invDir = 1.0f / dir;
@@ -390,5 +398,7 @@ void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, f
     separatedPoints[1].clear();
 }
 */
+
+unsigned int CellValue::nextChunkId = 0;
 
 }

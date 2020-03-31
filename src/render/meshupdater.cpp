@@ -7,6 +7,7 @@
 #include "render/camera.h"
 #include "world/hashtreeworld.h"
 #include "spatial/raycastlookuptable.h"
+#include "graphics/imgui.h"
 
 namespace render {
 
@@ -31,6 +32,11 @@ MeshUpdater::~MeshUpdater() {
 
 void MeshUpdater::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
+
+    if (ImGui::Begin("Debug")) {
+        ImGui::Text("Cell update queue size = %zu", cellUpdateQueue.size());
+        ImGui::End();
+    }
 
     SceneManager::MeshMutator meshMutator = meshHandle.mutateMesh();
     meshMutator.shared.transform = context.get<render::Camera>().getTransform();
@@ -225,6 +231,8 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
     }
     assert(vertIndices.size() * 3 == verts.size());
 
+    unsigned int cellId = hashTreeWorld.getCellId(coord);
+
     std::vector<int>::const_iterator faceVertsIt = faceVerts.cbegin();
     for (int neighbor : neighbors) {
         bool shouldHaveFace = neighbor;
@@ -232,17 +240,42 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
         unsigned int numVerts = *faceVertsIt++;
         assert(numVerts >= 3);
 
-        unsigned int minI;
-        unsigned int minVi = static_cast<unsigned int>(-1);
+        unsigned int minI = static_cast<unsigned int>(-1);
         for (unsigned int i = 0; i < numVerts; i++) {
             unsigned int vi = vertIndices[faceVertsIt[i]];
-            if (vi < minVi) {
+            unsigned int surfaceCellId = meshHandle.readVert(vi).local.surfaceForCell;
+            if (surfaceCellId == static_cast<unsigned int>(-1)) {
                 minI = i;
-                minVi = vi;
+            } else if (surfaceCellId == cellId) {
+                minI = i;
+                break;
+
+                // Could do some optimizations in this case because we know the surface already exists.
             }
         }
 
+        // If this fails, then we've run out of provoking vertices.
+        if (minI == static_cast<unsigned int>(-1)) {
+            minI = 0;
+
+            SceneManager::VertReader prevVert = meshHandle.readVert(vertIndices[faceVertsIt[minI]]);
+            SceneManager::VertMutator newVert = meshHandle.createVert();
+            newVert.shared.setPoint(prevVert.shared.getPoint());
+            vertIndices[faceVertsIt[minI]] = newVert.index;
+        }
+
         unsigned int baseVi = vertIndices[faceVertsIt[minI + 0]];
+        SceneManager::VertMutator baseVert = meshHandle.mutateVert(baseVi);
+//        unsigned int mod = (coord.x + coord.y + coord.z) % 100 == 0;
+        unsigned int mod = (coord.x % 16 == 0) && (coord.y % 16 == 0) && (coord.z % 16 == 0);
+        switch (mod) {
+            case 0: baseVert.shared.setColor(255, 0, 0, 255); break;
+            case 1: baseVert.shared.setColor(0, 255, 0, 255); break;
+            case 2: baseVert.shared.setColor(0, 0, 255, 255); break;
+            default: break;
+        }
+        baseVert.local.surfaceForCell = cellId;
+
         unsigned int prevVi = vertIndices[faceVertsIt[minI + 1 == numVerts ? 0 : minI + 1]];
         for (unsigned int i = minI + 2; i < numVerts; i++) {
             unsigned int vi = vertIndices[faceVertsIt[i]];

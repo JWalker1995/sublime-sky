@@ -2,11 +2,11 @@ import numpy as np
 import pyfastnoisesimd as fns
 
 
-def generate_terrain(points):
+def generate_terrain(seed, points):
 	coords = fns.empty_coords(points.shape[0])
 	coords[:] = points.T
 
-	noise = fns.Noise(seed=1234, numWorkers=1)
+	noise = fns.Noise(seed=seed, numWorkers=1)
 	noise.frequency = 0.02
 	noise.noiseType = fns.NoiseType.Perlin
 	noise.fractal.octaves = 4

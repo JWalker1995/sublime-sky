@@ -27,6 +27,33 @@ class InitResponse(object):
             return self._tab.Get(flatbuffers.number_types.Uint64Flags, o + self._tab.Pos)
         return 0
 
-def InitResponseStart(builder): builder.StartObject(1)
+    # InitResponse
+    def Materials(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        if o != 0:
+            x = self._tab.Vector(o)
+            x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
+            x = self._tab.Indirect(x)
+            from SsProtocol.Material import Material
+            obj = Material()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+    # InitResponse
+    def MaterialsLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+    # InitResponse
+    def MaterialsIsNone(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        return o == 0
+
+def InitResponseStart(builder): builder.StartObject(2)
 def InitResponseAddCapabilities(builder, capabilities): builder.PrependUint64Slot(0, capabilities, 0)
+def InitResponseAddMaterials(builder, materials): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(materials), 0)
+def InitResponseStartMaterialsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def InitResponseEnd(builder): return builder.EndObject()

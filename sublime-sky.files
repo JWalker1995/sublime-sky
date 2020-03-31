@@ -93,6 +93,8 @@ src/jw_util/workqueue.h
 src/jw_util/workqueuebase.h
 src/jw_util/workqueueinsomniac.h
 src/main.cpp
+src/materials/materialmanager.cpp
+src/materials/materialmanager.h
 src/meshgen/cubichoneycomb.cpp
 src/meshgen/cubichoneycomb.h
 src/meshgen/meshgenerator.h

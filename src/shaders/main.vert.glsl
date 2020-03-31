@@ -20,7 +20,7 @@ layout(location = COLOR_LOCATION) in vec4 in_color;
 //flat out uint face_offset;
 //out vec4 position;
 out vec3 orig_position;
-out vec3 vert_color;
+flat out vec3 vert_color;
 
 highp float rand(float seed)
 {

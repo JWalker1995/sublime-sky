@@ -6,5 +6,6 @@ class MessageUnion(object):
     NONE = 0
     InitRequest = 1
     InitResponse = 2
-    Chunk = 3
+    TerrainChunk = 3
+    EnvironmentChunk = 4
 

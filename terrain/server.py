@@ -10,7 +10,7 @@ import SsProtocol.MessageUnion as SsMessageUnion
 import SsProtocol.InitRequest as SsInitRequest
 import SsProtocol.InitResponse as SsInitResponse
 import SsProtocol.Capabilities as SsCapabilities
-import SsProtocol.Chunk as SsChunk
+import SsProtocol.TerrainChunk as SsTerrainChunk
 import SsProtocol.Vec3_u32 as SsVec3_u32
 
 from generate_terrain import generate_terrain
@@ -36,9 +36,13 @@ async def connection_loop(conn, path):
             msg_type = msg.MessageType()
             if msg_type == SsMessageUnion.MessageUnion.InitRequest:
                 builder = flatbuffers.Builder(1024)
-                
+
+                req = SsInitRequest.InitRequest()
+                req.Init(msg.Message().Bytes, msg.Message().Pos)
+                seed = req.Seed()
+
                 SsInitResponse.InitResponseStart(builder)
-                SsInitResponse.InitResponseAddCapabilities(builder, SsCapabilities.Capabilities.GenerateChunk)
+                SsInitResponse.InitResponseAddCapabilities(builder, SsCapabilities.Capabilities.GenerateTerrainChunk)
                 init_response = SsInitResponse.InitResponseEnd(builder)
 
                 SsMessage.MessageStart(builder)
@@ -48,33 +52,33 @@ async def connection_loop(conn, path):
 
                 builder.Finish(message)
                 await conn.send(builder.Output())
-            elif msg_type == SsMessageUnion.MessageUnion.Chunk:
+            elif msg_type == SsMessageUnion.MessageUnion.TerrainChunk:
                 builder = flatbuffers.Builder(1024)
 
-                chunk = SsChunk.Chunk()
+                chunk = SsTerrainChunk.TerrainChunk()
                 chunk.Init(msg.Message().Bytes, msg.Message().Pos)
                 cell_positions = CellPositionsAsNumpy(chunk)
 
-                cell_types = generate_terrain(cell_positions)
+                cell_types = generate_terrain(seed, cell_positions)
                 assert len(cell_types.shape) == 1
                 assert cell_types.dtype == np.uint32
 
-                SsChunk.ChunkStartCellTypesVector(builder, cell_types.shape[0])
+                SsTerrainChunk.TerrainChunkStartCellMaterialsVector(builder, cell_types.shape[0])
                 builder.Prep(4, cell_types.shape[0] * 4 - 4)
                 new_head = builder.head - cell_types.shape[0] * 4
                 builder.Bytes[new_head : builder.head] = cell_types.tobytes()
                 builder.head = new_head
                 cell_types_vec = builder.EndVector(cell_types.shape[0])
 
-                SsChunk.ChunkStart(builder)
-                SsChunk.ChunkAddCellSizeLog2(builder, chunk.CellSizeLog2())
+                SsTerrainChunk.TerrainChunkStart(builder)
+                SsTerrainChunk.TerrainChunkAddCellSizeLog2(builder, chunk.CellSizeLog2())
                 coord = chunk.CellCoord()
-                SsChunk.ChunkAddCellCoord(builder, SsVec3_u32.CreateVec3_u32(builder, coord.X(), coord.Y(), coord.Z()))
-                SsChunk.ChunkAddCellTypes(builder, cell_types_vec)
-                chunk = SsChunk.ChunkEnd(builder)
+                SsTerrainChunk.TerrainChunkAddCellCoord(builder, SsVec3_u32.CreateVec3_u32(builder, coord.X(), coord.Y(), coord.Z()))
+                SsTerrainChunk.TerrainChunkAddCellMaterials(builder, cell_types_vec)
+                chunk = SsTerrainChunk.TerrainChunkEnd(builder)
 
                 SsMessage.MessageStart(builder)
-                SsMessage.MessageAddMessageType(builder, SsMessageUnion.MessageUnion.Chunk)
+                SsMessage.MessageAddMessageType(builder, SsMessageUnion.MessageUnion.TerrainChunk)
                 SsMessage.MessageAddMessage(builder, chunk)
                 message = SsMessage.MessageEnd(builder)
 

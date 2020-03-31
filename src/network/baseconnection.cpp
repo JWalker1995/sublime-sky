@@ -6,6 +6,7 @@
 #include "network/connectionpoolbase.h"
 #include "util/refset.h"
 #include "schemas/message_generated.h"
+#include "schemas/config_game_generated.h"
 #include "network/messagebuilder.h"
 #include "worldgen/externalgenerator.h"
 
@@ -67,7 +68,7 @@ void BaseConnection::recv(const std::uint8_t *data, std::size_t size) {
 
     switch (message->message_type()) {
         case SsProtocol::MessageUnion_InitResponse: handleInitResponse(message->message_as_InitResponse()); break;
-        case SsProtocol::MessageUnion_Chunk: context.get<worldgen::ExternalGenerator>().handleResponse(message->message_as_Chunk()); break;
+        case SsProtocol::MessageUnion_TerrainChunk: context.get<worldgen::ExternalGenerator>().handleResponse(message->message_as_TerrainChunk()); break;
         default: context.log(game::GameContext::LogLevel::Warning, "Received message with unexpected type: " + std::to_string(message->message_type()));
     }
 }
@@ -75,7 +76,8 @@ void BaseConnection::recv(const std::uint8_t *data, std::size_t size) {
 void BaseConnection::sendInitRequest() {
     network::MessageBuilder::Lock lock(context);
 
-    auto initRequest = SsProtocol::CreateInitRequest(lock.getBuilder());
+    std::uint64_t seed = context.get<const SsProtocol::Config::Game>().seed();
+    auto initRequest = SsProtocol::CreateInitRequest(lock.getBuilder(), seed);
     auto message = SsProtocol::CreateMessage(lock.getBuilder(), SsProtocol::MessageUnion_InitRequest, initRequest.Union());
     lock.getBuilder().Finish(message);
 

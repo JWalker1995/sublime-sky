@@ -12,6 +12,12 @@ namespace world {
 
 class CellValue {
 public:
+    CellValue()
+        : chunkId(nextChunkId)
+    {
+        nextChunkId += Chunk::size * Chunk::size * Chunk::size;
+    }
+
     void setToBranch() {
         state = SpaceState::SubdividedAsBranch;
         assert(!isLeaf());
@@ -33,8 +39,10 @@ public:
         return state != SpaceState::SubdividedAsBranch;
     }
 
+    static unsigned int nextChunkId;
+    unsigned int chunkId;
+
     // TODO: state could be represented as sentinel values of chunk
-//    unsigned int chunkId;
     SpaceState state;
     Chunk *chunk;
     pointgen::Chunk *points = 0;
@@ -103,6 +111,7 @@ public:
     SpaceState &getSpaceStateMutable(spatial::UintCoord coord);
     glm::vec3 getPoint(spatial::UintCoord coord);
     bool &getNeedsRegen(spatial::UintCoord coord);
+    unsigned int getCellId(spatial::UintCoord coord);
 
     struct RaytestResult {
         spatial::UintCoord hitCoord;

@@ -64,6 +64,8 @@ public:
     // This 32-bit int has 27 defined bits, each relating to a cell in the 3x3x3 grid around the position.
     // There should be 4 set bits, each relating to a cell point.
     std::uint32_t connectedCellBitmask;
+
+    std::uint32_t surfaceForCell = static_cast<std::uint32_t>(-1);
 };
 
 }

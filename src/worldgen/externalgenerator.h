@@ -3,7 +3,7 @@
 #include "worldgen/worldgenerator.h"
 
 namespace game { class GameContext; }
-namespace SsProtocol { struct Chunk; }
+namespace SsProtocol { struct TerrainChunk; }
 
 namespace worldgen {
 
@@ -13,7 +13,7 @@ public:
 
     void generate(spatial::CellKey cube, const pointgen::Chunk *points);
 
-    void handleResponse(const SsProtocol::Chunk *chunk);
+    void handleResponse(const SsProtocol::TerrainChunk *chunk);
 
 private:
     game::GameContext &context;

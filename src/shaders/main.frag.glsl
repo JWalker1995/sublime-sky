@@ -20,7 +20,7 @@ uniform vec3 eyePos;
 
 
 in vec3 orig_position;
-in vec3 vert_color;
+flat in vec3 vert_color;
 out vec4 frag_color;
 
 highp float rand(float seed) {
@@ -31,11 +31,11 @@ highp float rand(float seed) {
 
 
 const bool blinn = true;
-const vec3 lightPos = vec3(0.0, 0.0, 10.0);
+//const vec3 lightPos = vec3(0.0, 0.0, 10.0);
 const vec3 lightColor = vec3(1.0, 1.0, 1.0);
 const float lightPower = 40.0;
 const vec3 ambientColor = vec3(0.0, 0.0, 0.0);
-const vec3 diffuseColor = vec3(188/256.0,143/256.0,143/256.0);
+//const vec3 diffuseColor = vec3(188/256.0,143/256.0,143/256.0);
 const vec3 specColor = vec3(1.0, 1.0, 1.0);
 const float shininess = 32.0;
 const float screenGamma = 2.2; // Assume the monitor is calibrated to the sRGB color space
@@ -49,11 +49,14 @@ void main(void) {
             frag_color = vec4(1.0, 1.0, 1.0, 0.0);
         }
     } else {
+        // TODO: This should come from the provoking vertex normal.
         vec3 xTangent = dFdx(orig_position);
         vec3 yTangent = dFdy(orig_position);
         vec3 faceNormal = normalize(cross(xTangent, yTangent));
 
-        vec3 lightDir = lightPos - orig_position;
+        vec3 diffuseColor = vert_color;
+
+        vec3 lightDir = eyePos + vec3(0.0, 0.0, 2.0) - orig_position;
         float distance = length(lightDir);
         distance = distance * distance;
         lightDir = normalize(lightDir);

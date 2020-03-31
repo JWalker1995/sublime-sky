@@ -27,6 +27,8 @@ SceneRenderer::SceneRenderer(game::GameContext &context)
     // TODO: Re-enable
     //glEnable(GL_CULL_FACE);
 
+    glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
+
     graphics::GL::catchErrors();
 
     // TODO: Enable face culling

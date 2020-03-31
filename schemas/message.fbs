@@ -1,18 +1,5 @@
 namespace SsProtocol;
 
-enum Capabilities: uint64 (bit_flags) {
-    GenerateChunk,
-    Connected = 63,
-}
-
-table InitRequest {
-    // seed: uint64;
-}
-
-table InitResponse {
-    capabilities: uint64;
-}
-
 struct Vec3_f {
     x: float;
     y: float;
@@ -25,6 +12,43 @@ struct Vec3_u32 {
     z: uint32;
 }
 
+enum Capabilities: uint64 (bit_flags) {
+    GenerateTerrainChunk,
+    Connected = 63,
+}
+
+table InitRequest {
+    seed: uint64;
+}
+
+enum MaterialModel: uint32 {
+    Invisible,
+    Phong,
+    Blinn,
+}
+
+table Environment {
+    color_ambient: Vec3_f;
+    light_color: Vec3_f;
+    light_power: float;
+    screen_gamma: float = 2.2;
+}
+
+table Material {
+    mass: float;
+
+    render_model: MaterialModel = Blinn;
+    color_diffuse: Vec3_f;
+    color_specular: Vec3_f;
+    shininess: float;
+}
+
+table InitResponse {
+    capabilities: uint64;
+
+    materials: [Material];
+}
+
 table Particle {
     position: Vec3_f;
     velocity: Vec3_f;
@@ -33,16 +57,24 @@ table Particle {
     type: uint32;
 }
 
-table Chunk {
+table TerrainChunk {
     cell_size_log2: uint8;
     cell_coord: Vec3_u32;
 
     cell_positions: [Vec3_f];
-    cell_types: [uint32];
+    cell_materials: [uint32];
     particles: [Particle];
 }
 
-union MessageUnion { InitRequest, InitResponse, Chunk }
+table EnvironmentChunk {
+    cell_size_log2: uint8;
+    cell_coord: Vec3_u32;
+
+    cell_positions: [Vec3_f];
+    cell_environments: [Environment];
+}
+
+union MessageUnion { InitRequest, InitResponse, TerrainChunk, EnvironmentChunk }
 
 table Message {
     message: MessageUnion;

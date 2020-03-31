@@ -33,14 +33,14 @@ void ExternalGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *p
         }
     }
     auto cellsVec = lock.getBuilder().CreateVectorOfStructs(&cellsPositions[0][0][0], pointgen::Chunk::size * pointgen::Chunk::size * pointgen::Chunk::size);
-    auto chunkCommand = SsProtocol::CreateChunk(lock.getBuilder(), cube.sizeLog2, &cellCoord, cellsVec);
-    auto message = SsProtocol::CreateMessage(lock.getBuilder(), SsProtocol::MessageUnion_Chunk, chunkCommand.Union());
+    auto chunkCommand = SsProtocol::CreateTerrainChunk(lock.getBuilder(), cube.sizeLog2, &cellCoord, cellsVec);
+    auto message = SsProtocol::CreateMessage(lock.getBuilder(), SsProtocol::MessageUnion_TerrainChunk, chunkCommand.Union());
     lock.getBuilder().Finish(message);
 
-    context.get<network::ConnectionPoolSpecialized<SsProtocol::Capabilities_GenerateChunk>>().send(lock.getBuilder().GetBufferPointer(), lock.getBuilder().GetSize());
+    context.get<network::ConnectionPoolSpecialized<SsProtocol::Capabilities_GenerateTerrainChunk>>().send(lock.getBuilder().GetBufferPointer(), lock.getBuilder().GetSize());
 }
 
-void ExternalGenerator::handleResponse(const SsProtocol::Chunk *chunk) {
+void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk) {
     spatial::CellKey cube;
     cube.sizeLog2 = chunk->cell_size_log2();
     cube.cellCoord.x = chunk->cell_coord()->x();
@@ -49,7 +49,7 @@ void ExternalGenerator::handleResponse(const SsProtocol::Chunk *chunk) {
 
     world::Chunk *dstChunk = context.get<util::Pool<world::Chunk>>().alloc();
 
-    const std::uint32_t *ptPtr = chunk->cell_types()->data();
+    const std::uint32_t *ptPtr = chunk->cell_materials()->data();
     for (unsigned int i = 0; i < pointgen::Chunk::size; i++) {
         for (unsigned int j = 0; j < pointgen::Chunk::size; j++) {
             for (unsigned int k = 0; k < pointgen::Chunk::size; k++) {
