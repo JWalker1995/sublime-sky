@@ -14,7 +14,7 @@ public:
         void setMeshIndex(unsigned int index);
     */
 
-    typedef SplitBuffer<MeshShared, MeshLocal, std::ratio<100, 1> /* TODO: Fix issue resizing this buffer in sync() */> MeshBuffer;
+    typedef SplitBuffer<MeshShared, MeshLocal> MeshBuffer;
     typedef SplitBuffer<VertShared, VertLocal> VertBuffer;
     typedef SplitBuffer<FaceShared, FaceLocal> FaceBuffer;
 

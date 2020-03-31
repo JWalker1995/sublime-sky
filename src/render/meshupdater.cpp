@@ -127,7 +127,9 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
     }
 
     glm::vec3 origin = hashTreeWorld.getPoint(coord);
-    assert(!std::isnan(origin.x));
+    if (std::isnan(origin.x)) {
+        return;
+    }
 
     voro::voronoicell_neighbor cell;
     cell.init(-2.0, 2.0, -2.0, 2.0, -2.0, 2.0);

@@ -20,6 +20,8 @@ src/game/cameraflycontroller.cpp
 src/game/cameraflycontroller.h
 src/game/debuginfo.cpp
 src/game/debuginfo.h
+src/game/digger.cpp
+src/game/digger.h
 src/game/gamecontext.cpp
 src/game/gamecontext.h
 src/game/mainloop.cpp

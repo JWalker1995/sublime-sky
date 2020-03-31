@@ -58,15 +58,6 @@ public:
         }
     };
 
-    /*
-    class Observer {
-    public:
-        virtual void onAlloc(unsigned int index) = 0;
-        virtual void onFree(unsigned int index) = 0;
-        virtual void onMutate(unsigned int index) = 0;
-    };
-    */
-
     SplitBuffer(GLenum target, GLenum bufferHint)
         : remoteBuffer(target, bufferHint)
     {}
