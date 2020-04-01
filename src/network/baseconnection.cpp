@@ -9,6 +9,7 @@
 #include "schemas/config_game_generated.h"
 #include "network/messagebuilder.h"
 #include "worldgen/externalgenerator.h"
+#include "material/materialmanager.h"
 
 namespace network {
 
@@ -68,7 +69,7 @@ void BaseConnection::recv(const std::uint8_t *data, std::size_t size) {
 
     switch (message->message_type()) {
         case SsProtocol::MessageUnion_InitResponse: handleInitResponse(message->message_as_InitResponse()); break;
-        case SsProtocol::MessageUnion_TerrainChunk: context.get<worldgen::ExternalGenerator>().handleResponse(message->message_as_TerrainChunk()); break;
+        case SsProtocol::MessageUnion_TerrainChunk: handleTerrainChunk(message->message_as_TerrainChunk()); break;
         default: context.log(game::GameContext::LogLevel::Warning, "Received message with unexpected type: " + std::to_string(message->message_type()));
     }
 }
@@ -84,8 +85,23 @@ void BaseConnection::sendInitRequest() {
     send(lock.getBuilder().GetBufferPointer(), lock.getBuilder().GetSize());
 }
 
-void BaseConnection::handleInitResponse(const SsProtocol::InitResponse *response) {
-    setCapabilities((response->capabilities() & ~SsProtocol::Capabilities_Connected) | (getCapabilities() & SsProtocol::Capabilities_Connected));
+void BaseConnection::handleInitResponse(const SsProtocol::InitResponse *msg) {
+    setCapabilities((msg->capabilities() & ~SsProtocol::Capabilities_Connected) | (getCapabilities() & SsProtocol::Capabilities_Connected));
+
+    materialOffset = context.get<material::MaterialManager>().registerMaterials(msg->materials());
+    materialCount = msg->materials()->size();
+}
+
+void BaseConnection::handleTerrainChunk(const SsProtocol::TerrainChunk *msg) {
+    auto it = msg->cell_materials()->cbegin();
+    while (it != msg->cell_materials()->cend()) {
+        if (*it >= materialCount) {
+            context.log(game::GameContext::LogLevel::Warning, "Received TerrainChunk message with material index beyond InitResponse::materials array; skipping: " + std::to_string(*it));
+            return;
+        }
+    }
+
+    context.get<worldgen::ExternalGenerator>().handleResponse(msg, materialOffset);
 }
 
 }

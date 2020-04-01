@@ -4,6 +4,7 @@
 #include "graphics/type/mesh.h"
 #include "graphics/type/vert.h"
 #include "graphics/type/face.h"
+#include "graphics/type/material.h"
 
 namespace graphics {
 
@@ -17,6 +18,7 @@ public:
     typedef SplitBuffer<MeshShared, MeshLocal> MeshBuffer;
     typedef SplitBuffer<VertShared, VertLocal> VertBuffer;
     typedef SplitBuffer<FaceShared, FaceLocal> FaceBuffer;
+    typedef SplitBuffer<MaterialShared, MaterialLocal> MaterialBuffer;
 
     typedef MeshBuffer::Reader MeshReader;
     typedef MeshBuffer::Mutator MeshMutator;
@@ -24,6 +26,8 @@ public:
     typedef VertBuffer::Mutator VertMutator;
     typedef FaceBuffer::Reader FaceReader;
     typedef FaceBuffer::Mutator FaceMutator;
+    typedef MaterialBuffer::Reader MaterialReader;
+    typedef MaterialBuffer::Mutator MaterialMutator;
 
     class MeshHandle {
     public:
@@ -105,6 +109,9 @@ public:
     FaceBuffer &getFaceBuffer() {
         return faceBuffer;
     }
+    MaterialBuffer &getMaterialBuffer() {
+        return materialBuffer;
+    }
 
     const MeshBuffer &getMeshBuffer() const {
         return meshBuffer;
@@ -115,19 +122,32 @@ public:
     const FaceBuffer &getFaceBuffer() const{
         return faceBuffer;
     }
+    const MaterialBuffer &getMaterialBuffer() const {
+        return materialBuffer;
+    }
 
     MeshHandle createMesh() {
         return MeshHandle(*this, meshBuffer.create().index);
     }
-
     MeshHandle getMesh(unsigned int meshIndex) {
         return MeshHandle(*this, meshIndex);
+    }
+
+    MaterialMutator createMaterial() {
+        return materialBuffer.create();
+    }
+    MaterialReader readMaterial(unsigned int index) {
+        return materialBuffer.read(index);
+    }
+    MaterialMutator mutateMaterial(unsigned int index) {
+        return materialBuffer.mutate(index);
     }
 
 private:
     MeshBuffer meshBuffer;
     VertBuffer vertBuffer;
     FaceBuffer faceBuffer;
+    MaterialBuffer materialBuffer;
 };
 
 }

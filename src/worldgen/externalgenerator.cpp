@@ -40,7 +40,9 @@ void ExternalGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *p
     context.get<network::ConnectionPoolSpecialized<SsProtocol::Capabilities_GenerateTerrainChunk>>().send(lock.getBuilder().GetBufferPointer(), lock.getBuilder().GetSize());
 }
 
-void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk) {
+void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, unsigned int materialOffset) {
+    assert(materialOffset != static_cast<unsigned int>(-1));
+
     spatial::CellKey cube;
     cube.sizeLog2 = chunk->cell_size_log2();
     cube.cellCoord.x = chunk->cell_coord()->x();
@@ -53,7 +55,7 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk) {
     for (unsigned int i = 0; i < pointgen::Chunk::size; i++) {
         for (unsigned int j = 0; j < pointgen::Chunk::size; j++) {
             for (unsigned int k = 0; k < pointgen::Chunk::size; k++) {
-                dstChunk->cells[i][j][k].type.value = static_cast<world::SpaceState::Value>(*ptPtr++);
+                dstChunk->cells[i][j][k].materialIndex = materialOffset + *ptPtr++;
             }
         }
     }

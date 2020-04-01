@@ -6,23 +6,13 @@
 #include <glm/vec3.hpp>
 #include <glm/gtx/norm.hpp>
 
-#include "world/spacestate.h"
-#include "world/particle.h"
-
 namespace world {
 
 class VoronoiCell {
 public:
-    SpaceState type = SpaceState::Uninitialized;
+    typedef std::uint16_t MaterialIndex;
 
-    float getMass() const {
-        switch (type.value) {
-            case SpaceState::Uninitialized: return 0.0f;
-            case SpaceState::Generating: return 0.0f;
-            case SpaceState::Air: return 0.01f;
-            default: return 1.0f;
-        }
-    }
+    MaterialIndex materialIndex = 0;
 
 //    glm::vec3 center;
 //    glm::vec3 velocity;

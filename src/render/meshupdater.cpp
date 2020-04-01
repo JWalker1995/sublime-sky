@@ -8,6 +8,7 @@
 #include "world/hashtreeworld.h"
 #include "spatial/raycastlookuptable.h"
 #include "graphics/imgui.h"
+#include "render/imguirenderer.h"
 
 namespace render {
 
@@ -31,7 +32,7 @@ MeshUpdater::~MeshUpdater() {
 }
 
 void MeshUpdater::tick(game::TickerContext &tickerContext) {
-    (void) tickerContext;
+    tickerContext.get<render::ImguiRenderer::Ticker>();
 
     if (ImGui::Begin("Debug")) {
         ImGui::Text("Cell update queue size = %zu", cellUpdateQueue.size());
@@ -223,8 +224,6 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
             // Create new vert
             SceneManager::VertMutator newVert = meshHandle.createVert();
             newVert.shared.setPoint(pt);
-            newVert.shared.setColor(0, 100, 0, 255);
-
             insert.first->second = newVert.index;
         }
         vertIndices.push_back(insert.first->second);

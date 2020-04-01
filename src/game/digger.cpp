@@ -2,6 +2,7 @@
 
 #include "application/window.h"
 #include "graphics/imgui.h"
+#include "render/imguirenderer.h"
 #include "render/camera.h"
 #include "world/hashtreeworld.h"
 #include "render/meshupdater.h"
@@ -13,6 +14,8 @@ Digger::Digger(game::GameContext &context)
 {}
 
 void Digger::tick(game::TickerContext &tickerContext) {
+    tickerContext.get<render::ImguiRenderer::Ticker>();
+
     application::Window &window = context.get<application::Window>();
     application::Window::Dimensions windowSize = window.dimensions;
 

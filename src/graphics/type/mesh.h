@@ -3,9 +3,6 @@
 #include "graphics/gl.h"
 #include "geometry/transform.h"
 
-namespace isosurface { class HashTreeIsosurface; }
-namespace spheretree { class Object; }
-
 namespace graphics {
 
 class GlVao;
@@ -19,7 +16,6 @@ public:
 
 class MeshLocal {
 public:
-    isosurface::HashTreeIsosurface *patcher = nullptr;
     bool shouldValidate = false;
 };
 

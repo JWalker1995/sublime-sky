@@ -106,8 +106,8 @@ public:
     void tick(game::TickerContext &tickerContext);
 
     CellValue &getCellValueContaining(spatial::UintCoord coord);
-    Chunk::MaterialIndex getMaterialIndex(spatial::UintCoord coord);
-    Chunk::MaterialIndex &getMaterialIndexMutable(spatial::UintCoord coord);
+    VoronoiCell::MaterialIndex getMaterialIndex(spatial::UintCoord coord);
+    VoronoiCell::MaterialIndex &getMaterialIndexMutable(spatial::UintCoord coord);
     glm::vec3 getPoint(spatial::UintCoord coord);
     bool &getNeedsRegen(spatial::UintCoord coord);
     unsigned int getCellId(spatial::UintCoord coord);

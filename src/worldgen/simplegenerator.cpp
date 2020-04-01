@@ -1,6 +1,7 @@
 #include "simplegenerator.h"
 
 #include "world/hashtreeworld.h"
+#include "render/scenemanager.h"
 #include "particle/particlemanager.h"
 #include "util/pool.h"
 
@@ -11,19 +12,39 @@ SimpleGenerator::SimpleGenerator(game::GameContext &context)
     , noise(123)
 {
     assert(pointgen::Chunk::size == world::Chunk::size);
+
+    render::SceneManager::MaterialMutator airMat = context.get<render::SceneManager>().createMaterial();
+    airMat.shared.renderModel = graphics::MaterialShared::RenderModel::Blinn;
+    std::fill_n(airMat.shared.colorDiffuse, 4, 1.0f);
+    std::fill_n(airMat.shared.colorSpecular, 4, 1.0f);
+    airMat.shared.shininess = 1.0f;
+    airMat.local.name = "Air";
+    airMat.local.phase = graphics::MaterialLocal::Phase::Gas;
+    airMat.local.mass = 1.0f;
+    airMaterialIndex = airMat.index;
+
+    render::SceneManager::MaterialMutator groundMat = context.get<render::SceneManager>().createMaterial();
+    groundMat.shared.renderModel = graphics::MaterialShared::RenderModel::Blinn;
+    std::fill_n(groundMat.shared.colorDiffuse, 4, 1.0f);
+    std::fill_n(groundMat.shared.colorSpecular, 4, 1.0f);
+    groundMat.shared.shininess = 1.0f;
+    groundMat.local.name = "Air";
+    groundMat.local.phase = graphics::MaterialLocal::Phase::Solid;
+    groundMat.local.mass = 1.0f;
+    groundMaterialIndex = groundMat.index;
 }
 
 void SimpleGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *points) {
     world::Chunk *dstChunk = context.get<util::Pool<world::Chunk>>().alloc();
 
     bool allSame = true;
-    world::SpaceState allState = getState(points->points[0][0][0]);
+    bool allState = getState(points->points[0][0][0]);
 
     for (unsigned int i = 0; i < world::Chunk::size; i++) {
         for (unsigned int j = 0; j < world::Chunk::size; j++) {
             for (unsigned int k = 0; k < world::Chunk::size; k++) {
-                world::SpaceState state = getState(points->points[i][j][k]);
-                dstChunk->cells[i][j][k].type = state;
+                bool state = getState(points->points[i][j][k]);
+                dstChunk->cells[i][j][k].materialIndex = state ? groundMaterialIndex : airMaterialIndex;
 
                 allSame &= state == allState;
             }
@@ -49,9 +70,9 @@ void SimpleGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *poi
     }
 }
 
-world::SpaceState SimpleGenerator::getState(glm::vec3 point) {
+bool SimpleGenerator::getState(glm::vec3 point) {
     if (std::isnan(point.x)) {
-        return world::SpaceState::Uninitialized;
+        return false;
     }
 
 //    glm::vec2 treeCenter(point.x, point.y);
@@ -86,7 +107,7 @@ world::SpaceState SimpleGenerator::getState(glm::vec3 point) {
                 context.get<particle::ParticleManager>().addBond(p, point);
             }
 
-            return world::SpaceState::TreeTrunk;
+            return true;
         }
     }
 
@@ -94,7 +115,7 @@ world::SpaceState SimpleGenerator::getState(glm::vec3 point) {
 //        z += 4.0f;
 //    }
 
-    return point.z < z ? static_cast<world::SpaceState::Value>(100) : world::SpaceState::Air;
+    return point.z < z;
 }
 
 }

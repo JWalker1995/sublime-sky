@@ -13,7 +13,7 @@ public:
 
     void generate(spatial::CellKey cube, const pointgen::Chunk *points);
 
-    void handleResponse(const SsProtocol::TerrainChunk *chunk);
+    void handleResponse(const SsProtocol::TerrainChunk *chunk, unsigned int materialOffset);
 
 private:
     game::GameContext &context;

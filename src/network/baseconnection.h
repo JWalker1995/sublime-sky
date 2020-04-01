@@ -5,6 +5,7 @@
 #include "jw_util/baseexception.h"
 
 namespace SsProtocol { struct InitResponse; }
+namespace SsProtocol { struct TerrainChunk; }
 
 namespace game { class GameContext; }
 
@@ -56,9 +57,13 @@ private:
     unsigned int waitTicks = 0;
     unsigned int waitTicksBackoff = 1;
 
+    unsigned int materialOffset = static_cast<unsigned int>(-1);
+    unsigned int materialCount = static_cast<unsigned int>(-1);
+
     void callConnect();
 
-    void handleInitResponse(const SsProtocol::InitResponse *response);
+    void handleInitResponse(const SsProtocol::InitResponse *msg);
+    void handleTerrainChunk(const SsProtocol::TerrainChunk *msg);
 };
 
 }

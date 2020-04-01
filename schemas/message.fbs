@@ -21,12 +21,6 @@ table InitRequest {
     seed: uint64;
 }
 
-enum MaterialModel: uint32 {
-    Invisible,
-    Phong,
-    Blinn,
-}
-
 table Environment {
     color_ambient: Vec3_f;
     light_color: Vec3_f;
@@ -34,10 +28,26 @@ table Environment {
     screen_gamma: float = 2.2;
 }
 
+enum Phase: uint8 {
+    Solid,
+    Liquid,
+    Gas,
+}
+
+enum MaterialRenderModel: uint32 {
+    Invisible,
+    Phong,
+    Blinn,
+}
+
 table Material {
+    name: string;
+
+    phase: Phase;
+
     mass: float;
 
-    render_model: MaterialModel = Blinn;
+    render_model: MaterialRenderModel = Blinn;
     color_diffuse: Vec3_f;
     color_specular: Vec3_f;
     shininess: float;

@@ -18,31 +18,33 @@ HashTreeWorld::HashTreeWorld(game::GameContext &gameContext)
 
 void HashTreeWorld::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
+
+    assert(context.get<render::SceneManager>().getMaterialBuffer().getExtentSize() < std::numeric_limits<decltype(VoronoiCell::materialIndex)>::max());
 }
 
 CellValue &HashTreeWorld::getCellValueContaining(spatial::UintCoord coord) {
     return getLeafContaining(coord, Chunk::sizeLog2)->second;
 }
 
-SpaceState HashTreeWorld::getSpaceState(spatial::UintCoord coord) {
+VoronoiCell::MaterialIndex HashTreeWorld::getMaterialIndex(spatial::UintCoord coord) {
     Cell *leafNode = getLeafContaining(coord, Chunk::sizeLog2);
     unsigned int x = coord.x % Chunk::size;
     unsigned int y = coord.y % Chunk::size;
     unsigned int z = coord.z % Chunk::size;
-    if (leafNode->second.state == SpaceState::SubdividedAsChunk) {
-        return leafNode->second.chunk->cells[x][y][z].type;
+    if (leafNode->second.chunk) {
+        return leafNode->second.chunk->cells[x][y][z].materialIndex;
     } else {
-        return leafNode->second.state;
+        return leafNode->second.constantMaterialIndex;
     }
 }
 
-SpaceState &HashTreeWorld::getSpaceStateMutable(spatial::UintCoord coord) {
+VoronoiCell::MaterialIndex &HashTreeWorld::getMaterialIndexMutable(spatial::UintCoord coord) {
     Cell *leafNode = getLeafContaining(coord, Chunk::sizeLog2);
     unsigned int x = coord.x % Chunk::size;
     unsigned int y = coord.y % Chunk::size;
     unsigned int z = coord.z % Chunk::size;
-    assert(leafNode->second.state == SpaceState::SubdividedAsChunk);
-    return leafNode->second.chunk->cells[x][y][z].type;
+    assert(leafNode->second.chunk);
+    return leafNode->second.chunk->cells[x][y][z].materialIndex;
 }
 
 glm::vec3 HashTreeWorld::getPoint(spatial::UintCoord coord) {
@@ -127,7 +129,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 
             }
         }
 
-        SpaceState state = getSpaceState(coord);
+        unsigned int materialIndex = getMaterialIndex(coord);
         if (!state.isTransparent()) {
             RaytestResult res;
             res.hitCoord = coord;

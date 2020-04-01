@@ -52,6 +52,8 @@ src/graphics/scenevalidator.h
 src/graphics/splitbuffer.h
 src/graphics/type/face.cpp
 src/graphics/type/face.h
+src/graphics/type/material.cpp
+src/graphics/type/material.h
 src/graphics/type/mesh.cpp
 src/graphics/type/mesh.h
 src/graphics/type/vert.cpp
@@ -93,8 +95,10 @@ src/jw_util/workqueue.h
 src/jw_util/workqueuebase.h
 src/jw_util/workqueueinsomniac.h
 src/main.cpp
-src/materials/materialmanager.cpp
-src/materials/materialmanager.h
+src/material/materialeditor.cpp
+src/material/materialeditor.h
+src/material/materialmanager.cpp
+src/material/materialmanager.h
 src/meshgen/cubichoneycomb.cpp
 src/meshgen/cubichoneycomb.h
 src/meshgen/meshgenerator.h
@@ -192,7 +196,6 @@ src/world/hashtreeworld.cpp
 src/world/hashtreeworld.h
 src/world/particle.cpp
 src/world/particle.h
-src/world/spacestate.h
 src/world/timemanager.cpp
 src/world/timemanager.h
 src/world/voronoicell.cpp

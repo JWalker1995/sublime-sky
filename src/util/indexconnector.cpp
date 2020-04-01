@@ -13,6 +13,7 @@ IndexConnector::IndexConnector(game::GameContext &context)
 
 void IndexConnector::tick(game::TickerContext &tickerContext) {
     tickerContext.get<render::ImguiRenderer::Ticker>();
+
     if (ImGui::Begin("Debug")) {
         unsigned int ids = registry.size();
         unsigned int waiting = 0;

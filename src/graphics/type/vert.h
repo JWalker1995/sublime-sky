@@ -18,8 +18,8 @@ public:
     GLfloat normal[3];
 
     GLuint meshIndex;
+    GLuint materialIndex;
     GLuint renderFlags = 0;
-    GLubyte color[4];
 
     glm::vec3 getPoint() const {
         return glm::vec3(point[0], point[1], point[2]);
@@ -37,13 +37,6 @@ public:
         normal[0] = vec.x;
         normal[1] = vec.y;
         normal[2] = vec.z;
-    }
-
-    void setColor(GLubyte r, GLubyte g, GLubyte b, GLubyte a) {
-        color[0] = r;
-        color[1] = g;
-        color[2] = b;
-        color[3] = a;
     }
 
     static void setupVao(GlVao &vao);

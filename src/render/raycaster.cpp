@@ -4,6 +4,7 @@
 #include <glm/gtx/norm.hpp>
 
 #include "graphics/imgui.h"
+#include "render/imguirenderer.h"
 #include "render/camera.h"
 #include "render/meshupdater.h"
 #include "world/hashtreeworld.h"
@@ -16,7 +17,7 @@ RayCaster::RayCaster(game::GameContext &context)
 {}
 
 void RayCaster::tick(game::TickerContext &tickerContext) {
-    (void) tickerContext;
+    tickerContext.get<render::ImguiRenderer::Ticker>();
 
     truncateRetries();
     castRetries();
