@@ -17,8 +17,10 @@ public:
 
 private:
     jw_util::Signal<SceneManager::MeshBuffer &>::Listener meshBufferNewVboListener;
+    jw_util::Signal<SceneManager::MaterialBuffer &>::Listener materialBufferNewVboListener;
 
     void onNewMeshBufferVbo(SceneManager::MeshBuffer &meshBuffer);
+    void onNewMaterialBufferVbo(SceneManager::MaterialBuffer &materialBuffer);
 };
 
 }

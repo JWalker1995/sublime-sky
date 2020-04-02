@@ -88,17 +88,25 @@ void BaseConnection::sendInitRequest() {
 void BaseConnection::handleInitResponse(const SsProtocol::InitResponse *msg) {
     setCapabilities((msg->capabilities() & ~SsProtocol::Capabilities_Connected) | (getCapabilities() & SsProtocol::Capabilities_Connected));
 
-    materialOffset = context.get<material::MaterialManager>().registerMaterials(msg->materials());
-    materialCount = msg->materials()->size();
+    if (msg->materials()) {
+        materialOffset = context.get<material::MaterialManager>().registerMaterials(msg->materials());
+        materialCount = msg->materials()->size();
+    }
 }
 
 void BaseConnection::handleTerrainChunk(const SsProtocol::TerrainChunk *msg) {
+    if (materialCount == 0) {
+        context.log(game::GameContext::LogLevel::Warning, "Received TerrainChunk message but no materials yet; skipping message.");
+        return;
+    }
+
     auto it = msg->cell_materials()->cbegin();
     while (it != msg->cell_materials()->cend()) {
         if (*it >= materialCount) {
             context.log(game::GameContext::LogLevel::Warning, "Received TerrainChunk message with material index beyond InitResponse::materials array; skipping: " + std::to_string(*it));
             return;
         }
+        it++;
     }
 
     context.get<worldgen::ExternalGenerator>().handleResponse(msg, materialOffset);

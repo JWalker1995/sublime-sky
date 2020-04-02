@@ -45,15 +45,14 @@ void ParticleManager::tick(game::TickerContext &tickerContext) {
         j->position += j->velocity;
 
         spatial::UintCoord containingCoord = hashTreeWorld.getContainingCoord(j->position);
-        world::SpaceState &newCell = hashTreeWorld.getSpaceStateMutable(containingCoord);
+        world::VoronoiCell &newCell = hashTreeWorld.getVoronoiCell(containingCoord);
         if (&newCell != j->cell) {
-            if (newCell != world::SpaceState::Air) {
-            }
+            assert(false); // TODO: Need to handle materials correctly here
             if (j->cell) {
                 newCell = *j->cell;
-                *j->cell = world::SpaceState::Air;
+                j->cell->materialIndex = 0;
             } else {
-                newCell = world::SpaceState::Rock;
+                newCell.materialIndex = 0;
             }
             j->cell = &newCell;
 

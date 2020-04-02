@@ -72,7 +72,7 @@ public:
     jw_util::Signal<MouseButtonEvent> onMouseButton;
     jw_util::Signal<KeyEvent> onKey;
 
-    void tick(game::TickerContext &context);
+    void tick(game::TickerContext &tickerContext);
     void updateFrame();
     void pollEvents();
 

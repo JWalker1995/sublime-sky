@@ -8,9 +8,9 @@ void GameContext::tick() {
     /*
     if (ImGui::Begin("Debug")) {
         ImGui::Text("GameContext gets: %d", gets);
-        ImGui::End();
         gets = 0;
     }
+    ImGui::End();
     */
 }
 

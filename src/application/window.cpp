@@ -90,8 +90,8 @@ Window::~Window() {
     glfwTerminate();
 }
 
-void Window::tick(game::TickerContext &context) {
-    (void) context;
+void Window::tick(game::TickerContext &tickerContext) {
+    (void) tickerContext;
 
     updateFrame();
     pollEvents();

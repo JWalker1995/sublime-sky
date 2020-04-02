@@ -35,8 +35,8 @@ void DrawColorProgram::bind() {
             showTrianglesValue = !showTrianglesValue;
             showTrianglesDirty = true;
         }
-        ImGui::End();
     }
+    ImGui::End();
 
     if (showTrianglesDirty) {
         glUniform1i(showTrianglesLocation, showTrianglesValue);

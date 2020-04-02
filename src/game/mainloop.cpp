@@ -20,6 +20,7 @@
 #include "meshgen/cubichoneycomb.h"
 #include "network/baseconnection.h"
 #include "game/digger.h"
+#include "material/materialeditor.h"
 #include "util/refset.h"
 
 namespace game {
@@ -52,6 +53,7 @@ void MainLoop::load() {
     context.get<network::ConnectionManager>().createConnection("ws://127.0.0.1:8765/");
     context.get<render::RayCaster>();
     context.get<game::Digger>();
+    context.get<material::MaterialEditor>();
 //    context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();
     context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>();
 //    context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>();

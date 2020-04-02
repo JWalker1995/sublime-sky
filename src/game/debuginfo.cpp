@@ -16,8 +16,8 @@ void DebugInfo::tick(TickerContext &tickerContext) {
 
     if (ImGui::Begin("Debug")) {
         ImGui::Text("Counter: %d", counter);
-        ImGui::End();
     }
+    ImGui::End();
 }
 
 }

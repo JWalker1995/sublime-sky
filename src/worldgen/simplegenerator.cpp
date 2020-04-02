@@ -66,7 +66,7 @@ void SimpleGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *poi
         context.get<util::Pool<world::Chunk>>().free(dstChunk);
         context.get<world::HashTreeWorld>().finishWorldGen(cube, allState, 0);
     } else {
-        context.get<world::HashTreeWorld>().finishWorldGen(cube, world::SpaceState::SubdividedAsChunk, dstChunk);
+        context.get<world::HashTreeWorld>().finishWorldGen(cube, static_cast<world::VoronoiCell::MaterialIndex>(-1), dstChunk);
     }
 }
 

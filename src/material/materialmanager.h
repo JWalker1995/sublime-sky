@@ -4,7 +4,7 @@
 #include "graphics/type/material.h"
 
 namespace flatbuffers { template <typename _> class Vector; }
-namespace flatbuffers { template <typename _> class Offset; }
+namespace flatbuffers { template <typename _> struct Offset; }
 namespace SsProtocol { struct Material; }
 
 namespace material {

@@ -8,8 +8,8 @@
   "logLevel": "trace",
   "window": {
     "title": "Sublime Sky Alpha - Client",
-    "sizeX": 500,
-    "sizeY": 500
+    "sizeX": 800,
+    "sizeY": 800
   },
   "targetFaceCount": 100000,
   "authority": {

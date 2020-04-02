@@ -25,8 +25,8 @@ class Environment(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
             x = o + self._tab.Pos
-            from SsProtocol.Vec3_f import Vec3_f
-            obj = Vec3_f()
+            from SsProtocol.Vec4_f import Vec4_f
+            obj = Vec4_f()
             obj.Init(self._tab.Bytes, x)
             return obj
         return None
@@ -36,8 +36,8 @@ class Environment(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             x = o + self._tab.Pos
-            from SsProtocol.Vec3_f import Vec3_f
-            obj = Vec3_f()
+            from SsProtocol.Vec4_f import Vec4_f
+            obj = Vec4_f()
             obj.Init(self._tab.Bytes, x)
             return obj
         return None

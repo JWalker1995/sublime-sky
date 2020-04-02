@@ -65,11 +65,9 @@ void CameraFlyController::tick(game::TickerContext &tickerContext) {
     }
 
     if (window.isKeyPressed(GLFW_KEY_SPACE)) {
-        if (window.isKeyPressed(GLFW_KEY_LEFT_SHIFT) || window.isKeyPressed(GLFW_KEY_RIGHT_SHIFT)) {
-            velocity -= render::Camera::up;
-        } else {
-            velocity += render::Camera::up;
-        }
+        velocity += render::Camera::up;
+    } else if (window.isKeyPressed(GLFW_KEY_LEFT_SHIFT) || window.isKeyPressed(GLFW_KEY_RIGHT_SHIFT)) {
+        velocity -= render::Camera::up;
     }
 
     if (window.isKeyPressed(GLFW_KEY_P)) {
@@ -90,12 +88,6 @@ void CameraFlyController::tick(game::TickerContext &tickerContext) {
     }
 
     position += velocity * 0.01f;
-
-    float floor = -4.0f;
-    if (position.z < floor && velocity.z < 0.0f) {
-        position.z = floor;
-        velocity.z = 0.0f;
-    }
 
     context.get<render::Camera>().setView(position, lookDir);
 }

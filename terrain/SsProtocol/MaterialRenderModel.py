@@ -2,7 +2,7 @@
 
 # namespace: SsProtocol
 
-class MaterialModel(object):
+class MaterialRenderModel(object):
     Invisible = 0
     Phong = 1
     Blinn = 2

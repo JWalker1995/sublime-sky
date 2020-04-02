@@ -19,9 +19,12 @@ uniform vec3 eyePos;
 // layout(binding = NUM_FRAGMENTS_BINDING) uniform atomic_uint num_fragments;
 
 
-in vec3 orig_position;
-flat in vec3 vert_color;
-out vec4 frag_color;
+in vec3 modelPosition;
+flat in vec4 colorDiffuse;
+flat in vec4 colorSpecular;
+flat in float shininess;
+flat in uint renderModel;
+layout(location = 0) out vec4 fragColor;
 
 highp float rand(float seed) {
     highp float c = 43758.5453;
@@ -31,32 +34,30 @@ highp float rand(float seed) {
 
 
 const bool blinn = true;
-//const vec3 lightPos = vec3(0.0, 0.0, 10.0);
-const vec3 lightColor = vec3(1.0, 1.0, 1.0);
-const float lightPower = 40.0;
-const vec3 ambientColor = vec3(0.0, 0.0, 0.0);
+const vec4 lightColor = vec4(1.0, 1.0, 1.0, 1.0);
+const float lightPower = 40000.0;
+const vec4 ambientColor = vec4(0.0, 0.0, 0.0, 1.0);
 //const vec3 diffuseColor = vec3(188/256.0,143/256.0,143/256.0);
-const vec3 specColor = vec3(1.0, 1.0, 1.0);
-const float shininess = 32.0;
+//const vec3 specColor = vec3(1.0, 1.0, 1.0);
+//const float shininess = 32.0;
 const float screenGamma = 2.2; // Assume the monitor is calibrated to the sRGB color space
 
 
 void main(void) {
     if (showTriangles) {
         if (gl_FrontFacing) {
-            frag_color = vec4(rand(gl_PrimitiveID), rand(gl_PrimitiveID + 0.3), rand(gl_PrimitiveID + 0.6), 0.0);
+            fragColor = vec4(rand(gl_PrimitiveID), rand(gl_PrimitiveID + 0.3), rand(gl_PrimitiveID + 0.6), 0.0);
         } else {
-            frag_color = vec4(1.0, 1.0, 1.0, 0.0);
+            fragColor = vec4(1.0, 1.0, 1.0, 0.0);
         }
     } else {
         // TODO: This should come from the provoking vertex normal.
-        vec3 xTangent = dFdx(orig_position);
-        vec3 yTangent = dFdy(orig_position);
+        vec3 xTangent = dFdx(modelPosition);
+        vec3 yTangent = dFdy(modelPosition);
         vec3 faceNormal = normalize(cross(xTangent, yTangent));
 
-        vec3 diffuseColor = vert_color;
-
-        vec3 lightDir = eyePos + vec3(0.0, 0.0, 2.0) - orig_position;
+        vec3 lightPos = eyePos + vec3(0.0, 0.0, 100.0);
+        vec3 lightDir = lightPos - modelPosition;
         float distance = length(lightDir);
         distance = distance * distance;
         lightDir = normalize(lightDir);
@@ -65,7 +66,7 @@ void main(void) {
         float specular = 0.0;
 
         if (lambertian > 0.0) {
-          vec3 viewDir = normalize(-orig_position);
+          vec3 viewDir = normalize(eyePos - modelPosition);
 
           if (blinn) {
             vec3 halfDir = normalize(lightDir + viewDir);
@@ -78,14 +79,14 @@ void main(void) {
             specular = pow(specAngle, shininess/4.0);
           }
         }
-        vec3 colorLinear = ambientColor +
-                           diffuseColor * lambertian * lightColor * lightPower / distance +
-                           specColor * specular * lightColor * lightPower / distance;
+        vec4 colorLinear = ambientColor +
+                           colorDiffuse * lambertian * lightColor * lightPower / distance +
+                           colorSpecular * specular * lightColor * lightPower / distance;
         // apply gamma correction (assume ambientColor, diffuseColor and specColor
         // have been linearized, i.e. have no gamma correction in them)
-        vec3 colorGammaCorrected = pow(colorLinear, vec3(1.0 / screenGamma));
+        vec4 colorGammaCorrected = pow(colorLinear, vec4(1.0 / screenGamma));
         // use the gamma corrected color in the fragment
-        frag_color = vec4(colorGammaCorrected, 1.0);
+        fragColor = colorGammaCorrected;
     }
 }
 

@@ -8,8 +8,8 @@
   "logLevel": "trace",
   "window": {
     "title": "Sublime Sky Alpha - Server",
-    "sizeX": 400,
-    "sizeY": 400
+    "sizeX": 2880,
+    "sizeY": 1538
   },
   "targetFaceCount": 100000,
   "listenPort": 12345,

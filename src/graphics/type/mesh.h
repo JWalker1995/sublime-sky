@@ -13,6 +13,7 @@ public:
 
     static void setupVao(GlVao &vao);
 };
+static_assert(sizeof(MeshShared) % 16 == 0, "MeshShared size won't match up with OpenGL interface block layout std140");
 
 class MeshLocal {
 public:

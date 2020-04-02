@@ -15,8 +15,8 @@ void Camera::tick(game::TickerContext &tickerContext) {
     if (ImGui::Begin("Debug")) {
         ImGui::Text("Eye position = (%f, %f, %f)", getEyePos().x, getEyePos().y, getEyePos().z);
         ImGui::Text("Eye direction = (%f, %f, %f)", getEyeDir().x, getEyeDir().y, getEyeDir().z);
-        ImGui::End();
     }
+    ImGui::End();
 }
 
 }

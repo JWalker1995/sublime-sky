@@ -6,6 +6,13 @@ struct Vec3_f {
     z: float;
 }
 
+struct Vec4_f {
+    x: float;
+    y: float;
+    z: float;
+    w: float;
+}
+
 struct Vec3_u32 {
     x: uint32;
     y: uint32;
@@ -22,13 +29,13 @@ table InitRequest {
 }
 
 table Environment {
-    color_ambient: Vec3_f;
-    light_color: Vec3_f;
+    color_ambient: Vec4_f;
+    light_color: Vec4_f;
     light_power: float;
     screen_gamma: float = 2.2;
 }
 
-enum Phase: uint8 {
+enum MaterialPhase: uint8 {
     Solid,
     Liquid,
     Gas,
@@ -43,13 +50,13 @@ enum MaterialRenderModel: uint32 {
 table Material {
     name: string;
 
-    phase: Phase;
+    phase: MaterialPhase;
 
     mass: float;
 
     render_model: MaterialRenderModel = Blinn;
-    color_diffuse: Vec3_f;
-    color_specular: Vec3_f;
+    color_diffuse: Vec4_f;
+    color_specular: Vec4_f;
     shininess: float;
 }
 

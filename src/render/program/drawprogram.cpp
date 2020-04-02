@@ -13,6 +13,9 @@ DrawProgram::DrawProgram(game::GameContext &context)
     , meshBufferNewVboListener(
           context.get<SceneManager>().getMeshBuffer().onNewVbo,
           jw_util::MethodCallback<SceneManager::MeshBuffer &>::create<DrawProgram, &DrawProgram::onNewMeshBufferVbo>(this))
+    , materialBufferNewVboListener(
+          context.get<SceneManager>().getMaterialBuffer().onNewVbo,
+          jw_util::MethodCallback<SceneManager::MaterialBuffer &>::create<DrawProgram, &DrawProgram::onNewMaterialBufferVbo>(this))
 {}
 
 void DrawProgram::insertDefines(Defines &defines) {
@@ -51,7 +54,14 @@ void DrawProgram::onNewMeshBufferVbo(SceneManager::MeshBuffer &meshBuffer) {
     assertLinked();
 
     meshBuffer.getGlBuffer().bind_base();
-    bindUniformBlock("meshes", meshBuffer.getGlBuffer().get_base_binding());
+    bindUniformBlock("MeshesBlock", meshBuffer.getGlBuffer().get_base_binding());
+}
+
+void DrawProgram::onNewMaterialBufferVbo(SceneManager::MaterialBuffer &materialBuffer) {
+    assertLinked();
+
+    materialBuffer.getGlBuffer().bind_base();
+    bindUniformBlock("MaterialsBlock", materialBuffer.getGlBuffer().get_base_binding());
 }
 
 }

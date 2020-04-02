@@ -79,8 +79,8 @@ void ImguiRenderer::tickOpen(game::TickerContext &tickerContext) {
             if (ImGui::MenuItem("Bottom-right", NULL, corner == 3)) {corner = 3;}
             ImGui::EndPopup();
         }
-        ImGui::End();
     }
+    ImGui::End();
 
     /*
     // 1. Show a simple window.

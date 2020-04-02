@@ -36,8 +36,8 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
 
     if (ImGui::Begin("Debug")) {
         ImGui::Text("Cell update queue size = %zu", cellUpdateQueue.size());
-        ImGui::End();
     }
+    ImGui::End();
 
     SceneManager::MeshMutator meshMutator = meshHandle.mutateMesh();
     meshMutator.shared.transform = context.get<render::Camera>().getTransform();
@@ -128,8 +128,9 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
         return;
     }
 
-    world::SpaceState originState = hashTreeWorld.getSpaceState(coord);
-    if (!enableDestroyGeometry && originState.isTransparent()) {
+    world::VoronoiCell::MaterialIndex originMaterialIndex = hashTreeWorld.getMaterialIndex(coord);
+    bool originIsTransparent = hashTreeWorld.isTransparent(originMaterialIndex);
+    if (!enableDestroyGeometry && originIsTransparent) {
         return;
     }
 
@@ -160,8 +161,9 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
                     continue;
                 }
 
-                bool isTransp = hashTreeWorld.getSpaceState(neighborCoord).isTransparent();
-                bool shouldHaveSurface = !originState.isTransparent() && isTransp;
+                world::VoronoiCell::MaterialIndex neighborMaterialIndex = hashTreeWorld.getMaterialIndex(neighborCoord);
+                bool isTransparent = neighborMaterialIndex != static_cast<world::VoronoiCell::MaterialIndex>(-1) && hashTreeWorld.isTransparent(neighborMaterialIndex);
+                bool shouldHaveSurface = !originIsTransparent && isTransparent;
                 hasSurface |= shouldHaveSurface;
 
                 if (shouldHaveSurface) {
@@ -179,7 +181,7 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
         return;
     }
 
-    if (!originState.isTransparent()) {
+    if (!originIsTransparent) {
         transparentPosSum /= transparentCount;
         glm::vec3 camPos = context.get<render::Camera>().getEyePos();
         if (hashTreeWorld.testRay(transparentPosSum, camPos - transparentPosSum, 100.0f).pointDistance > 99.0f) {
@@ -265,14 +267,7 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
 
         unsigned int baseVi = vertIndices[faceVertsIt[minI + 0]];
         SceneManager::VertMutator baseVert = meshHandle.mutateVert(baseVi);
-//        unsigned int mod = (coord.x + coord.y + coord.z) % 100 == 0;
-        unsigned int mod = (coord.x % 16 == 0) && (coord.y % 16 == 0) && (coord.z % 16 == 0);
-        switch (mod) {
-            case 0: baseVert.shared.setColor(255, 0, 0, 255); break;
-            case 1: baseVert.shared.setColor(0, 255, 0, 255); break;
-            case 2: baseVert.shared.setColor(0, 0, 255, 255); break;
-            default: break;
-        }
+        baseVert.shared.materialIndex = originMaterialIndex;
         baseVert.local.surfaceForCell = cellId;
 
         unsigned int prevVi = vertIndices[faceVertsIt[minI + 1 == numVerts ? 0 : minI + 1]];

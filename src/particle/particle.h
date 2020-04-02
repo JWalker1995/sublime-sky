@@ -3,7 +3,7 @@
 #include "graphics/glm.h"
 #include <glm/vec3.hpp>
 
-namespace world { class SpaceState; }
+namespace world { class VoronoiCell; }
 
 namespace particle {
 
@@ -13,7 +13,7 @@ public:
     glm::vec3 velocity;
     float mass;
     float energy;
-    world::SpaceState *cell = 0;
+    world::VoronoiCell *cell = 0;
 
     void tick();
 

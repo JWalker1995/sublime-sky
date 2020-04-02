@@ -24,16 +24,12 @@ SceneRenderer::SceneRenderer(game::GameContext &context)
     glEnable(GL_DEPTH_TEST);
     //glDisable(GL_DEPTH_TEST);
 
-    // TODO: Re-enable
-    //glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
 
     glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
 
     graphics::GL::catchErrors();
-
-    // TODO: Enable face culling
-    //glEnable(GL_CULL_FACE);
-    //glFrontFace(GL_CW);
 
     // ALL construction of managed classes should be managed by the Context
     // Perhaps register classes statically?
@@ -64,9 +60,7 @@ void SceneRenderer::tickClose(game::TickerContext &tickerContext) {
     vao.bind();
 
     SceneManager &sceneManager = context.get<SceneManager>();
-    sceneManager.getMeshBuffer().sync(vao);
-    sceneManager.getVertBuffer().sync(vao);
-    sceneManager.getFaceBuffer().sync(vao);
+    sceneManager.sync(vao);
 
     // context.get<FaceFragCounter>().update();
 

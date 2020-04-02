@@ -2,25 +2,48 @@
 
 #defines
 
-// MESH_TRANSFORMS_BINDING
-layout (std140) uniform meshes
+#define NUM_MESHES 1024
+#define NUM_MATERIALS 1024
+
+struct Mesh {
+    mat4 transform;
+};
+
+struct Material {
+    vec4 colorDiffuse;
+    vec4 colorSpecular;
+    float shininess;
+    uint renderModel;
+};
+
+layout (std140) uniform MeshesBlock
 {
-    mat4 transforms[1024];
+    Mesh meshes[NUM_MESHES];
+};
+
+layout (std140) uniform MaterialsBlock
+{
+    Material materials[NUM_MATERIALS];
 };
 
 // in uint primitive_offset;
 layout(location = POSITION_LOCATION) in vec4 position;
 layout(location = NORMAL_LOCATION) in vec4 normal;
 layout(location = MESH_INDEX_LOCATION) in uint meshIndex;
+layout(location = MATERIAL_INDEX_LOCATION) in uint materialIndex;
 layout(location = RENDER_FLAGS_LOCATION) in uint renderFlags;
-layout(location = COLOR_LOCATION) in vec4 in_color;
+//layout(location = COLOR_LOCATION) in vec4 in_color;
 
 //in int gl_VertexID;
 
 //flat out uint face_offset;
 //out vec4 position;
-out vec3 orig_position;
-flat out vec3 vert_color;
+out vec3 modelPosition;
+//flat out vec3 modelNormal;
+flat out vec4 colorDiffuse;
+flat out vec4 colorSpecular;
+flat out float shininess;
+flat out uint renderModel;
 
 highp float rand(float seed)
 {
@@ -29,14 +52,13 @@ highp float rand(float seed)
     return fract(sin(sn) * c);
 }
 
-void main(void)
-{
+void main(void) {
     const float far_clip = 1e6f;
     const float clip_scale = 1.0f;
 
-    orig_position = position.xyz;
+    modelPosition = position.xyz;
 
-    gl_Position = transforms[meshIndex] * vec4(position.xyz, 1.0);
+    gl_Position = meshes[meshIndex].transform * vec4(position.xyz, 1.0);
     //gl_Position = vec4(rand(gl_VertexID) / 16.0 + float(meshes.transforms[1][1][0] == 0.0) - 0.03125, rand(gl_VertexID + 100), 1.0, 1.0);
     //gl_Position = vec4(gl_VertexID / 200.0 - 0.8, float(position.w == 1.01) + cos(gl_VertexID) * 0.1, 1.0, 1.0);
 
@@ -45,11 +67,10 @@ void main(void)
         gl_Position.z = gl_Position.w * log2(clip_scale * gl_Position.z + 1.0f) / log2(clip_scale * far_clip + 1.0f);
     }
 
-    if ((renderFlags & (1u << RENDER_FLAGS_SELECTED_BIT)) != 0) {
-        vert_color = vec3(1.0, 0.0, 0.0);
-    } else {
-        vert_color = in_color.xyz;
-    }
+    colorDiffuse = materials[materialIndex].colorDiffuse;
+    colorSpecular = materials[materialIndex].colorSpecular;
+    shininess = materials[materialIndex].shininess;
+    renderModel = materials[materialIndex].renderModel;
 
     /*
     float red = rand(gl_VertexID + 0.0);

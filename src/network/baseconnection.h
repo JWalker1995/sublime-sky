@@ -58,7 +58,7 @@ private:
     unsigned int waitTicksBackoff = 1;
 
     unsigned int materialOffset = static_cast<unsigned int>(-1);
-    unsigned int materialCount = static_cast<unsigned int>(-1);
+    unsigned int materialCount = 0;
 
     void callConnect();
 

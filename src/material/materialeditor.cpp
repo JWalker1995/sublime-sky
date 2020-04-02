@@ -19,14 +19,22 @@ void MaterialEditor::tick(game::TickerContext &tickerContext) {
     if (ImGui::Begin("Materials")) {
         for (unsigned int i = 0; i < materials.getExtentSize(); i++) {
             render::SceneManager::MaterialMutator mat = materials.mutate(i);
-            ImGui::Text("%s", mat.local.name.data());
-            ImGui::ColorEdit4("My color", mat.shared.colorDiffuse);
-            // ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel
-        }
-//        HelpMarker("With the ImGuiColorEditFlags_NoInputs flag you can hide all the slider/text inputs.\nWith the ImGuiColorEditFlags_NoLabel flag you can pass a non-empty label which will only be used for the tooltip and picker popup.");
 
-        ImGui::End();
+            ImGui::ColorEdit4((mat.local.name + " specular##" + std::to_string(i)).data(), mat.shared.colorDiffuse, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+            ImGui::SameLine(35);
+            ImGui::ColorEdit4((mat.local.name + " diffuse##" + std::to_string(i)).data(), mat.shared.colorSpecular, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+            ImGui::SameLine(60);
+            ImGui::PushItemWidth(100);
+            ImGui::InputFloat(("##shininess_" + std::to_string(i)).data(), &mat.shared.shininess, 0.1f, 1.0f);
+            ImGui::SameLine(165);
+            if (mat.local.originalIndex == static_cast<unsigned int>(-1)) {
+                ImGui::Text("%s", mat.local.name.data());
+            } else {
+                ImGui::Text("%s (%d)", mat.local.name.data(), mat.local.originalIndex);
+            }
+        }
     }
+    ImGui::End();
 }
 
 }

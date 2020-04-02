@@ -38,7 +38,8 @@ void Digger::tick(game::TickerContext &tickerContext) {
 
     if (window.isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT)) {
         spatial::UintCoord selectedCell = hashTreeWorld.testRay(camera.getEyePos(), camera.getEyeDir(), 100.0f).hitCoord;
-        hashTreeWorld.getSpaceStateMutable(selectedCell) = world::SpaceState::Air;
+        assert(false); // TODO: Need to get actual material here
+        hashTreeWorld.getVoronoiCell(selectedCell).materialIndex = 0;
 
         spatial::UintCoord min = selectedCell - spatial::UintCoord(2);
         spatial::UintCoord max = selectedCell + spatial::UintCoord(2);

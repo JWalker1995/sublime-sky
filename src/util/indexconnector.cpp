@@ -28,8 +28,8 @@ void IndexConnector::tick(game::TickerContext &tickerContext) {
         }
 
         ImGui::Text("IndexConnector: ids=%d, waiting=%d, pending=%d", ids, waiting, pending);
-        ImGui::End();
     }
+    ImGui::End();
 }
 
 }

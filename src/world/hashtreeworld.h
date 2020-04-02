@@ -3,7 +3,6 @@
 #include "spatial/hashtree.h"
 #include "game/tickercontext.h"
 #include "world/chunk.h"
-#include "world/spacestate.h"
 #include "worldgen/worldgenerator.h"
 
 namespace pointgen { class Chunk; }
@@ -18,33 +17,23 @@ public:
         nextChunkId += Chunk::size * Chunk::size * Chunk::size;
     }
 
-    void setToBranch() {
-        constantMaterialIndex = static_cast<unsigned int>(-1);
-        chunk = 0;
-        assert(!isLeaf());
-    }
-
-    void setToLeaf(unsigned int newConstantMaterialIndex) {
-        assert(newConstantMaterialIndex != static_cast<unsigned int>(-1));
-        constantMaterialIndex = newConstantMaterialIndex;
-        chunk = 0;
-        assert(isLeaf());
-    }
-    void setToLeaf(Chunk *newChunk) {
-        constantMaterialIndex = static_cast<unsigned int>(-1);
-        chunk = newChunk;
-        assert(isLeaf());
-    }
-
     bool isLeaf() const {
-        return constantMaterialIndex == static_cast<unsigned int>(-1) && chunk == 0;
+        return type != Type::Branch;
     }
 
     static unsigned int nextChunkId;
     unsigned int chunkId;
 
+    enum class Type {
+        Branch,
+        LeafGenerating,
+        LeafConstant,
+        LeafChunk,
+    };
+    Type type;
+
     VoronoiCell::MaterialIndex constantMaterialIndex;
-    Chunk *chunk;
+    Chunk *chunk = 0;
     pointgen::Chunk *points = 0;
     bool needsRegen[Chunk::size][Chunk::size][Chunk::size] = {{{0}}};
 };
@@ -106,15 +95,15 @@ public:
     void tick(game::TickerContext &tickerContext);
 
     CellValue &getCellValueContaining(spatial::UintCoord coord);
-    Chunk::MaterialIndex getMaterialIndex(spatial::UintCoord coord);
-    Chunk::MaterialIndex &getMaterialIndexMutable(spatial::UintCoord coord);
+    VoronoiCell::MaterialIndex getMaterialIndex(spatial::UintCoord coord);
+    VoronoiCell &getVoronoiCell(spatial::UintCoord coord);
     glm::vec3 getPoint(spatial::UintCoord coord);
     bool &getNeedsRegen(spatial::UintCoord coord);
     unsigned int getCellId(spatial::UintCoord coord);
 
     struct RaytestResult {
         spatial::UintCoord hitCoord;
-        SpaceState state;
+        VoronoiCell::MaterialIndex materialIndex;
         float pointDistance;
     };
     RaytestResult testRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit);
@@ -122,18 +111,20 @@ public:
 
     spatial::UintCoord getContainingCoord(glm::vec3 point);
 
-    void finishWorldGen(spatial::CellKey cube, SpaceState chunkState, Chunk *chunk);
+    void finishWorldGen(spatial::CellKey cube, VoronoiCell::MaterialIndex constantMaterialIndex, Chunk *chunk);
 
 //    void emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing);
+
+    bool isTransparent(VoronoiCell::MaterialIndex materialIndex) const;
 
 private:
     static CellValue makeRootBranch() {
         CellValue res;
-        res.setToBranch();
+        res.type = CellValue::Type::Branch;
         return res;
     }
     static void setBranch(Cell *cell) {
-        cell->second.setToBranch();
+        cell->second.type = CellValue::Type::Branch;
     }
     static void setBranchWithParent(Cell *cell, const Cell *parent) {
         (void) parent;
@@ -141,7 +132,7 @@ private:
     }
 
     void setLeaf(Cell *cell) {
-        cell->second.setToLeaf(SpaceState::Generating);
+        cell->second.type = CellValue::Type::LeafGenerating;
         requestWorldGen(cell);
     }
 

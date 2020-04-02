@@ -18,7 +18,7 @@ public:
     GLfloat normal[3];
 
     GLuint meshIndex;
-    GLuint materialIndex;
+    GLuint materialIndex = 0;
     GLuint renderFlags = 0;
 
     glm::vec3 getPoint() const {

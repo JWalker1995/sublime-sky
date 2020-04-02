@@ -17,10 +17,10 @@ private:
     game::GameContext &context;
     SimplexNoise noise;
 
-    unsigned int airMaterial;
-    unsigned int groundMaterial;
+    unsigned int airMaterialIndex;
+    unsigned int groundMaterialIndex;
 
-    world::SpaceState getState(glm::vec3 point);
+    bool getState(glm::vec3 point);
 };
 
 }

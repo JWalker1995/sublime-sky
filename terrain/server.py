@@ -10,10 +10,14 @@ import SsProtocol.MessageUnion as SsMessageUnion
 import SsProtocol.InitRequest as SsInitRequest
 import SsProtocol.InitResponse as SsInitResponse
 import SsProtocol.Capabilities as SsCapabilities
+import SsProtocol.Material as SsMaterial
+import SsProtocol.MaterialPhase as SsMaterialPhase
+import SsProtocol.MaterialRenderModel as SsMaterialRenderModel
 import SsProtocol.TerrainChunk as SsTerrainChunk
 import SsProtocol.Vec3_u32 as SsVec3_u32
+import SsProtocol.Vec4_f as SsVec4_f
 
-from generate_terrain import generate_terrain
+from generate import generate_materials, generate_terrain
 
 # Kinda hacky but it works
 def CellPositionsAsNumpy(chunk):
@@ -26,6 +30,27 @@ def CellPositionsAsNumpy(chunk):
     numpy_dtype = flatbuffers.number_types.to_numpy_type(flatbuffers.number_types.Float32Flags)
     arr = flatbuffers.encode.GetVectorAsNumpy(numpy_dtype, chunk._tab.Bytes, length, offset)
     return arr.reshape((-1, 3))
+
+def serialize_material(builder, material):
+    name = builder.CreateString(material['name'])
+
+    SsMaterial.MaterialStart(builder)
+    SsMaterial.MaterialAddName(builder, name)
+    SsMaterial.MaterialAddPhase(builder, {
+        'solid': SsMaterialPhase.MaterialPhase.Solid,
+        'liquid': SsMaterialPhase.MaterialPhase.Liquid,
+        'gas': SsMaterialPhase.MaterialPhase.Gas,
+    }[material['phase'].lower()])
+    SsMaterial.MaterialAddMass(builder, material['mass'])
+    SsMaterial.MaterialAddRenderModel(builder, {
+        'invisible': SsMaterialRenderModel.MaterialRenderModel.Invisible,
+        'phong': SsMaterialRenderModel.MaterialRenderModel.Phong,
+        'blinn': SsMaterialRenderModel.MaterialRenderModel.Blinn,
+    }[material['render_model'].lower()])
+    SsMaterial.MaterialAddColorDiffuse(builder, SsVec4_f.CreateVec4_f(builder, *material['color_diffuse']))
+    SsMaterial.MaterialAddColorSpecular(builder, SsVec4_f.CreateVec4_f(builder, *material['color_specular']))
+    SsMaterial.MaterialAddShininess(builder, material['shininess'])
+    return SsMaterial.MaterialEnd(builder)
 
 async def connection_loop(conn, path):
     print('Received connection from {}'.format(conn.remote_address))
@@ -41,8 +66,16 @@ async def connection_loop(conn, path):
                 req.Init(msg.Message().Bytes, msg.Message().Pos)
                 seed = req.Seed()
 
+                materials = generate_materials(seed)
+                material_offsets = [serialize_material(builder, m) for m in materials]
+
+                SsInitResponse.InitResponseStartMaterialsVector(builder, len(material_offsets))
+                [builder.PrependUOffsetTRelative(mo) for mo in reversed(material_offsets)]
+                materials_vec = builder.EndVector(len(material_offsets))
+
                 SsInitResponse.InitResponseStart(builder)
                 SsInitResponse.InitResponseAddCapabilities(builder, SsCapabilities.Capabilities.GenerateTerrainChunk)
+                SsInitResponse.InitResponseAddMaterials(builder, materials_vec)
                 init_response = SsInitResponse.InitResponseEnd(builder)
 
                 SsMessage.MessageStart(builder)
