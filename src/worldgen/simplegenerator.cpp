@@ -15,6 +15,7 @@ SimpleGenerator::SimpleGenerator(game::GameContext &context)
 
     render::SceneManager::MaterialMutator airMat = context.get<render::SceneManager>().createMaterial();
     airMat.shared.renderModel = graphics::MaterialShared::RenderModel::Blinn;
+    std::fill_n(airMat.shared.colorAmbient, 4, 1.0f);
     std::fill_n(airMat.shared.colorDiffuse, 4, 1.0f);
     std::fill_n(airMat.shared.colorSpecular, 4, 1.0f);
     airMat.shared.shininess = 1.0f;
@@ -25,6 +26,7 @@ SimpleGenerator::SimpleGenerator(game::GameContext &context)
 
     render::SceneManager::MaterialMutator groundMat = context.get<render::SceneManager>().createMaterial();
     groundMat.shared.renderModel = graphics::MaterialShared::RenderModel::Blinn;
+    std::fill_n(groundMat.shared.colorAmbient, 4, 1.0f);
     std::fill_n(groundMat.shared.colorDiffuse, 4, 1.0f);
     std::fill_n(groundMat.shared.colorSpecular, 4, 1.0f);
     groundMat.shared.shininess = 1.0f;

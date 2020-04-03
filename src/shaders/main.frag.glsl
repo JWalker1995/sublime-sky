@@ -20,6 +20,7 @@ uniform vec3 eyePos;
 
 
 in vec3 modelPosition;
+flat in vec4 colorAmbient;
 flat in vec4 colorDiffuse;
 flat in vec4 colorSpecular;
 flat in float shininess;
@@ -35,8 +36,8 @@ highp float rand(float seed) {
 
 const bool blinn = true;
 const vec4 lightColor = vec4(1.0, 1.0, 1.0, 1.0);
-const float lightPower = 40000.0;
-const vec4 ambientColor = vec4(0.0, 0.0, 0.0, 1.0);
+const float lightPower = 10000.0;
+//const vec4 ambientColor = vec4(0.0, 0.0, 0.0, 1.0);
 //const vec3 diffuseColor = vec3(188/256.0,143/256.0,143/256.0);
 //const vec3 specColor = vec3(1.0, 1.0, 1.0);
 //const float shininess = 32.0;
@@ -56,7 +57,7 @@ void main(void) {
         vec3 yTangent = dFdy(modelPosition);
         vec3 faceNormal = normalize(cross(xTangent, yTangent));
 
-        vec3 lightPos = eyePos + vec3(0.0, 0.0, 100.0);
+        vec3 lightPos = eyePos + vec3(0.0, 0.0, 50.0);
         vec3 lightDir = lightPos - modelPosition;
         float distance = length(lightDir);
         distance = distance * distance;
@@ -79,7 +80,7 @@ void main(void) {
             specular = pow(specAngle, shininess/4.0);
           }
         }
-        vec4 colorLinear = ambientColor +
+        vec4 colorLinear = colorAmbient * lightColor * lightPower / distance +
                            colorDiffuse * lambertian * lightColor * lightPower / distance +
                            colorSpecular * specular * lightColor * lightPower / distance;
         // apply gamma correction (assume ambientColor, diffuseColor and specColor

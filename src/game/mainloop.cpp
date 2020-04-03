@@ -17,7 +17,6 @@
 #include "pointgen/rsquaredlatticegenerator.h"
 #include "worldgen/simplegenerator.h"
 #include "worldgen/externalgenerator.h"
-#include "meshgen/cubichoneycomb.h"
 #include "network/baseconnection.h"
 #include "game/digger.h"
 #include "material/materialeditor.h"
@@ -58,7 +57,6 @@ void MainLoop::load() {
     context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>();
 //    context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>();
     context.construct<worldgen::WorldGenerator, worldgen::ExternalGenerator>();
-    context.construct<meshgen::MeshGenerator, meshgen::CubicHoneycomb>();
 }
 
 void MainLoop::run() {

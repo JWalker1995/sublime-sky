@@ -8,7 +8,6 @@
 #include <glm/gtx/hash.hpp>
 
 #include "game/tickercontext.h"
-#include "meshgen/meshgenerator.h"
 #include "render/scenemanager.h"
 #include "spatial/uintcoord.h"
 

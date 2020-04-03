@@ -99,9 +99,6 @@ src/material/materialeditor.cpp
 src/material/materialeditor.h
 src/material/materialmanager.cpp
 src/material/materialmanager.h
-src/meshgen/cubichoneycomb.cpp
-src/meshgen/cubichoneycomb.h
-src/meshgen/meshgenerator.h
 src/network/baseconnection.cpp
 src/network/baseconnection.h
 src/network/connectionmanager.cpp

@@ -42,7 +42,7 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
     SceneManager::MeshMutator meshMutator = meshHandle.mutateMesh();
     meshMutator.shared.transform = context.get<render::Camera>().getTransform();
 
-    static constexpr unsigned int maxCellUpdatesPerTick = 256;
+    static constexpr unsigned int maxCellUpdatesPerTick = 256 * 8;
     for (unsigned int i = 0; i < maxCellUpdatesPerTick; i++) {
         if (cellUpdateQueue.empty()) {
             break;
@@ -184,13 +184,20 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
     if (!originIsTransparent) {
         transparentPosSum /= transparentCount;
         glm::vec3 camPos = context.get<render::Camera>().getEyePos();
-        if (hashTreeWorld.testRay(transparentPosSum, camPos - transparentPosSum, 100.0f).pointDistance > 99.0f) {
-            cellUpdateQueue.emplace(coord - spatial::UintCoord(1, 0, 0), enableDestroyGeometry);
-            cellUpdateQueue.emplace(coord - spatial::UintCoord(0, 1, 0), enableDestroyGeometry);
-            cellUpdateQueue.emplace(coord - spatial::UintCoord(0, 0, 1), enableDestroyGeometry);
-            cellUpdateQueue.emplace(coord + spatial::UintCoord(1, 0, 0), enableDestroyGeometry);
-            cellUpdateQueue.emplace(coord + spatial::UintCoord(0, 1, 0), enableDestroyGeometry);
-            cellUpdateQueue.emplace(coord + spatial::UintCoord(0, 0, 1), enableDestroyGeometry);
+        if (hashTreeWorld.testRay(transparentPosSum, camPos - transparentPosSum, 100.0f).pointDistance < 99.0f) {
+            spatial::UintCoord min = coord - spatial::UintCoord(1);
+            spatial::UintCoord max = coord + spatial::UintCoord(1);
+            spatial::UintCoord neighborCoord;
+            for (neighborCoord.x = min.x; neighborCoord.x <= max.x; neighborCoord.x++) {
+                for (neighborCoord.y = min.y; neighborCoord.y <= max.y; neighborCoord.y++) {
+                    for (neighborCoord.z = min.z; neighborCoord.z <= max.z; neighborCoord.z++) {
+                        if (neighborCoord == coord) {
+                            continue;
+                        }
+                        cellUpdateQueue.emplace(neighborCoord, enableDestroyGeometry);
+                    }
+                }
+            }
         }
     }
 

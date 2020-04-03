@@ -10,6 +10,7 @@ struct Mesh {
 };
 
 struct Material {
+    vec4 colorAmbient;
     vec4 colorDiffuse;
     vec4 colorSpecular;
     float shininess;
@@ -40,6 +41,7 @@ layout(location = RENDER_FLAGS_LOCATION) in uint renderFlags;
 //out vec4 position;
 out vec3 modelPosition;
 //flat out vec3 modelNormal;
+flat out vec4 colorAmbient;
 flat out vec4 colorDiffuse;
 flat out vec4 colorSpecular;
 flat out float shininess;
@@ -67,6 +69,7 @@ void main(void) {
         gl_Position.z = gl_Position.w * log2(clip_scale * gl_Position.z + 1.0f) / log2(clip_scale * far_clip + 1.0f);
     }
 
+    colorAmbient = materials[materialIndex].colorAmbient;
     colorDiffuse = materials[materialIndex].colorDiffuse;
     colorSpecular = materials[materialIndex].colorSpecular;
     shininess = materials[materialIndex].shininess;

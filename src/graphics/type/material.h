@@ -7,7 +7,8 @@ namespace graphics {
 class GlVao;
 
 class MaterialShared {
-public:    
+public:
+    GLfloat colorAmbient[4];
     GLfloat colorDiffuse[4];
     GLfloat colorSpecular[4];
     GLfloat shininess;

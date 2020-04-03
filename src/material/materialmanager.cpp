@@ -50,6 +50,11 @@ unsigned int MaterialManager::registerMaterials(const flatbuffers::Vector<flatbu
         material.local.originalIndex = i;
         material.local.mass = inMat->mass();
 
+        material.shared.colorAmbient[0] = inMat->color_ambient()->x();
+        material.shared.colorAmbient[1] = inMat->color_ambient()->y();
+        material.shared.colorAmbient[2] = inMat->color_ambient()->z();
+        material.shared.colorAmbient[3] = inMat->color_ambient()->w();
+
         material.shared.colorDiffuse[0] = inMat->color_diffuse()->x();
         material.shared.colorDiffuse[1] = inMat->color_diffuse()->y();
         material.shared.colorDiffuse[2] = inMat->color_diffuse()->z();

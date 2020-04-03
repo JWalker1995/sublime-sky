@@ -55,6 +55,7 @@ table Material {
     mass: float;
 
     render_model: MaterialRenderModel = Blinn;
+    color_ambient: Vec4_f;
     color_diffuse: Vec4_f;
     color_specular: Vec4_f;
     shininess: float;

@@ -25,6 +25,10 @@ void SceneManager::createNullMaterial() {
 
     // Let's make sure we can see them (so we know if we have a bug)
     nullMaterial.shared.renderModel = graphics::MaterialShared::RenderModel::Blinn;
+    nullMaterial.shared.colorAmbient[0] = 1.0f;
+    nullMaterial.shared.colorAmbient[1] = 0.0f;
+    nullMaterial.shared.colorAmbient[2] = 0.0f;
+    nullMaterial.shared.colorAmbient[3] = 1.0f;
     nullMaterial.shared.colorDiffuse[0] = 1.0f;
     nullMaterial.shared.colorDiffuse[1] = 0.0f;
     nullMaterial.shared.colorDiffuse[2] = 0.0f;

@@ -47,6 +47,7 @@ def serialize_material(builder, material):
         'phong': SsMaterialRenderModel.MaterialRenderModel.Phong,
         'blinn': SsMaterialRenderModel.MaterialRenderModel.Blinn,
     }[material['render_model'].lower()])
+    SsMaterial.MaterialAddColorAmbient(builder, SsVec4_f.CreateVec4_f(builder, *material['color_ambient']))
     SsMaterial.MaterialAddColorDiffuse(builder, SsVec4_f.CreateVec4_f(builder, *material['color_diffuse']))
     SsMaterial.MaterialAddColorSpecular(builder, SsVec4_f.CreateVec4_f(builder, *material['color_specular']))
     SsMaterial.MaterialAddShininess(builder, material['shininess'])
