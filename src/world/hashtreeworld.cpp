@@ -81,22 +81,21 @@ unsigned int HashTreeWorld::getCellId(spatial::UintCoord coord) {
 }
 
 HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit) {
-    RayDrawer rayDrawer(origin, dir);
-
     // Initialize sizeLog2 with a reasonable guess.
     // If it's incorrect, it'll be fixed.
     // On subsequent loop iterations, it'll just roll over. The previous size is the new guess.
-    unsigned int sizeLog2 = std::max(static_cast<signed int>(Chunk::sizeLog2), guessViewChunkSizeLog2(rayDrawer.getCurCoord()));
+    signed int guessSizeLog2 = guessViewChunkSizeLog2(spatial::UintCoord::fromPoint(origin));
+    unsigned int sizeLog2 = std::max(static_cast<signed int>(Chunk::sizeLog2), guessSizeLog2);
 
-    // TODO: Initialize RayDrawer to the correct level
+    RayDrawer rayDrawer(dir);
 
     iterateNewChunk:
 
     // Here, we make sure the sizeLog2 is exact.
-    bool shouldParentSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCoord(), sizeLog2 + 1));
+    bool shouldParentSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCellKey(), sizeLog2 + 1));
     if (shouldParentSubdiv) {
         while (true) {
-            bool shouldSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCoord(), sizeLog2));
+            bool shouldSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCellKey(), sizeLog2));
             if (!shouldSubdiv) {
                 break;
             }
@@ -106,7 +105,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
     } else {
         while (true) {
             sizeLog2++;
-            bool shouldParentSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCoord(), sizeLog2 + 1));
+            bool shouldParentSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCellKey(), sizeLog2 + 1));
             if (shouldParentSubdiv) {
                 break;
             }
@@ -115,7 +114,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
 
     // Try to insert/get the desired chunk.
     std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> insert =
-            getMap().emplace(spatial::CellKey::fromCoord(rayDrawer.getCurCoord(), sizeLog2), CellValue());
+            getMap().emplace(spatial::CellKey::fromCoord(rayDrawer.getCurCellKey(), sizeLog2), CellValue());
 
     if (insert.second) {
         // Inserted new chunk
@@ -126,7 +125,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
         std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> parentInsert;
         do {
             parentSizeLog2++;
-            parentInsert = getMap().emplace(spatial::CellKey::fromCoord(rayDrawer.getCurCoord(), parentSizeLog2), CellValue());
+            parentInsert = getMap().emplace(spatial::CellKey::fromCoord(rayDrawer.getCurCellKey(), parentSizeLog2), CellValue());
         } while (parentInsert.second);
     }
 
@@ -169,7 +168,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
         default:
             res.result = RaytestResult::HitGenerating;
             res.surfaceMaterialIndex = material;
-            res.surfaceHitCoord = rayDrawer.getCurCoord();
+            res.surfaceHitCoord = rayDrawer.getCurCellKey();
             res.surfaceChunkSizeLog2 = sizeLog2;
             return res;
         }

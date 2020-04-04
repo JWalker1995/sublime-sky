@@ -5,6 +5,7 @@
 #include "schemas/config_client_generated.h"
 #include "game/gamecontext.h"
 #include "game/tickercontext.h"
+#include "util/testrunner.h"
 #include "application/callqueue.h"
 #include "application/syncpoint.h"
 #include "application/signalhandler.h"
@@ -34,6 +35,9 @@ void MainLoop::load() {
     context.get<application::CallQueue>();
     context.get<application::SyncPoint>();
 
+    if (config.test_runner()) {
+        util::TestRunner::getInstance().run();
+    }
     if (config.signal_handler()) {
         context.get<application::SignalHandler>();
     }

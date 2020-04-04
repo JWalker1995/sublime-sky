@@ -187,6 +187,8 @@ src/util/pool.h
 src/util/reflist.h
 src/util/refset.h
 src/util/smallvectormanager.h
+src/util/testrunner.cpp
+src/util/testrunner.h
 src/world/chunk.cpp
 src/world/chunk.h
 src/world/hashtreeworld.cpp
@@ -195,6 +197,7 @@ src/world/materialindex.h
 src/world/particle.cpp
 src/world/particle.h
 src/world/raydrawer.h
+src/world/raydrawer.test.cpp
 src/world/timemanager.cpp
 src/world/timemanager.h
 src/world/voronoicell.cpp

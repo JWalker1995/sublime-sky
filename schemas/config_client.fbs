@@ -4,6 +4,8 @@ namespace SsProtocol.Config;
 
 enum LogLevel: byte { trace, debug, info, warning, error, critical, off }
 
+table TestRunner {}
+
 table SignalHandler {}
 
 table Window {
@@ -37,6 +39,7 @@ table Network {
 table Client {
     log_level: LogLevel;
 
+    test_runner: TestRunner;
     signal_handler: SignalHandler;
     window: Window;
     render: Render;
