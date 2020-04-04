@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "schemas/config_client_generated.h"
 #include "network/websocketclient.h"
 #include "util/pool.h"
 #include "util/refset.h"
@@ -10,20 +11,31 @@ namespace network {
 
 ConnectionManager::ConnectionManager(game::GameContext &context)
     : TickableBase(context)
-{}
+{
+    const SsProtocol::Config::Network *config = context.get<const SsProtocol::Config::Client>().network();
+    if (!config) {
+        throw NoNetworkConfigException("Trying to create a ConnectionManager but there's no network config!");
+    }
+
+    const flatbuffers::Vector<flatbuffers::Offset<SsProtocol::Config::ServerConnectionSpec>> *servers = config->servers();
+    for (std::size_t i = 0; i < servers->size(); i++) {
+        const SsProtocol::Config::ServerConnectionSpec *scs = servers->Get(i);
+        switch (scs->protocol()) {
+            case SsProtocol::Config::ConnectionProtocol_WebSocket: {
+                std::string uri = "ws://" + scs->hostname()->str();
+                if (scs->port()) {
+                    uri += ":" + std::to_string(scs->port());
+                }
+                context.get<util::Pool<WebSocketClient::Connection>>().alloc(context, uri);
+            } break;
+        }
+    }
+}
 
 void ConnectionManager::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
 
     util::RefSet<BaseConnection>::Invoker<>::call<&BaseConnection::tick>(context.get<util::RefSet<BaseConnection>>());
-}
-
-BaseConnection *ConnectionManager::createConnection(const std::string &uriStr) {
-    if (uriStr.substr(0, 3) == "ws:") {
-        return context.get<util::Pool<WebSocketClient::Connection>>().alloc(context, uriStr);
-    } else {
-        throw UnexpectedUriSchemaException("Unexpected uri scheme in uri: " + uriStr);
-    }
 }
 
 }

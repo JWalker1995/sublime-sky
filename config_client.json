@@ -1,22 +1,17 @@
 {
-  "username": "Client username",
-  "loadSignalHandler": true,
-  "loadWindow": true,
-  "loadRender": true,
-  "loadNetwork": true,
-  "socketDestroyImmediate": true,
-  "logLevel": "trace",
+  "log_level": "trace",
+  "signal_handler": {},
   "window": {
-    "title": "Sublime Sky Alpha - Client",
-    "sizeX": 800,
-    "sizeY": 800
+    "title": "Sublime Sky Alpha",
+    "size_x": 2880,
+    "size_y": 1538
   },
-  "targetFaceCount": 100000,
-  "authority": {
-    "hostname": "localhost",
-    "port": 12345
+  "render": {
+    "use_log_depth_buffer": true
   },
-  "closeOnDisconnect": true,
-  "networkChannelQueueCapacity": 15,
-  "uuidReserveSizeLog2": 16
+  "network": {
+    "servers": [
+      { "protocol": "WebSocket", "hostname": "127.0.0.1", "port": 8765 }
+    ]
+  }
 }

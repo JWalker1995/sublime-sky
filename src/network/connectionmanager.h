@@ -13,11 +13,11 @@ class ConnectionPoolBase;
 class ConnectionManager : public game::TickerContext::TickableBase<ConnectionManager> {
 private:
 public:
-    class UnexpectedUriSchemaException : public jw_util::BaseException {
+    class NoNetworkConfigException : public jw_util::BaseException {
         friend class ConnectionManager;
 
     private:
-        UnexpectedUriSchemaException(const std::string &msg)
+        NoNetworkConfigException(const std::string &msg)
             : BaseException(msg)
         {}
     };
@@ -25,8 +25,6 @@ public:
     ConnectionManager(game::GameContext &context);
 
     void tick(game::TickerContext &tickerContext);
-
-    BaseConnection *createConnection(const std::string &uriStr);
 };
 
 }

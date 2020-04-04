@@ -104,7 +104,7 @@ int main(int argc, char **argv)
         gameConfigSupplier.loadFromJsonFile(argv[2]);
     }
 
-    SsProtocol::Config::LogLevel logLevel = context.get<const SsProtocol::Config::Client>().logLevel();
+    SsProtocol::Config::LogLevel logLevel = context.get<const SsProtocol::Config::Client>().log_level();
     const char *logLevelStr = SsProtocol::Config::EnumNameLogLevel(logLevel);
     context.get<spdlog::logger>().info("Setting log level to \"{}\"", logLevelStr);
 

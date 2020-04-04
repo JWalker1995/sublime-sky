@@ -191,8 +191,10 @@ src/world/chunk.cpp
 src/world/chunk.h
 src/world/hashtreeworld.cpp
 src/world/hashtreeworld.h
+src/world/materialindex.h
 src/world/particle.cpp
 src/world/particle.h
+src/world/raydrawer.h
 src/world/timemanager.cpp
 src/world/timemanager.h
 src/world/voronoicell.cpp

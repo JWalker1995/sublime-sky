@@ -4,40 +4,45 @@ namespace SsProtocol.Config;
 
 enum LogLevel: byte { trace, debug, info, warning, error, critical, off }
 
+table SignalHandler {}
+
 table Window {
     title: string;
-    sizeX: uint;
-    sizeY: uint;
+    size_x: uint;
+    size_y: uint;
 }
 
-table RemoteConnectionDetails {
+table Render {
+    use_log_depth_buffer: bool;
+}
+
+table MaterialEditor {}
+
+table Raycaster {
+    // raysPerSecond: uint;
+    // retryQueueLimit: uint;
+}
+
+enum ConnectionProtocol: uint { WebSocket }
+table ServerConnectionSpec {
+    protocol: ConnectionProtocol;
     hostname: string;
     port: ushort;
 }
+table Network {
+    servers: [ServerConnectionSpec];
+}
+
 
 table Client {
-    username: string;
+    log_level: LogLevel;
 
-    loadSignalHandler: bool;
-    loadWindow: bool;
-    loadRender: bool;
-    loadNetwork: bool;
-
-    socketDestroyImmediate: bool;
-
-    uuidReserveSizeLog2: uint;
-    uuidAuthority: bool;
-
-    logLevel: LogLevel;
+    signal_handler: SignalHandler;
     window: Window;
-    targetFaceCount: uint;
-
-    listenPort: ushort; // If 0, will choose a random port
-    authority: RemoteConnectionDetails;
-    closeOnDisconnect: bool;
-    networkChannelQueueCapacity: uint;
-
-    playerAllocationSizeLog2: uint;
+    render: Render;
+    material_editor: MaterialEditor;
+    raycaster: Raycaster;
+    network: Network;
 }
 
 root_type Client;

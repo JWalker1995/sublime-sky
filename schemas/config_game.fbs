@@ -2,82 +2,26 @@ namespace SsProtocol.Config;
 
 // Don't supply defaults here. Defaults should be supplied by a base config file
 
-struct Vec3 {
+struct Vec3_f {
     x: float;
     y: float;
     z: float;
 }
 
-table Spawner {
-    center: Vec3;
-    radius: float;
-}
+table CubicLatticeGenerator {}
+table RSquaredLatticeGenerator {}
+union LatticeGenerator { CubicLatticeGenerator, RSquaredLatticeGenerator }
 
-table BlobType {
-    key: string;
-    mass: float;
-    collisionRadius: float;
-    influenceRadius: float;
-}
-
-table Inventory {
-    numSlots: uint;
-}
-
-table DependencyWatcher {
-    updateIntervalSeconds: float;
-    folders: [string];
-}
-
-table WfcModel {
-    seed: ulong;
-    rotationResolution: uint;
-    featureSizeXY: float;
-    featureSizeZ: float;
-    featureCountXY: uint;
-    featureCountZ: uint;
-    dnnData: string;
-}
-
-union WorldgenModel { WfcModel }
-
-table BlobMatcher {
-    blobType: uint;
-    position: Vec3;
-}
-
-struct Edge {
-    a: uint;
-    b: uint;
-}
-
-table ObjectCategory {
-    name: string;
-    blobs: [BlobMatcher];
-    bonds: [Edge];
-    parent: uint;
-}
-
-table ObjectHeirarchy {
-    categories: [ObjectCategory];
-}
+table SimpleWorldGenerator {}
+table ExternalWorldGenerator {}
+union WorldGenerator { SimpleWorldGenerator, ExternalWorldGenerator }
 
 table Game {
     seed: uint64;
 
-    joinSpawner: Spawner;
+    lattice_generator: LatticeGenerator;
 
-    initialCheckpointCapacity: uint;
-    maxRollbackDistance: uint;
-
-    samplesDir: string;
-    samplesSuffix: string;
-
-    blobTypes: [BlobType];
-    inventory: Inventory;
-    dependencyWatcher: DependencyWatcher;
-    worldgenModel: WorldgenModel;
-    objectHeirarchy: ObjectHeirarchy;
+    world_generator: WorldGenerator;
 }
 
 root_type Game;

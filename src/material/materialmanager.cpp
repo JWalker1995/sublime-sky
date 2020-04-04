@@ -2,12 +2,15 @@
 
 #include "schemas/message_generated.h"
 #include "render/scenemanager.h"
+#include "world/materialindex.h"
 
 namespace material {
 
 MaterialManager::MaterialManager(game::GameContext &context)
     : TickableBase(context)
-{}
+{
+    createGeneratingMaterial();
+}
 
 void MaterialManager::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
@@ -69,6 +72,35 @@ unsigned int MaterialManager::registerMaterials(const flatbuffers::Vector<flatbu
     }
 
     return firstIndex;
+}
+
+void MaterialManager::createGeneratingMaterial() {
+    // Allocate dummy material that shouldn't be set on any vertices, but will signify that a cell is generating.
+    // This material should never be seen.
+    render::SceneManager::MaterialMutator generatingMaterial = context.get<render::SceneManager>().createMaterial();
+
+    // It should match world::MaterialIndex::Generating
+    assert(generatingMaterial.index == static_cast<unsigned int>(world::MaterialIndex::Generating));
+
+    // Let's make sure we can see them (so we know if we have a bug)
+    generatingMaterial.shared.renderModel = graphics::MaterialShared::RenderModel::Blinn;
+    generatingMaterial.shared.colorAmbient[0] = 1.0f;
+    generatingMaterial.shared.colorAmbient[1] = 0.0f;
+    generatingMaterial.shared.colorAmbient[2] = 0.0f;
+    generatingMaterial.shared.colorAmbient[3] = 1.0f;
+    generatingMaterial.shared.colorDiffuse[0] = 1.0f;
+    generatingMaterial.shared.colorDiffuse[1] = 0.0f;
+    generatingMaterial.shared.colorDiffuse[2] = 0.0f;
+    generatingMaterial.shared.colorDiffuse[3] = 1.0f;
+    generatingMaterial.shared.colorSpecular[0] = 1.0f;
+    generatingMaterial.shared.colorSpecular[1] = 0.0f;
+    generatingMaterial.shared.colorSpecular[2] = 0.0f;
+    generatingMaterial.shared.colorSpecular[3] = 1.0f;
+    generatingMaterial.shared.shininess = 1.0f;
+
+    generatingMaterial.local.name = "_ss_generating";
+    generatingMaterial.local.phase = graphics::MaterialLocal::Phase::Solid;
+    generatingMaterial.local.mass = 1.0f;
 }
 
 }

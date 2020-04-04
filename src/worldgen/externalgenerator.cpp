@@ -76,7 +76,7 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
 //        t++;
 //    }
 
-    context.get<world::HashTreeWorld>().finishWorldGen(cube, static_cast<world::VoronoiCell::MaterialIndex>(-1), dstChunk);
+    context.get<world::HashTreeWorld>().finishWorldGen(cube, static_cast<world::MaterialIndex>(-1), dstChunk);
 }
 
 }

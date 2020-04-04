@@ -39,7 +39,7 @@ Window::Window(game::GameContext &context)
 
     // Create GLFW window
     // http://www.glfw.org/docs/latest/window.html
-    glfwWindow = glfwCreateWindow(static_cast<int>(config.sizeX()), static_cast<int>(config.sizeY()), config.title()->c_str(), nullptr, firstWindow);
+    glfwWindow = glfwCreateWindow(static_cast<int>(config.size_x()), static_cast<int>(config.size_y()), config.title()->c_str(), nullptr, firstWindow);
     if (!glfwWindow) {
         throw Exception("glfwCreateWindow() error");
     }

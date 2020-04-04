@@ -34,14 +34,17 @@ void MainLoop::load() {
     context.get<application::CallQueue>();
     context.get<application::SyncPoint>();
 
-    if (config.loadSignalHandler()) {
+    if (config.signal_handler()) {
         context.get<application::SignalHandler>();
     }
-    if (config.loadWindow()) {
+    if (config.window()) {
         context.get<application::Window>();
     }
-    if (config.loadRender()) {
+    if (config.render()) {
         context.get<render::SceneRenderer>();
+    }
+    if (config.network()) {
+        context.get<network::ConnectionManager>();
     }
 
     // TODO: Not sure why we have to have this
@@ -49,10 +52,10 @@ void MainLoop::load() {
 
     context.get<CameraFlyController>();
 
-    context.get<network::ConnectionManager>().createConnection("ws://127.0.0.1:8765/");
     context.get<render::RayCaster>();
     context.get<game::Digger>();
     context.get<material::MaterialEditor>();
+    // TODO: Maybe load this from config with a union?
 //    context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();
     context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>();
 //    context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>();

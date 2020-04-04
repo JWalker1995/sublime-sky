@@ -128,7 +128,7 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
         return;
     }
 
-    world::VoronoiCell::MaterialIndex originMaterialIndex = hashTreeWorld.getMaterialIndex(coord);
+    world::MaterialIndex originMaterialIndex = hashTreeWorld.getMaterialIndex(coord);
     bool originIsTransparent = hashTreeWorld.isTransparent(originMaterialIndex);
     if (!enableDestroyGeometry && originIsTransparent) {
         return;
@@ -161,8 +161,8 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
                     continue;
                 }
 
-                world::VoronoiCell::MaterialIndex neighborMaterialIndex = hashTreeWorld.getMaterialIndex(neighborCoord);
-                bool isTransparent = neighborMaterialIndex != static_cast<world::VoronoiCell::MaterialIndex>(-1) && hashTreeWorld.isTransparent(neighborMaterialIndex);
+                world::MaterialIndex neighborMaterialIndex = hashTreeWorld.getMaterialIndex(neighborCoord);
+                bool isTransparent = neighborMaterialIndex != static_cast<world::MaterialIndex>(-1) && hashTreeWorld.isTransparent(neighborMaterialIndex);
                 bool shouldHaveSurface = !originIsTransparent && isTransparent;
                 hasSurface |= shouldHaveSurface;
 

@@ -5,6 +5,7 @@
 #include "graphics/glbufferbase.h"
 #include "render/shaders.h"
 #include "render/vao.h"
+#include "schemas/config_client_generated.h"
 
 namespace render {
 
@@ -21,7 +22,11 @@ DrawProgram::DrawProgram(game::GameContext &context)
 void DrawProgram::insertDefines(Defines &defines) {
     Program::insertDefines(defines);
 
-    defines.set("USE_LOG_DEPTH_BUFFER", 1);
+    const SsProtocol::Config::Render *render = context.get<const SsProtocol::Config::Client>().render();
+    if (!render) {
+        throw NoRenderConfigException("Trying to create a DrawProgram but there's no render config!");
+    }
+    defines.set("USE_LOG_DEPTH_BUFFER", render->use_log_depth_buffer());
 
     context.get<Vao>().insertDefines(defines);
 

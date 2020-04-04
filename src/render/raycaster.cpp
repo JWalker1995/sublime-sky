@@ -82,7 +82,7 @@ void RayCaster::castNew() {
 void RayCaster::castRay(glm::vec3 origin, glm::vec3 dir) {
     world::HashTreeWorld::RaytestResult res = context.get<world::HashTreeWorld>().testRay(origin, dir, 100.0f);
 
-    if (res.materialIndex == static_cast<world::VoronoiCell::MaterialIndex>(-1)) {
+    if (res.materialIndex == static_cast<world::MaterialIndex>(-1)) {
         retryRays.emplace_back(origin + dir * (res.pointDistance - 1.0f), dir);
     } else {
         context.get<world::TimeManager>().incTimeAround(res.hitCoord, 1.0f);

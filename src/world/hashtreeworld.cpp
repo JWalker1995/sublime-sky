@@ -5,28 +5,35 @@
 #include "pointgen/chunkpointsmanager.h"
 #include "worldgen/worldgenerator.h"
 #include "render/meshupdater.h"
+#include "render/camera.h"
 #include "query/rectquery.h"
 #include "util/pool.h"
+#include "world/raydrawer.h"
 
 namespace world {
 
 HashTreeWorld::HashTreeWorld(game::GameContext &gameContext)
     : TickableBase(gameContext)
-{
-
-}
+    , cameraCoord(calcCameraCoord())
+{}
 
 void HashTreeWorld::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
 
-    assert(context.get<render::SceneManager>().getMaterialBuffer().getExtentSize() < std::numeric_limits<decltype(VoronoiCell::materialIndex)>::max());
+    assert(context.get<render::SceneManager>().getMaterialBuffer().getExtentSize() < std::numeric_limits<decltype(MaterialIndex)>::max());
+
+    cameraCoord = calcCameraCoord();
+}
+
+spatial::UintCoord HashTreeWorld::calcCameraCoord() {
+    return spatial::UintCoord::fromPoint(context.get<render::Camera>().getEyePos());
 }
 
 CellValue &HashTreeWorld::getCellValueContaining(spatial::UintCoord coord) {
     return getLeafContaining(coord, Chunk::sizeLog2)->second;
 }
 
-VoronoiCell::MaterialIndex HashTreeWorld::getMaterialIndex(spatial::UintCoord coord) {
+MaterialIndex HashTreeWorld::getMaterialIndex(spatial::UintCoord coord) {
     Cell *leafNode = getLeafContaining(coord, Chunk::sizeLog2);
     unsigned int x = coord.x % Chunk::size;
     unsigned int y = coord.y % Chunk::size;
@@ -36,7 +43,7 @@ VoronoiCell::MaterialIndex HashTreeWorld::getMaterialIndex(spatial::UintCoord co
     } else if (leafNode->second.type == CellValue::Type::LeafConstant) {
         return leafNode->second.constantMaterialIndex;
     } else {
-        return static_cast<VoronoiCell::MaterialIndex>(-1);
+        return static_cast<MaterialIndex>(-1);
     }
 }
 
@@ -71,6 +78,102 @@ unsigned int HashTreeWorld::getCellId(spatial::UintCoord coord) {
     unsigned int y = coord.y % Chunk::size;
     unsigned int z = coord.z % Chunk::size;
     return leafNode->second.chunkId + ((x * Chunk::size) + y) * Chunk::size + z;
+}
+
+HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit) {
+    RayDrawer rayDrawer(origin, dir);
+
+    // Initialize sizeLog2 with a reasonable guess.
+    // If it's incorrect, it'll be fixed.
+    // On subsequent loop iterations, it'll just roll over. The previous size is the new guess.
+    unsigned int sizeLog2 = std::max(static_cast<signed int>(Chunk::sizeLog2), guessViewChunkSizeLog2(rayDrawer.getCurCoord()));
+
+    // TODO: Initialize RayDrawer to the correct level
+
+    iterateNewChunk:
+
+    // Here, we make sure the sizeLog2 is exact.
+    bool shouldParentSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCoord(), sizeLog2 + 1));
+    if (shouldParentSubdiv) {
+        while (true) {
+            bool shouldSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCoord(), sizeLog2));
+            if (!shouldSubdiv) {
+                break;
+            }
+            sizeLog2--;
+            rayDrawer.enterChildCell();
+        }
+    } else {
+        while (true) {
+            sizeLog2++;
+            bool shouldParentSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCoord(), sizeLog2 + 1));
+            if (shouldParentSubdiv) {
+                break;
+            }
+        }
+    }
+
+    // Try to insert/get the desired chunk.
+    std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> insert =
+            getMap().emplace(spatial::CellKey::fromCoord(rayDrawer.getCurCoord(), sizeLog2), CellValue());
+
+    if (insert.second) {
+        // Inserted new chunk
+        insert.first->second.setChunkId();
+
+        // Insert all parent nodes
+        unsigned int parentSizeLog2 = sizeLog2;
+        std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> parentInsert;
+        do {
+            parentSizeLog2++;
+            parentInsert = getMap().emplace(spatial::CellKey::fromCoord(rayDrawer.getCurCoord(), parentSizeLog2), CellValue());
+        } while (parentInsert.second);
+    }
+
+    if (insert.first->second.chunk) {
+        // In this case, we have cells for the chunk (as opposed to it being a constant chunk)
+
+        while (rayDrawer.getDistanceAtNextStep() <= distanceLimit) {
+            bool steppedIntoNewChunk = rayDrawer.step<Chunk::size>();
+            if (steppedIntoNewChunk) {
+                goto iterateNewChunk;
+            }
+
+            unsigned int materialIndex = getMaterialIndex(coord);
+            if (materialIndex == static_cast<MaterialIndex>(-1)) {
+                RaytestResult res;
+                res.hitCoord = coord;
+                res.materialIndex = static_cast<MaterialIndex>(-1);
+                res.pointDistance = std::min({ stepTime.x, stepTime.y, stepTime.z });
+                return res;
+            } else if (!isTransparent(materialIndex)) {
+                RaytestResult res;
+                res.hitCoord = coord;
+                res.materialIndex = materialIndex;
+                res.pointDistance = std::min({ stepTime.x, stepTime.y, stepTime.z });
+                return res;
+            }
+        }
+    } else {
+        MaterialIndex material = insert.first->second.constantMaterialIndex;
+        RaytestResult res;
+        switch (material) {
+        case MaterialIndex::Null:
+            generateChunk(&*insert.first);
+
+            // Fall-through intentional
+        case MaterialIndex::Generating:
+            res.result = RaytestResult::HitGenerating;
+            return res;
+
+        default:
+            res.result = RaytestResult::HitGenerating;
+            res.surfaceMaterialIndex = material;
+            res.surfaceHitCoord = rayDrawer.getCurCoord();
+            res.surfaceChunkSizeLog2 = sizeLog2;
+            return res;
+        }
+    }
 }
 
 HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit) {
@@ -132,10 +235,10 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 
         }
 
         unsigned int materialIndex = getMaterialIndex(coord);
-        if (materialIndex == static_cast<VoronoiCell::MaterialIndex>(-1)) {
+        if (materialIndex == static_cast<MaterialIndex>(-1)) {
             RaytestResult res;
             res.hitCoord = coord;
-            res.materialIndex = static_cast<VoronoiCell::MaterialIndex>(-1);
+            res.materialIndex = static_cast<MaterialIndex>(-1);
             res.pointDistance = std::min({ stepTime.x, stepTime.y, stepTime.z });
             return res;
         } else if (!isTransparent(materialIndex)) {
@@ -149,7 +252,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 
 
     RaytestResult res;
     res.hitCoord = spatial::UintCoord(0);
-    res.materialIndex = static_cast<VoronoiCell::MaterialIndex>(-1);
+    res.materialIndex = static_cast<MaterialIndex>(-1);
     res.pointDistance = distanceLimit;
     return res;
 }
@@ -164,7 +267,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRaySlow(glm::vec3 origin, glm::v
         float distParallel; // Distance along ray
         float distPerpendicularSq; // Distance from ray
         spatial::UintCoord fromCell;
-        VoronoiCell::MaterialIndex materialIndex;
+        MaterialIndex materialIndex;
     };
     std::vector<EnqueuedCell> cellQueue;
 
@@ -251,7 +354,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRaySlow(glm::vec3 origin, glm::v
             } else if (leafNode->second.type == CellValue::Type::LeafGenerating) {
                 assert(false); // TODO: Need to build this result correctly
                 RaytestResult res;
-                res.materialIndex = static_cast<VoronoiCell::MaterialIndex>(-1);
+                res.materialIndex = static_cast<MaterialIndex>(-1);
                 // res.surfaceDistance = minSurfaceDist; // Not giving this means we can skip uniform chunks.
                 res.pointDistance = loadDistance + maxDistanceChange;
                 return res;
@@ -290,7 +393,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testRaySlow(glm::vec3 origin, glm::v
 
     RaytestResult res;
     res.hitCoord = spatial::UintCoord(0);
-    res.materialIndex = static_cast<VoronoiCell::MaterialIndex>(-1);
+    res.materialIndex = static_cast<MaterialIndex>(-1);
     res.pointDistance = distanceLimit;
     return res;
 }
@@ -332,13 +435,28 @@ const pointgen::Chunk *HashTreeWorld::getChunkPoints(Cell *cell) {
     return cell->second.points;
 }
 
-void HashTreeWorld::requestWorldGen(Cell *cell) {
-    // TODO: Hopefully the point chunk doesn't get re-allocated before the request is finished
+void HashTreeWorld::generateChunk(Cell *cell) {
+    assert(cell->second.chunk == 0);
+    assert(cell->second.constantMaterialIndex == MaterialIndex::Null);
+
+    if (cell->first.sizeLog2 > Chunk::sizeLog2) {
+        // There might be leaf-level chunks that we can deduce some materials from
+        // There's really three cases here:
+        // 1. There's no leaf-level chunks, so we can just set constantMaterialIndex = MaterialIndex::Generating.
+        // 2. There's some leaf-level chunks, so we should allocate a new world::Chunk
+        //      and fill each cell with either MaterialIndex::Generating or the leaf-level material.
+        // 3. The entire cell's covered with leaf-level chunks, so we can fill this entire chunk and skip the generation request.
+        // For now, just assume there's no leaf-level chunks.
+    }
+
+    cell->second.constantMaterialIndex = MaterialIndex::Generating;
+
     context.get<worldgen::WorldGenerator>().generate(cell->first, getChunkPoints(cell));
 }
 
-void HashTreeWorld::finishWorldGen(spatial::CellKey cube, VoronoiCell::MaterialIndex constantMaterialIndex, Chunk *chunk) {
+void HashTreeWorld::finishWorldGen(spatial::CellKey cube, MaterialIndex constantMaterialIndex, Chunk *chunk) {
     Cell *node = getNodeContaining(cube);
+    assert(node->second.chunk == 0);
     assert(node->second.type == CellValue::Type::LeafGenerating);
 
     if (chunk) {
@@ -419,8 +537,8 @@ void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, f
 }
 */
 
-bool HashTreeWorld::isTransparent(VoronoiCell::MaterialIndex materialIndex) const {
-    assert(materialIndex != static_cast<VoronoiCell::MaterialIndex>(-1));
+bool HashTreeWorld::isTransparent(MaterialIndex materialIndex) const {
+    assert(materialIndex != static_cast<MaterialIndex>(-1));
 
     // TODO: Maybe cache this lookup?
     render::SceneManager &sceneManager = context.get<render::SceneManager>();

@@ -16,6 +16,9 @@ public:
     void tick(game::TickerContext &tickerContext);
 
     unsigned int registerMaterials(const flatbuffers::Vector<flatbuffers::Offset<SsProtocol::Material>> *materials);
+
+private:
+    void createGeneratingMaterial();
 };
 
 }

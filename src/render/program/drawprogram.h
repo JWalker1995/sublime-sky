@@ -9,6 +9,15 @@ namespace render {
 
 class DrawProgram : public Program {
 public:
+    class NoRenderConfigException : public jw_util::BaseException {
+        friend class DrawProgram;
+
+    private:
+        NoRenderConfigException(const std::string &msg)
+            : BaseException(msg)
+        {}
+    };
+
     DrawProgram(game::GameContext &context);
 
     virtual void insertDefines(Defines &defines);

@@ -1,17 +1,15 @@
 #pragma once
 
-#include <cstdint>
-
 #include "graphics/glm.h"
 #include <glm/vec3.hpp>
 #include <glm/gtx/norm.hpp>
+
+#include "world/materialindex.h"
 
 namespace world {
 
 class VoronoiCell {
 public:
-    typedef std::uint16_t MaterialIndex;
-
     MaterialIndex materialIndex = 0;
 
 //    glm::vec3 center;

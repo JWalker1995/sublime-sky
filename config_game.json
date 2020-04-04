@@ -1,27 +1,5 @@
 {
-  "seed": 1234,
-  "initialCheckpointCapacity": 8,
-  "maxRollbackDistance": 1024,
-  "inventory": {
-    "numSlots": 10
-  },
-  "dependencyWatcher": {
-    "updateIntervalSeconds": 1,
-    "folders": []
-  },
-  "worldgenModel_type": "WfcModel",
-  "worldgenModel": {
-    "seed": 0,
-    "rotationResolution": 10,
-    "featureSizeXY": 0.4,
-    "featureSizeZ": 0.4,
-    "featureCountXY": 5,
-    "featureCountZ": 5
-  },
-  "samplesDir": "samples/",
-  "samplesSuffix": ".json",
-  "joinSpawner": {
-    "center": { "x": 0, "y": 0, "z": 0 },
-    "radius": 25
-  }
+	"seed": 1234,
+	"point_generator_type": "RSquaredLatticeGenerator",
+	"point_generator": {}
 }
