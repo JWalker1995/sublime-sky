@@ -1,5 +1,6 @@
 {
   "log_level": "trace",
+  "test_runner": {},
   "signal_handler": {},
   "window": {
     "title": "Sublime Sky Alpha",

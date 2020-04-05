@@ -39,6 +39,7 @@ public:
     pointgen::Chunk *points = 0;
     bool needsRegen[Chunk::size][Chunk::size][Chunk::size] = {{{0}}};
     std::vector<unsigned int> faceIndices;
+    const std::uint_fast8_t *gasMask; // Haha
 };
 
 class HashTreeWorld : private spatial::HashTree<HashTreeWorld, CellValue>, public game::TickerContext::TickableBase<HashTreeWorld> {
@@ -114,8 +115,7 @@ public:
 
         // These properties are only set if result == HitSurface:
         MaterialIndex surfaceMaterialIndex;
-        spatial::UintCoord surfaceHitCoord;
-        unsigned int surfaceChunkSizeLog2;
+        spatial::CellKey surfaceHitCell;
 //        float surfacePointDistance;
     };
     RaytestResult testViewRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit);

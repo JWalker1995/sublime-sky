@@ -18,6 +18,7 @@ struct CellKey {
     {}
 
     bool isNearby(CellKey other) const {
+        assert(sizeLog2 == other.sizeLog2);
         return true
                 && std::abs(static_cast<UintCoord::SignedAxisType>(cellCoord.x - other.cellCoord.x)) <= 1
                 && std::abs(static_cast<UintCoord::SignedAxisType>(cellCoord.y - other.cellCoord.y)) <= 1

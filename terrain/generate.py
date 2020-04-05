@@ -109,7 +109,7 @@ def generate_terrain(seed, points):
 	res[points[:, 2] + noise_values * 40 < 5.0] = 1
 
 	# Assign water
-	res[points[:, 2] < 0.0] = 2
+	res[points[:, 2] < -5.0] = 2
 
 	# # Assign clouds
 	# res[(points[:, 2] - 110) ** 2 * 1e-1 + noise_values * 100 < -60.0] = 3

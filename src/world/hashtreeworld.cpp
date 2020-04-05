@@ -84,93 +84,75 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
     // Initialize sizeLog2 with a reasonable guess.
     // If it's incorrect, it'll be fixed.
     // On subsequent loop iterations, it'll just roll over. The previous size is the new guess.
-    signed int guessSizeLog2 = guessViewChunkSizeLog2(spatial::UintCoord::fromPoint(origin));
-    unsigned int sizeLog2 = std::max(static_cast<signed int>(Chunk::sizeLog2), guessSizeLog2);
+    spatial::UintCoord initCoord = spatial::UintCoord::fromPoint(origin);
+    unsigned int sizeLog2 = std::max(static_cast<signed int>(Chunk::sizeLog2), guessViewChunkSizeLog2(initCoord));
 
-    RayDrawer rayDrawer(dir);
+    RayDrawer chunkIt(origin, dir, spatial::CellKey::fromCoord(initCoord, sizeLog2));
 
-    iterateNewChunk:
-
-    // Here, we make sure the sizeLog2 is exact.
-    bool shouldParentSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCellKey(), sizeLog2 + 1));
-    if (shouldParentSubdiv) {
-        while (true) {
-            bool shouldSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCellKey(), sizeLog2));
-            if (!shouldSubdiv) {
-                break;
+    while (true) {
+        // Here, we make sure the sizeLog2 is exact.
+        bool shouldParentSubdiv = shouldSubdivForView(chunkIt.getCurCellKey().parent());
+        if (shouldParentSubdiv) {
+            while (true) {
+                bool shouldSubdiv = shouldSubdivForView(chunkIt.getCurCellKey());
+                if (!shouldSubdiv) {
+                    break;
+                }
+                chunkIt.enterChildCell();
             }
-            sizeLog2--;
-            rayDrawer.enterChildCell();
+        } else {
+            while (true) {
+                chunkIt.enterParentCell();
+                bool shouldParentSubdiv = shouldSubdivForView(chunkIt.getCurCellKey().parent());
+                if (shouldParentSubdiv) {
+                    break;
+                }
+            }
         }
-    } else {
-        while (true) {
-            sizeLog2++;
-            bool shouldParentSubdiv = shouldSubdivForView(spatial::CellKey::fromCoord(rayDrawer.getCurCellKey(), sizeLog2 + 1));
-            if (shouldParentSubdiv) {
-                break;
-            }
+
+        // Try to insert/get the desired chunk.
+        std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> insert =
+                getMap().emplace(chunkIt.getCurCellKey(), CellValue());
+
+        if (insert.second) {
+            // Inserted new chunk
+            insert.first->second.setChunkId();
+
+            // Insert all parent nodes
+            spatial::CellKey parentCellKey = chunkIt.getCurCellKey();
+            std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> parentInsert;
+            do {
+                parentCellKey = parentCellKey.parent();
+                parentInsert = getMap().emplace(parentCellKey, CellValue());
+            } while (parentInsert.second);
         }
-    }
 
-    // Try to insert/get the desired chunk.
-    std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> insert =
-            getMap().emplace(spatial::CellKey::fromCoord(rayDrawer.getCurCellKey(), sizeLog2), CellValue());
+        if (insert.first->second.chunk) {
+            // In this case, we have cells for the chunk (as opposed to it being a constant chunk)
 
-    if (insert.second) {
-        // Inserted new chunk
-        insert.first->second.setChunkId();
 
-        // Insert all parent nodes
-        unsigned int parentSizeLog2 = sizeLog2;
-        std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> parentInsert;
-        do {
-            parentSizeLog2++;
-            parentInsert = getMap().emplace(spatial::CellKey::fromCoord(rayDrawer.getCurCellKey(), parentSizeLog2), CellValue());
-        } while (parentInsert.second);
-    }
+        } else {
+            MaterialIndex material = insert.first->second.constantMaterialIndex;
+            RaytestResult res;
+            switch (material) {
+            case MaterialIndex::Null:
+                generateChunk(&*insert.first);
 
-    if (insert.first->second.chunk) {
-        // In this case, we have cells for the chunk (as opposed to it being a constant chunk)
-
-        while (rayDrawer.getDistanceAtNextStep() <= distanceLimit) {
-            bool steppedIntoNewChunk = rayDrawer.step<Chunk::size>();
-            if (steppedIntoNewChunk) {
-                goto iterateNewChunk;
-            }
-
-            unsigned int materialIndex = getMaterialIndex(coord);
-            if (materialIndex == static_cast<MaterialIndex>(-1)) {
-                RaytestResult res;
-                res.hitCoord = coord;
-                res.materialIndex = static_cast<MaterialIndex>(-1);
-                res.pointDistance = std::min({ stepTime.x, stepTime.y, stepTime.z });
+                // Fall-through intentional
+            case MaterialIndex::Generating:
+                res.result = RaytestResult::HitGenerating;
                 return res;
-            } else if (!isTransparent(materialIndex)) {
-                RaytestResult res;
-                res.hitCoord = coord;
-                res.materialIndex = materialIndex;
-                res.pointDistance = std::min({ stepTime.x, stepTime.y, stepTime.z });
-                return res;
+
+            default:
+                if (isTransparent(material)) {
+                    chunkIt.step();
+                } else {
+                    res.result = RaytestResult::HitSurface;
+                    res.surfaceMaterialIndex = material;
+                    res.surfaceHitCell = chunkIt.getCurCellKey();
+                    return res;
+                }
             }
-        }
-    } else {
-        MaterialIndex material = insert.first->second.constantMaterialIndex;
-        RaytestResult res;
-        switch (material) {
-        case MaterialIndex::Null:
-            generateChunk(&*insert.first);
-
-            // Fall-through intentional
-        case MaterialIndex::Generating:
-            res.result = RaytestResult::HitGenerating;
-            return res;
-
-        default:
-            res.result = RaytestResult::HitGenerating;
-            res.surfaceMaterialIndex = material;
-            res.surfaceHitCoord = rayDrawer.getCurCellKey();
-            res.surfaceChunkSizeLog2 = sizeLog2;
-            return res;
         }
     }
 }

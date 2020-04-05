@@ -6,6 +6,7 @@
 
 #include "spatial/cellkey.h"
 
+// TODO: Move to spatial namespace
 namespace world {
 
 class RayDrawer {
@@ -25,20 +26,67 @@ public:
         };
     }
 
+    glm::vec3 getCurCellEnterPosition() const {
+        float lastStepTime = 0.0f;
+        for (unsigned int i = 0; i < 3; i++) {
+            float t = timeToPlane[i] - std::fabs(timeStepSize[i]);
+            if (t > lastStepTime) {
+                lastStepTime = t;
+            }
+        }
+
+        glm::vec3 res;
+        for (unsigned int i = 0; i < 3; i++) {
+            res[i] = (timeToPlane[i] - lastStepTime) / std::fabs(timeStepSize[i]);
+            if (timeStepSize[i] >= 0.0f) {
+                res[i] = 1.0f - res[i];
+            }
+            assert(res[i] > -0.001 && res[i] < 1.001f);
+        }
+        return res;
+    }
+
+    glm::vec3 getCurCellExitPosition() const {
+        float firstStepTime = std::numeric_limits<float>::infinity();
+        for (unsigned int i = 0; i < 3; i++) {
+            float t = timeToPlane[i];
+            if (t < firstStepTime) {
+                firstStepTime = t;
+            }
+        }
+
+        glm::vec3 res;
+        for (unsigned int i = 0; i < 3; i++) {
+            res[i] = (timeToPlane[i] - firstStepTime) / std::fabs(timeStepSize[i]);
+            if (timeStepSize[i] >= 0.0f) {
+                res[i] = 1.0f - res[i];
+            }
+            assert(res[i] > -0.001 && res[i] < 1.001f);
+        }
+        return res;
+    }
+
     void enterChildCell() {
-        // This method should work, but will test some extra cells because we always enter the low-bit child
+        float lastStepTime = 0.0f;
+        for (unsigned int i = 0; i < 3; i++) {
+            float t = timeToPlane[i] - std::fabs(timeStepSize[i]);
+            if (t > lastStepTime) {
+                lastStepTime = t;
+            }
+        }
 
-        // Go into the low-bit child
-        cellKey = cellKey.child<0, 0, 0>();
-
-        // Update time
+        bool childDir[3];
         for (unsigned int i = 0; i < 3; i++) {
             timeStepSize[i] *= 0.5f;
 
-            if (timeStepSize[i] >= 0.0f) {
-                timeToPlane[i] -= timeStepSize[i];
+            bool farCell = (timeToPlane[i] - lastStepTime) > std::fabs(timeStepSize[i]);
+            childDir[i] = farCell ^ (timeStepSize[i] >= 0.0f);
+            if (farCell) {
+                timeToPlane[i] -= std::fabs(timeStepSize[i]);
             }
         }
+
+        cellKey = cellKey.grandChild<1>(childDir[0], childDir[1], childDir[2]);
     }
 
     void enterParentCell() {
@@ -49,7 +97,7 @@ public:
                 // If going towards negative, but we're in the high-bit child of the parent cell.
                 // THEN
                 // We need to add on the time it would take to cross that child cell
-                timeToPlane[i] += std::abs(timeStepSize[i]);
+                timeToPlane[i] += std::fabs(timeStepSize[i]);
             }
 
             timeStepSize[i] *= 2.0f;
@@ -78,30 +126,31 @@ public:
         }
     }
 
-    template <spatial::UintCoord::AxisType chunkSize>
-    bool step() {
+//    template <spatial::UintCoord::AxisType chunkSize>
+//    bool step() {
         // Returns true if this step is over a chunk boundary
 
+    void step() {
         if (timeToPlane.x < timeToPlane.y) {
             if (timeToPlane.x < timeToPlane.z) {
                 if (timeStepSize.x >= 0.0f) {
                     cellKey.cellCoord.x++;
                     timeToPlane.x += timeStepSize.x;
-                    return cellKey.cellCoord.x % chunkSize == 0;
+//                    return cellKey.cellCoord.x % chunkSize == 0;
                 } else {
                     cellKey.cellCoord.x--;
                     timeToPlane.x -= timeStepSize.x;
-                    return cellKey.cellCoord.x % chunkSize == chunkSize - 1;
+//                    return cellKey.cellCoord.x % chunkSize == chunkSize - 1;
                 }
             } else {
                 if (timeStepSize.z >= 0.0f) {
                     cellKey.cellCoord.z++;
                     timeToPlane.z += timeStepSize.z;
-                    return cellKey.cellCoord.z % chunkSize == 0;
+//                    return cellKey.cellCoord.z % chunkSize == 0;
                 } else {
                     cellKey.cellCoord.z--;
                     timeToPlane.z -= timeStepSize.z;
-                    return cellKey.cellCoord.z % chunkSize == chunkSize - 1;
+//                    return cellKey.cellCoord.z % chunkSize == chunkSize - 1;
                 }
             }
         } else {
@@ -109,21 +158,21 @@ public:
                 if (timeStepSize.y >= 0.0f) {
                     cellKey.cellCoord.y++;
                     timeToPlane.y += timeStepSize.y;
-                    return cellKey.cellCoord.y % chunkSize == 0;
+//                    return cellKey.cellCoord.y % chunkSize == 0;
                 } else {
                     cellKey.cellCoord.y--;
                     timeToPlane.y -= timeStepSize.y;
-                    return cellKey.cellCoord.y % chunkSize == chunkSize - 1;
+//                    return cellKey.cellCoord.y % chunkSize == chunkSize - 1;
                 }
             } else {
                 if (timeStepSize.z >= 0.0f) {
                     cellKey.cellCoord.z++;
                     timeToPlane.z += timeStepSize.z;
-                    return cellKey.cellCoord.z % chunkSize == 0;
+//                    return cellKey.cellCoord.z % chunkSize == 0;
                 } else {
                     cellKey.cellCoord.z--;
                     timeToPlane.z -= timeStepSize.z;
-                    return cellKey.cellCoord.z % chunkSize == chunkSize - 1;
+//                    return cellKey.cellCoord.z % chunkSize == chunkSize - 1;
                 }
             }
         }
