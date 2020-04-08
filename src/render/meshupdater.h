@@ -9,7 +9,7 @@
 
 #include "game/tickercontext.h"
 #include "render/scenemanager.h"
-#include "spatial/uintcoord.h"
+#include "spatial/cellkey.h"
 
 namespace game { class GameContext; }
 
@@ -22,10 +22,10 @@ public:
 
     void tick(game::TickerContext &tickerContext);
 
-    void enqueueCellUpdate(spatial::UintCoord coord, bool enableDestroyGeometry);
+    void enqueueCellUpdate(spatial::CellKey cellKey);
 
-    template <bool enableDestroyGeometry>
-    void updateCell(spatial::UintCoord coord);
+//    template <bool enableDestroyGeometry>
+    void updateCell(spatial::CellKey cellKey);
 
     render::SceneManager::MeshHandle getMeshHandle() const {
         return meshHandle;
@@ -35,7 +35,7 @@ private:
     util::SmallVectorManager<unsigned int> &facesVecManager;
     SceneManager::MeshHandle meshHandle;
 
-    std::queue<std::pair<spatial::UintCoord, bool>> cellUpdateQueue;
+    std::queue<spatial::CellKey> cellUpdateQueue;
 
     // TODO: This doesn't really even have to store the pair.
     // A vector, that maps a hash to a uint and forces the user to check equality should suffice.

@@ -3,7 +3,6 @@ Tuprules.tup
 cleanup_files.sh
 config_client.json
 config_game.json
-config_server.json
 defines.cfg
 src/application/callqueue.h
 src/application/gamerecorder.cpp
@@ -178,6 +177,8 @@ src/spatial/octree.h
 src/spatial/pointspatialindex.h
 src/spatial/raycastlookuptable.cpp
 src/spatial/raycastlookuptable.h
+src/spatial/raychunklookuptable.cpp
+src/spatial/raychunklookuptable.h
 src/spatial/uintcoord.h
 src/spatial/uniformpointindexer.h
 src/util/hashforwarder.h

@@ -62,11 +62,11 @@ public:
         : remoteBuffer(target, bufferHint)
     {}
 
-    unsigned int getExtentSize() const {
+    std::size_t getExtentSize() const {
         return sharedData.size();
     }
 
-    unsigned int getActiveSize() const {
+    std::size_t getActiveSize() const {
         return sharedData.size() - availableIndices.size();
     }
 

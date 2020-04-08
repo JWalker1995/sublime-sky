@@ -17,7 +17,7 @@ void MaterialEditor::tick(game::TickerContext &tickerContext) {
     assert(materials.getActiveSize() == materials.getExtentSize());
 
     if (ImGui::Begin("Materials")) {
-        for (unsigned int i = 0; i < materials.getExtentSize(); i++) {
+        for (std::size_t i = 0; i < materials.getExtentSize(); i++) {
             render::SceneManager::MaterialMutator mat = materials.mutate(i);
 
             ImGui::ColorEdit4((mat.local.name + " ambient##" + std::to_string(i)).data(), mat.shared.colorAmbient, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);

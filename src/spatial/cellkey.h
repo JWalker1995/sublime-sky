@@ -135,9 +135,9 @@ struct CellKey {
     CellKey grandChild(UintCoord::AxisType dx, UintCoord::AxisType dy, UintCoord::AxisType dz) const {
         assert(sizeLog2 >= levels);
         CellKey res;
-        res.cellCoord.x = (cellCoord.x << levels) | dx;
-        res.cellCoord.y = (cellCoord.y << levels) | dy;
-        res.cellCoord.z = (cellCoord.z << levels) | dz;
+        res.cellCoord.x = (cellCoord.x << levels) + dx;
+        res.cellCoord.y = (cellCoord.y << levels) + dy;
+        res.cellCoord.z = (cellCoord.z << levels) + dz;
         res.sizeLog2 = sizeLog2 - levels;
         assert(res.sizeLog2 <= UintCoord::maxSizeLog2);
         return res;
@@ -145,6 +145,15 @@ struct CellKey {
 
     template <signed int dx, signed int dy, signed int dz>
     CellKey sibling() const {
+        CellKey res;
+        res.cellCoord.x = cellCoord.x + dx;
+        res.cellCoord.y = cellCoord.y + dy;
+        res.cellCoord.z = cellCoord.z + dz;
+        res.sizeLog2 = sizeLog2;
+        return res;
+    }
+
+    CellKey sibling(signed int dx, signed int dy, signed int dz) const {
         CellKey res;
         res.cellCoord.x = cellCoord.x + dx;
         res.cellCoord.y = cellCoord.y + dy;

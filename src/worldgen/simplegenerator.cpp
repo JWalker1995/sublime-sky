@@ -37,7 +37,12 @@ SimpleGenerator::SimpleGenerator(game::GameContext &context)
 }
 
 void SimpleGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *points) {
-    world::Chunk *dstChunk = context.get<util::Pool<world::Chunk>>().alloc();
+    world::HashTreeWorld::Cell *cell = context.get<world::HashTreeWorld>().lookupChunk(cube);
+
+    if (!cell->second.chunk) {
+        cell->second.chunk = context.get<util::Pool<world::Chunk>>().alloc();
+    }
+    cell->second.needsRegen.fill<true>();
 
     bool allSame = true;
     bool allState = getState(points->points[0][0][0]);
@@ -46,7 +51,7 @@ void SimpleGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *poi
         for (unsigned int j = 0; j < world::Chunk::size; j++) {
             for (unsigned int k = 0; k < world::Chunk::size; k++) {
                 bool state = getState(points->points[i][j][k]);
-                dstChunk->cells[i][j][k].materialIndex = state ? groundMaterialIndex : airMaterialIndex;
+                cell->second.chunk->cells[i][j][k].materialIndex = static_cast<world::MaterialIndex>(state ? groundMaterialIndex : airMaterialIndex);
 
                 allSame &= state == allState;
             }
@@ -65,11 +70,16 @@ void SimpleGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *poi
     allSame = false;
 
     if (allSame) {
-        context.get<util::Pool<world::Chunk>>().free(dstChunk);
-        context.get<world::HashTreeWorld>().finishWorldGen(cube, allState, 0);
+        context.get<util::Pool<world::Chunk>>().free(cell->second.chunk);
+        cell->second.chunk = 0;
+        cell->second.constantMaterialIndex = static_cast<world::MaterialIndex>(allState ? groundMaterialIndex : airMaterialIndex);
     } else {
-        context.get<world::HashTreeWorld>().finishWorldGen(cube, static_cast<world::MaterialIndex>(-1), dstChunk);
+#ifndef NDEBUG
+        cell->second.constantMaterialIndex = static_cast<world::MaterialIndex>(-1);
+#endif
     }
+
+    context.get<world::HashTreeWorld>().updateGasMasks(&cell->second);
 }
 
 bool SimpleGenerator::getState(glm::vec3 point) {

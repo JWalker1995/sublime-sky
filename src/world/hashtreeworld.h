@@ -2,6 +2,8 @@
 
 #include "defs/VIEW_CHUNK_SUBDIV_OFFSET_LOG2.h"
 
+#include "jw_util/bitset.h"
+
 #include "spatial/hashtree.h"
 #include "game/tickercontext.h"
 #include "world/chunk.h"
@@ -37,15 +39,17 @@ public:
     MaterialIndex constantMaterialIndex = MaterialIndex::Null;
     Chunk *chunk = 0;
     pointgen::Chunk *points = 0;
-    bool needsRegen[Chunk::size][Chunk::size][Chunk::size] = {{{0}}};
     std::vector<unsigned int> faceIndices;
-    const std::uint_fast8_t *gasMask; // Haha
+    jw_util::Bitset<Chunk::size * Chunk::size * Chunk::size> needsRegen;
+    jw_util::Bitset<Chunk::size * Chunk::size * Chunk::size> gasMasks[3];
 };
 
 class HashTreeWorld : private spatial::HashTree<HashTreeWorld, CellValue>, public game::TickerContext::TickableBase<HashTreeWorld> {
     friend class spatial::HashTree<HashTreeWorld, CellValue>;
 
 public:
+    using spatial::HashTree<HashTreeWorld, CellValue>::Cell;
+
     template <bool populateState, bool populatePoints>
     class CellIterator {
     public:
@@ -98,13 +102,18 @@ public:
 
     void tick(game::TickerContext &tickerContext);
 
+    Cell *lookupChunk(spatial::CellKey cellKey);
+
+    void updateGasMasks(CellValue *cellValue);
+
+    /*
     CellValue &getCellValueContaining(spatial::UintCoord coord);
     MaterialIndex getMaterialIndex(spatial::UintCoord coord);
     VoronoiCell &getVoronoiCell(spatial::UintCoord coord);
     glm::vec3 getPoint(spatial::UintCoord coord);
     bool &getNeedsRegen(spatial::UintCoord coord);
     unsigned int getCellId(spatial::UintCoord coord);
-
+    */
     struct RaytestResult {
         enum Result {
             HitSurface,
@@ -119,48 +128,20 @@ public:
 //        float surfacePointDistance;
     };
     RaytestResult testViewRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit);
-    RaytestResult testRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit);
-    RaytestResult testRaySlow(glm::vec3 origin, glm::vec3 dir, float distanceLimit);
+//    RaytestResult testRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit);
+//    RaytestResult testRaySlow(glm::vec3 origin, glm::vec3 dir, float distanceLimit);
 
-    spatial::UintCoord getContainingCoord(glm::vec3 point);
-
-    void finishWorldGen(spatial::CellKey cube, MaterialIndex constantMaterialIndex, Chunk *chunk);
+//    spatial::UintCoord getContainingCoord(glm::vec3 point);
 
 //    void emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing);
 
-    bool isTransparent(MaterialIndex materialIndex) const;
+    const pointgen::Chunk *getChunkPoints(Cell *cell);
 
-private:
-    spatial::UintCoord cameraCoord;
-    spatial::UintCoord calcCameraCoord();
+    bool isGas(MaterialIndex materialIndex) const;
 
-    static CellValue makeRootBranch() {
-        CellValue res;
-        res.type = CellValue::Type::Branch;
-        return res;
-    }
-    static void setBranch(Cell *cell) {
-        cell->second.type = CellValue::Type::Branch;
-    }
-    static void setBranchWithParent(Cell *cell, const Cell *parent) {
-        (void) parent;
-        setBranch(cell);
-    }
-
-    void setLeaf(Cell *cell) {
-        cell->second.type = CellValue::Type::LeafGenerating;
-        generateChunk(cell);
-    }
-
-    void setLeafWithParent(Cell *cell, const Cell *parent) {
-        (void) parent;
-        setLeaf(cell);
-    }
-
-    bool shouldSubdiv(Cell *cell) const {
+    bool shouldSubdivForPhysics(Cell *cell) const {
         return cell->first.sizeLog2 > Chunk::sizeLog2;
     }
-
     bool shouldSubdivForView(spatial::CellKey cellKey) {
         if (cellKey.sizeLog2 <= Chunk::sizeLog2) {
             return false;
@@ -168,6 +149,16 @@ private:
 
         signed int desiredSizeLog2 = guessViewChunkSizeLog2(cellKey.child<1, 1, 1>().getCoord<0, 0, 0>());
         return static_cast<signed int>(cellKey.sizeLog2) > desiredSizeLog2;
+    }
+
+private:
+    spatial::UintCoord cameraCoord;
+    spatial::UintCoord calcCameraCoord();
+
+    static CellValue makeRootBranch() {
+        CellValue res;
+        res.setChunkId();
+        return res;
     }
 
     signed int guessViewChunkSizeLog2(spatial::UintCoord coord) const {
@@ -185,8 +176,6 @@ private:
         signed int desiredSizeLog2 = numSigBits / 2 + VIEW_CHUNK_SUBDIV_OFFSET_LOG2;
         return desiredSizeLog2;
     }
-
-    const pointgen::Chunk *getChunkPoints(Cell *cell);
 
     void generateChunk(Cell *cell);
 };

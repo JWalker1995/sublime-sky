@@ -48,35 +48,27 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
     cube.cellCoord.x = chunk->cell_coord()->x();
     cube.cellCoord.y = chunk->cell_coord()->y();
     cube.cellCoord.z = chunk->cell_coord()->z();
+    world::HashTreeWorld::Cell *cell = context.get<world::HashTreeWorld>().lookupChunk(cube);
 
-    world::Chunk *dstChunk = context.get<util::Pool<world::Chunk>>().alloc();
+    if (!cell->second.chunk) {
+        cell->second.chunk = context.get<util::Pool<world::Chunk>>().alloc();
+    }
+    cell->second.needsRegen.fill<true>();
 
     const std::uint32_t *ptPtr = chunk->cell_materials()->data();
     for (unsigned int i = 0; i < pointgen::Chunk::size; i++) {
         for (unsigned int j = 0; j < pointgen::Chunk::size; j++) {
             for (unsigned int k = 0; k < pointgen::Chunk::size; k++) {
-                dstChunk->cells[i][j][k].materialIndex = materialOffset + *ptPtr++;
+                cell->second.chunk->cells[i][j][k].materialIndex = static_cast<world::MaterialIndex>(materialOffset + *ptPtr++);
             }
         }
     }
 
-//    spatial::UintCoord coord = spatial::UintCoord::fromPoint(glm::vec3(5.0f, 5.0f, 20.0f));
+#ifndef NDEBUG
+    cell->second.constantMaterialIndex = static_cast<world::MaterialIndex>(-1);
+#endif
 
-//    static unsigned int t = 0;
-//    if (t) {
-//        t++;
-//        if (t == 100) {
-//            coord.x++;
-//            context.get<render::MeshUpdater>().updateCell(coord);
-//        }
-//    }
-
-//    if (cube.contains(coord)) {
-//        dstChunk->cells[coord.x % world::Chunk::size][coord.y % world::Chunk::size][coord.z % world::Chunk::size].type = world::SpaceState::Dirt;
-//        t++;
-//    }
-
-    context.get<world::HashTreeWorld>().finishWorldGen(cube, static_cast<world::MaterialIndex>(-1), dstChunk);
+    context.get<world::HashTreeWorld>().updateGasMasks(&cell->second);
 }
 
 }

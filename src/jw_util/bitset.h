@@ -7,8 +7,11 @@
 
 namespace jw_util {
 
-template <unsigned int size>
+template <unsigned int size_>
 class Bitset {
+public:
+    static constexpr unsigned int size = size_;
+
     typedef typename std::conditional<size <= 8,
         std::uint_fast8_t,
         typename std::conditional<size <= 16,
@@ -23,7 +26,6 @@ class Bitset {
 
     static_assert((wordBits & (wordBits - 1)) == 0, "wordBits must be a power of 2");
 
-public:
     class ValueIterator {
     public:
         ValueIterator(Bitset &bitset)
@@ -76,7 +78,7 @@ public:
         }
 
         if (value) {
-            words[numWords - 1] &= (static_cast<WordType>(1) << (size % wordBits)) - 1;
+            maskLastWord();
         }
     }
 
@@ -119,6 +121,7 @@ public:
         for (unsigned int i = 0; i < numWords; i++) {
             res.words[i] = ~words[i];
         }
+        res.maskLastWord();
         return res;
     }
 
@@ -159,8 +162,9 @@ public:
         return !(*this == other);
     }
 
-private:
-    WordType words[numWords];
+    void maskLastWord() {
+        words[numWords - 1] &= (static_cast<WordType>(1) << (size % wordBits)) - 1;
+    }
 
     static unsigned int getLsbIndex(unsigned char word) { return getLsbIndex(static_cast<unsigned int>(word)); }
     static unsigned int getLsbIndex(unsigned short word) { return getLsbIndex(static_cast<unsigned int>(word)); }
@@ -173,6 +177,8 @@ private:
     static unsigned int getPopcount(unsigned int word) { return __builtin_popcount(word); }
     static unsigned int getPopcount(unsigned long word) { return __builtin_popcountl(word); }
     static unsigned int getPopcount(unsigned long long word) { return __builtin_popcountll(word); }
+
+    WordType words[numWords];
 };
 
 }

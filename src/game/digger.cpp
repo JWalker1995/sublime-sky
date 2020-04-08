@@ -30,8 +30,7 @@ void Digger::tick(game::TickerContext &tickerContext) {
     ImGui::GetForegroundDrawList()->AddLine(a, b, 0xFFFFFFFF, 2.0f);
     ImGui::GetForegroundDrawList()->AddLine(c, d, 0xFFFFFFFF, 2.0f);
 
-    return;
-
+    /*
     render::Camera &camera = context.get<render::Camera>();
     world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
     render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
@@ -53,6 +52,7 @@ void Digger::tick(game::TickerContext &tickerContext) {
             }
         }
     }
+    */
 }
 
 }

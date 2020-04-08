@@ -1,5 +1,7 @@
 #pragma once
 
+#include "defs/CHUNK_SIZE_LOG2.h"
+
 #include "graphics/glm.h"
 #include <glm/vec3.hpp>
 #include <glm/gtx/norm.hpp>
@@ -130,50 +132,25 @@ public:
 //    bool step() {
         // Returns true if this step is over a chunk boundary
 
-    void step() {
+    struct StepResult {
+//        glm::vec2 planeImpactPoint;
+//        bool towardsPositive;
+//        unsigned char stepAxis;
+        bool movedChunk;
+    };
+
+    StepResult step() {
         if (timeToPlane.x < timeToPlane.y) {
             if (timeToPlane.x < timeToPlane.z) {
-                if (timeStepSize.x >= 0.0f) {
-                    cellKey.cellCoord.x++;
-                    timeToPlane.x += timeStepSize.x;
-//                    return cellKey.cellCoord.x % chunkSize == 0;
-                } else {
-                    cellKey.cellCoord.x--;
-                    timeToPlane.x -= timeStepSize.x;
-//                    return cellKey.cellCoord.x % chunkSize == chunkSize - 1;
-                }
+                return stepWithDir<0>();
             } else {
-                if (timeStepSize.z >= 0.0f) {
-                    cellKey.cellCoord.z++;
-                    timeToPlane.z += timeStepSize.z;
-//                    return cellKey.cellCoord.z % chunkSize == 0;
-                } else {
-                    cellKey.cellCoord.z--;
-                    timeToPlane.z -= timeStepSize.z;
-//                    return cellKey.cellCoord.z % chunkSize == chunkSize - 1;
-                }
+                return stepWithDir<2>();
             }
         } else {
             if (timeToPlane.y < timeToPlane.z) {
-                if (timeStepSize.y >= 0.0f) {
-                    cellKey.cellCoord.y++;
-                    timeToPlane.y += timeStepSize.y;
-//                    return cellKey.cellCoord.y % chunkSize == 0;
-                } else {
-                    cellKey.cellCoord.y--;
-                    timeToPlane.y -= timeStepSize.y;
-//                    return cellKey.cellCoord.y % chunkSize == chunkSize - 1;
-                }
+                return stepWithDir<1>();
             } else {
-                if (timeStepSize.z >= 0.0f) {
-                    cellKey.cellCoord.z++;
-                    timeToPlane.z += timeStepSize.z;
-//                    return cellKey.cellCoord.z % chunkSize == 0;
-                } else {
-                    cellKey.cellCoord.z--;
-                    timeToPlane.z -= timeStepSize.z;
-//                    return cellKey.cellCoord.z % chunkSize == chunkSize - 1;
-                }
+                return stepWithDir<2>();
             }
         }
     }
@@ -182,6 +159,40 @@ private:
     spatial::CellKey cellKey;
     glm::vec3 timeToPlane;
     glm::vec3 timeStepSize;
+
+    template <unsigned int stepAxis>
+    StepResult stepWithDir() {
+        static constexpr spatial::UintCoord::AxisType chunkSize = static_cast<spatial::UintCoord::AxisType>(1) << CHUNK_SIZE_LOG2;
+
+        StepResult res;
+
+//        res.planeImpactPoint.x = (timeToPlane[stepAxis] - timeToPlane[(stepAxis + 1) % 3]) / timeStepSize[(stepAxis + 1) % 3];
+//        if (timeStepSize[(stepAxis + 1) % 3] >= 0.0f) {
+//            res.planeImpactPoint.x += 1.0f;
+//        }
+//        assert(res.planeImpactPoint.x > -0.001f && res.planeImpactPoint.x < 1.001f);
+
+//        res.planeImpactPoint.y = (timeToPlane[stepAxis] - timeToPlane[(stepAxis + 2) % 3]) / timeStepSize[(stepAxis + 2) % 3];
+//        if (timeStepSize[(stepAxis + 2) % 3] >= 0.0f) {
+//            res.planeImpactPoint.y += 1.0f;
+//        }
+//        assert(res.planeImpactPoint.y > -0.001f && res.planeImpactPoint.y < 1.001f);
+
+        if (timeStepSize[stepAxis] >= 0.0f) {
+//            res.towardsPositive = true;
+            cellKey.cellCoord[stepAxis]++;
+            timeToPlane[stepAxis] += timeStepSize[stepAxis];
+            res.movedChunk = cellKey.cellCoord.z % chunkSize == 0;
+        } else {
+//            res.towardsPositive = false;
+            cellKey.cellCoord[stepAxis]--;
+            timeToPlane[stepAxis] -= timeStepSize[stepAxis];
+            res.movedChunk = cellKey.cellCoord.z % chunkSize == chunkSize - 1;
+        }
+
+//        res.stepAxis = stepAxis;
+        return res;
+    }
 };
 
 }

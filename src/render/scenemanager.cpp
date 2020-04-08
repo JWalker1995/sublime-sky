@@ -1,13 +1,27 @@
 #include "scenemanager.h"
 
 #include "world/materialindex.h"
+#include "render/imguirenderer.h"
+#include "graphics/imgui.h"
 
 namespace render {
 
-SceneManager::SceneManager(game::GameContext &context) {
-    (void) context;
-
+SceneManager::SceneManager(game::GameContext &context)
+    : TickableBase(context)
+{
     createNullMaterial();
+}
+
+void SceneManager::tick(game::TickerContext &tickerContext) {
+    tickerContext.get<render::ImguiRenderer::Ticker>();
+
+    if (ImGui::Begin("Debug")) {
+        ImGui::Text("Mesh counts active/extent = %zu / %zu", getMeshBuffer().getActiveSize(), getMeshBuffer().getExtentSize());
+        ImGui::Text("Vert counts active/extent = %zu / %zu", getVertBuffer().getActiveSize(), getVertBuffer().getExtentSize());
+        ImGui::Text("Face counts active/extent = %zu / %zu", getFaceBuffer().getActiveSize(), getFaceBuffer().getExtentSize());
+        ImGui::Text("Material counts active/extent = %zu / %zu", getMaterialBuffer().getActiveSize(), getMaterialBuffer().getExtentSize());
+    }
+    ImGui::End();
 }
 
 void SceneManager::sync(graphics::GlVao &vao) {

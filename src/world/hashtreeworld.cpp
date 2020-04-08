@@ -20,7 +20,7 @@ HashTreeWorld::HashTreeWorld(game::GameContext &gameContext)
 void HashTreeWorld::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
 
-    assert(context.get<render::SceneManager>().getMaterialBuffer().getExtentSize() < std::numeric_limits<decltype(MaterialIndex)>::max());
+    assert(context.get<render::SceneManager>().getMaterialBuffer().getExtentSize() < std::numeric_limits<std::underlying_type<MaterialIndex>::type>::max());
 
     cameraCoord = calcCameraCoord();
 }
@@ -29,6 +29,56 @@ spatial::UintCoord HashTreeWorld::calcCameraCoord() {
     return spatial::UintCoord::fromPoint(context.get<render::Camera>().getEyePos());
 }
 
+HashTreeWorld::Cell *HashTreeWorld::lookupChunk(spatial::CellKey cellKey) {
+    std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator found = getMap().find(cellKey);
+    if (found == getMap().end()) {
+        return 0;
+    } else {
+        return &*found;
+    }
+}
+
+void HashTreeWorld::updateGasMasks(CellValue *cellValue) {
+    using BitsetType = jw_util::Bitset<Chunk::size * Chunk::size * Chunk::size>;
+    static_assert(BitsetType::size % BitsetType::wordBits == 0, "Bitset size is not a word multiple");
+
+    if (cellValue->chunk) {
+        cellValue->gasMasks[0].fill<false>();
+        cellValue->gasMasks[1].fill<false>();
+        cellValue->gasMasks[2].fill<false>();
+
+        for (unsigned int i = 0; i < Chunk::size; i++) {
+            for (unsigned int j = 0; j < Chunk::size; j++) {
+                for (unsigned int k = 0; k < Chunk::size; k++) {
+                    MaterialIndex material = cellValue->chunk->cells[i][j][k].materialIndex;
+                    bool value = isGas(material);
+                    if (value) {
+                        cellValue->gasMasks[0].set<true>((i * Chunk::size + j) * Chunk::size + k);
+                        cellValue->gasMasks[1].set<true>((j * Chunk::size + k) * Chunk::size + i);
+                        cellValue->gasMasks[2].set<true>((k * Chunk::size + i) * Chunk::size + j);
+                    }
+                }
+            }
+        }
+    } else {
+        switch (cellValue->constantMaterialIndex) {
+            case MaterialIndex::Null: assert(false); break;
+            case MaterialIndex::Generating: assert(false); break;
+            default:
+                if (isGas(cellValue->constantMaterialIndex)) {
+                    cellValue->gasMasks[0].fill<true>();
+                    cellValue->gasMasks[1].fill<true>();
+                    cellValue->gasMasks[2].fill<true>();
+                } else {
+                    cellValue->gasMasks[0].fill<false>();
+                    cellValue->gasMasks[1].fill<false>();
+                    cellValue->gasMasks[2].fill<false>();
+                }
+        }
+    }
+}
+
+/*
 CellValue &HashTreeWorld::getCellValueContaining(spatial::UintCoord coord) {
     return getLeafContaining(coord, Chunk::sizeLog2)->second;
 }
@@ -79,6 +129,7 @@ unsigned int HashTreeWorld::getCellId(spatial::UintCoord coord) {
     unsigned int z = coord.z % Chunk::size;
     return leafNode->second.chunkId + ((x * Chunk::size) + y) * Chunk::size + z;
 }
+*/
 
 HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit) {
     // Initialize sizeLog2 with a reasonable guess.
@@ -87,23 +138,24 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
     spatial::UintCoord initCoord = spatial::UintCoord::fromPoint(origin);
     unsigned int sizeLog2 = std::max(static_cast<signed int>(Chunk::sizeLog2), guessViewChunkSizeLog2(initCoord));
 
-    RayDrawer chunkIt(origin, dir, spatial::CellKey::fromCoord(initCoord, sizeLog2));
+    // TODO: Iterate by chunk
+    RayDrawer cellIt(origin, dir, spatial::CellKey::fromCoord(initCoord, sizeLog2 - Chunk::sizeLog2));
 
     while (true) {
         // Here, we make sure the sizeLog2 is exact.
-        bool shouldParentSubdiv = shouldSubdivForView(chunkIt.getCurCellKey().parent());
+        bool shouldParentSubdiv = shouldSubdivForView(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2 + 1>());
         if (shouldParentSubdiv) {
             while (true) {
-                bool shouldSubdiv = shouldSubdivForView(chunkIt.getCurCellKey());
+                bool shouldSubdiv = shouldSubdivForView(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2>());
                 if (!shouldSubdiv) {
                     break;
                 }
-                chunkIt.enterChildCell();
+                cellIt.enterChildCell();
             }
         } else {
             while (true) {
-                chunkIt.enterParentCell();
-                bool shouldParentSubdiv = shouldSubdivForView(chunkIt.getCurCellKey().parent());
+                cellIt.enterParentCell();
+                bool shouldParentSubdiv = shouldSubdivForView(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2 + 1>());
                 if (shouldParentSubdiv) {
                     break;
                 }
@@ -112,14 +164,14 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
 
         // Try to insert/get the desired chunk.
         std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> insert =
-                getMap().emplace(chunkIt.getCurCellKey(), CellValue());
+                getMap().emplace(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2>(), CellValue());
 
         if (insert.second) {
             // Inserted new chunk
             insert.first->second.setChunkId();
 
             // Insert all parent nodes
-            spatial::CellKey parentCellKey = chunkIt.getCurCellKey();
+            spatial::CellKey parentCellKey = cellIt.getCurCellKey().grandParent<Chunk::sizeLog2>();
             std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> parentInsert;
             do {
                 parentCellKey = parentCellKey.parent();
@@ -130,26 +182,49 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
         if (insert.first->second.chunk) {
             // In this case, we have cells for the chunk (as opposed to it being a constant chunk)
 
+            RayDrawer::StepResult step;
+            do {
+                unsigned int x = cellIt.getCurCellKey().cellCoord.x % Chunk::size;
+                unsigned int y = cellIt.getCurCellKey().cellCoord.y % Chunk::size;
+                unsigned int z = cellIt.getCurCellKey().cellCoord.z % Chunk::size;
 
+                MaterialIndex material = insert.first->second.chunk->cells[x][y][z].materialIndex;
+                RaytestResult res;
+                switch (material) {
+                case MaterialIndex::Null:
+                    assert(false);
+                    break;
+                case MaterialIndex::Generating:
+                    res.result = RaytestResult::HitGenerating;
+                    return res;
+                default:
+                    if (!isGas(material)) {
+                        res.result = RaytestResult::HitSurface;
+                        res.surfaceMaterialIndex = material;
+                        res.surfaceHitCell = cellIt.getCurCellKey();
+                        return res;
+                    }
+                }
+
+                step = cellIt.step();
+            } while (!step.movedChunk);
         } else {
             MaterialIndex material = insert.first->second.constantMaterialIndex;
             RaytestResult res;
             switch (material) {
             case MaterialIndex::Null:
                 generateChunk(&*insert.first);
-
                 // Fall-through intentional
             case MaterialIndex::Generating:
                 res.result = RaytestResult::HitGenerating;
                 return res;
-
             default:
-                if (isTransparent(material)) {
-                    chunkIt.step();
+                if (isGas(material)) {
+                    while (!cellIt.step().movedChunk) {}
                 } else {
                     res.result = RaytestResult::HitSurface;
                     res.surfaceMaterialIndex = material;
-                    res.surfaceHitCell = chunkIt.getCurCellKey();
+                    res.surfaceHitCell = cellIt.getCurCellKey();
                     return res;
                 }
             }
@@ -157,6 +232,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
     }
 }
 
+/*
 HashTreeWorld::RaytestResult HashTreeWorld::testRay(glm::vec3 origin, glm::vec3 dir, float distanceLimit) {
     dir /= glm::length(dir);
     glm::vec3 invDir = 1.0f / dir;
@@ -406,15 +482,7 @@ spatial::UintCoord HashTreeWorld::getContainingCoord(glm::vec3 point) {
 
     return closestCoord;
 }
-
-const pointgen::Chunk *HashTreeWorld::getChunkPoints(Cell *cell) {
-    pointgen::ChunkPointsManager &chunkPointsManager = context.get<pointgen::ChunkPointsManager>();
-    if (!cell->second.points) {
-        cell->second.points = chunkPointsManager.generate(cell->first);
-    }
-    chunkPointsManager.use(cell->second.points);
-    return cell->second.points;
-}
+*/
 
 void HashTreeWorld::generateChunk(Cell *cell) {
     assert(cell->second.chunk == 0);
@@ -433,45 +501,6 @@ void HashTreeWorld::generateChunk(Cell *cell) {
     cell->second.constantMaterialIndex = MaterialIndex::Generating;
 
     context.get<worldgen::WorldGenerator>().generate(cell->first, getChunkPoints(cell));
-}
-
-void HashTreeWorld::finishWorldGen(spatial::CellKey cube, MaterialIndex constantMaterialIndex, Chunk *chunk) {
-    Cell *node = getNodeContaining(cube);
-    assert(node->second.chunk == 0);
-    assert(node->second.type == CellValue::Type::LeafGenerating);
-
-    if (chunk) {
-        node->second.type = CellValue::Type::LeafChunk;
-        node->second.chunk = chunk;
-    } else {
-        node->second.type = CellValue::Type::LeafConstant;
-        node->second.constantMaterialIndex = constantMaterialIndex;
-    }
-
-    std::fill_n(&node->second.needsRegen[0][0][0], Chunk::size * Chunk::size * Chunk::size, true);
-
-    /*
-    if (node->first.sizeLog2 == 4) {
-        render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
-
-        static constexpr unsigned int padding = 2;
-        for (unsigned int i = padding; i < world::Chunk::size - padding; i++) {
-            for (unsigned int j = padding; j < world::Chunk::size - padding; j++) {
-                for (unsigned int k = padding; k < world::Chunk::size - padding; k++) {
-                    world::SpaceState state = node->second.chunk->cells[i][j][k].type;
-                    if (!state.isTransparent()) {
-                        meshUpdater.updateCell<false>(node->first.getCoord<0, 0, 0>() + spatial::UintCoord(i, j, k));
-                    }
-                }
-            }
-        }
-    }
-    */
-
-//    glm::vec3 changedMin = worldGenRequest->getCube().getCoord<0, 0, 0>().toPoint();
-//    glm::vec3 changedMax = worldGenRequest->getCube().getCoord<1, 1, 1>().toPoint();
-//    float pointSpacing = worldGenRequest->getCube().getSize() / Chunk::size;
-//    emitMeshUpdate(changedMin, changedMax, pointSpacing);
 }
 
 /*
@@ -518,12 +547,21 @@ void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, f
 }
 */
 
-bool HashTreeWorld::isTransparent(MaterialIndex materialIndex) const {
+const pointgen::Chunk *HashTreeWorld::getChunkPoints(Cell *cell) {
+    pointgen::ChunkPointsManager &chunkPointsManager = context.get<pointgen::ChunkPointsManager>();
+    if (!cell->second.points) {
+        cell->second.points = chunkPointsManager.generate(cell->first);
+    }
+    chunkPointsManager.use(cell->second.points);
+    return cell->second.points;
+}
+
+bool HashTreeWorld::isGas(MaterialIndex materialIndex) const {
     assert(materialIndex != static_cast<MaterialIndex>(-1));
 
     // TODO: Maybe cache this lookup?
     render::SceneManager &sceneManager = context.get<render::SceneManager>();
-    return sceneManager.readMaterial(materialIndex).local.phase == graphics::MaterialLocal::Phase::Gas;
+    return sceneManager.readMaterial(static_cast<unsigned int>(materialIndex)).local.phase == graphics::MaterialLocal::Phase::Gas;
 }
 
 unsigned int CellValue::nextChunkId = 0;

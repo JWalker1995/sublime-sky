@@ -1,5 +1,5 @@
 {
 	"seed": 1234,
-	"point_generator_type": "RSquaredLatticeGenerator",
-	"point_generator": {}
+	"lattice_generator_type": "RSquaredLatticeGenerator",
+	"lattice_generator": {}
 }

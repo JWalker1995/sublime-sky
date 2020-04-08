@@ -67,7 +67,7 @@ void RayCaster::castNew() {
     std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
     glm::vec3 origin = context.get<render::Camera>().getEyePos();
-    for (unsigned int i = 0; i < numRays; i++) {
+    for (unsigned int i = 0; i < static_cast<unsigned int>(numRays); i++) {
         glm::vec3 dir;
         do {
             dir.x = dist(rngGen);
@@ -80,13 +80,13 @@ void RayCaster::castNew() {
 }
 
 void RayCaster::castRay(glm::vec3 origin, glm::vec3 dir) {
-    world::HashTreeWorld::RaytestResult res = context.get<world::HashTreeWorld>().testRay(origin, dir, 100.0f);
+    world::HashTreeWorld::RaytestResult res = context.get<world::HashTreeWorld>().testViewRay(origin, dir, 100.0f);
 
-    if (res.materialIndex == static_cast<world::MaterialIndex>(-1)) {
-        retryRays.emplace_back(origin + dir * (res.pointDistance - 1.0f), dir);
+    if (res.result == world::HashTreeWorld::RaytestResult::HitGenerating) {
+        retryRays.emplace_back(origin, dir);
     } else {
-        context.get<world::TimeManager>().incTimeAround(res.hitCoord, 1.0f);
-        context.get<render::MeshUpdater>().enqueueCellUpdate(res.hitCoord, false);
+//        context.get<world::TimeManager>().incTimeAround(res.surfaceHitCell, 1.0f);
+        context.get<render::MeshUpdater>().enqueueCellUpdate(res.surfaceHitCell);
     }
 }
 

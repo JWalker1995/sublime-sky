@@ -20,16 +20,22 @@ Chunk *ChunkPointsManager::generate(const spatial::CellKey &cellKey) {
     } else {
         chunk = mostRecentlyUsed->moreRecentlyUsed;
 
-        glm::vec3 somePoint;
-        for (unsigned int i = 0; i < Chunk::size * Chunk::size * Chunk::size; i++) {
-            somePoint = (&chunk->points[0][0][0])[i];
-            if (!std::isnan(somePoint.x)) {
-                break;
-            }
+        glm::vec3 min;
+        for (unsigned int i = 0; i < Chunk::size; i++) {
+            min = chunk->points[0][0][i];
+            if (!std::isnan(min.x)) { break; }
         }
 
-        world::CellValue &foundCell = context.get<world::HashTreeWorld>().getCellValueContaining(spatial::UintCoord::fromPoint(somePoint));
-        if (foundCell.points != chunk) {
+        glm::vec3 max;
+        for (unsigned int i = 0; i < Chunk::size; i++) {
+            max = chunk->points[Chunk::size - 1][Chunk::size - 1][Chunk::size - 1 - i];
+            if (!std::isnan(max.x)) { break; }
+        }
+        max -= glm::vec3(1e-3f);
+
+        spatial::CellKey chunkKey = spatial::CellKey::fromCoords(spatial::UintCoord::fromPoint(min), spatial::UintCoord::fromPoint(max));
+        world::HashTreeWorld::Cell *foundCell = context.get<world::HashTreeWorld>().lookupChunk(chunkKey);
+        if (foundCell->second.points != chunk) {
             assert(false);
 
             // This should never happen; but we can deal with it by orphaning the point chunk and trying again.
@@ -46,8 +52,8 @@ Chunk *ChunkPointsManager::generate(const spatial::CellKey &cellKey) {
             return generate(cellKey);
         }
 
-        assert(foundCell.points == chunk);
-        foundCell.points = 0;
+        assert(foundCell->second.points == chunk);
+        foundCell->second.points = 0;
         // Now the chunk is available because nothing refers to it
     }
 

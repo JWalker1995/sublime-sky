@@ -10,7 +10,7 @@ namespace world {
 
 class VoronoiCell {
 public:
-    MaterialIndex materialIndex = 0;
+    MaterialIndex materialIndex = MaterialIndex::Null;
 
 //    glm::vec3 center;
 //    glm::vec3 velocity;

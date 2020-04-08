@@ -15,13 +15,13 @@ public:
 
     void run();
 
-    int registerGameTest(void funcPtr(game::GameContext &)) {
+    int registerGameTest(void (*funcPtr)(game::GameContext &)) {
         gameTests.push_back(funcPtr);
         return 0;
     }
 
 private:
-    std::vector<void (game::GameContext &)> gameTests;
+    std::vector<void (*)(game::GameContext &)> gameTests;
 };
 
 }

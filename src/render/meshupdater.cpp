@@ -48,14 +48,9 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
             break;
         }
 
-        std::pair<spatial::UintCoord, bool> front = cellUpdateQueue.front();
+        spatial::CellKey front = cellUpdateQueue.front();
         cellUpdateQueue.pop();
-
-        if (front.second) {
-            updateCell<true>(front.first);
-        } else {
-            updateCell<false>(front.first);
-        }
+        updateCell(front);
     }
 }
 
@@ -112,29 +107,60 @@ void MeshUpdater::finishMeshGen(MeshGenRequest *meshGenRequest) {
 }
 */
 
-void MeshUpdater::enqueueCellUpdate(spatial::UintCoord coord, bool enableDestroyGeometry) {
-    context.get<world::HashTreeWorld>().getNeedsRegen(coord) = true;
-    cellUpdateQueue.emplace(coord, enableDestroyGeometry);
+void MeshUpdater::enqueueCellUpdate(spatial::CellKey cellKey) {
+//    assert(false);
+//    context.get<world::HashTreeWorld>().getNeedsRegen(coord) = true;
+    cellUpdateQueue.push(cellKey);
 }
 
-template <bool enableDestroyGeometry>
-void MeshUpdater::updateCell(spatial::UintCoord coord) {
+void MeshUpdater::updateCell(spatial::CellKey cellKey) {
+    static constexpr bool enableDestroyGeometry = true;
+
     world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
 
-    bool &needsRegen = hashTreeWorld.getNeedsRegen(coord);
-    if (needsRegen) {
-        needsRegen = false;
-    } else {
+    spatial::CellKey chunk = cellKey.grandParent<world::Chunk::sizeLog2>();
+    if (hashTreeWorld.shouldSubdivForView(chunk)) {
+        updateCell(cellKey.child<0, 0, 0>());
+        updateCell(cellKey.child<0, 0, 1>());
+        updateCell(cellKey.child<0, 1, 0>());
+        updateCell(cellKey.child<0, 1, 1>());
+        updateCell(cellKey.child<1, 0, 0>());
+        updateCell(cellKey.child<1, 0, 1>());
+        updateCell(cellKey.child<1, 1, 0>());
+        updateCell(cellKey.child<1, 1, 1>());
         return;
     }
 
-    world::MaterialIndex originMaterialIndex = hashTreeWorld.getMaterialIndex(coord);
-    bool originIsTransparent = hashTreeWorld.isTransparent(originMaterialIndex);
+    world::HashTreeWorld::Cell *chunkNode = hashTreeWorld.lookupChunk(chunk);
+    if (!chunkNode) {
+        updateCell(cellKey.parent());
+        return;
+    }
+
+//    bool &needsRegen = hashTreeWorld.getNeedsRegen(coord);
+//    if (needsRegen) {
+//        needsRegen = false;
+//    } else {
+//        return;
+//    }
+
+    if (!chunkNode->second.chunk) {
+        assert(false);
+        return;
+    }
+
+    unsigned int x = cellKey.cellCoord.x % world::Chunk::size;
+    unsigned int y = cellKey.cellCoord.y % world::Chunk::size;
+    unsigned int z = cellKey.cellCoord.z % world::Chunk::size;
+    world::MaterialIndex originMaterialIndex = chunkNode->second.chunk->cells[x][y][z].materialIndex;
+
+    bool originIsTransparent = hashTreeWorld.isGas(originMaterialIndex);
     if (!enableDestroyGeometry && originIsTransparent) {
         return;
     }
 
-    glm::vec3 origin = hashTreeWorld.getPoint(coord);
+    const pointgen::Chunk *pointChunk = hashTreeWorld.getChunkPoints(chunkNode);
+    glm::vec3 origin = pointChunk->points[x][y][z];
     if (std::isnan(origin.x)) {
         return;
     }
@@ -146,23 +172,43 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
     float transparentCount = 0.0f;
     bool hasSurface = false;
 
-    spatial::UintCoord min = coord - spatial::UintCoord(2);
-    spatial::UintCoord max = coord + spatial::UintCoord(2);
-    spatial::UintCoord neighborCoord;
-    for (neighborCoord.x = min.x; neighborCoord.x <= max.x; neighborCoord.x++) {
-        for (neighborCoord.y = min.y; neighborCoord.y <= max.y; neighborCoord.y++) {
-            for (neighborCoord.z = min.z; neighborCoord.z <= max.z; neighborCoord.z++) {
-                if (neighborCoord == coord) {
+    spatial::UintCoord min = cellKey.cellCoord - spatial::UintCoord(2);
+    spatial::UintCoord max = cellKey.cellCoord + spatial::UintCoord(2);
+    spatial::CellKey neighborCell;
+    neighborCell.sizeLog2 = cellKey.sizeLog2;
+    for (neighborCell.cellCoord.x = min.x; neighborCell.cellCoord.x <= max.x; neighborCell.cellCoord.x++) {
+        for (neighborCell.cellCoord.y = min.y; neighborCell.cellCoord.y <= max.y; neighborCell.cellCoord.y++) {
+            for (neighborCell.cellCoord.z = min.z; neighborCell.cellCoord.z <= max.z; neighborCell.cellCoord.z++) {
+                if (neighborCell.cellCoord == cellKey.cellCoord) {
                     continue;
                 }
 
-                glm::vec3 pt = hashTreeWorld.getPoint(neighborCoord);
+                glm::vec3 pt;
+                world::MaterialIndex neighborMaterialIndex;
+
+                unsigned int x = cellKey.cellCoord.x % world::Chunk::size;
+                unsigned int y = cellKey.cellCoord.y % world::Chunk::size;
+                unsigned int z = cellKey.cellCoord.z % world::Chunk::size;
+
+                spatial::CellKey neighborChunk = neighborCell.grandParent<world::Chunk::sizeLog2>();
+                if (neighborChunk.cellCoord == chunk.cellCoord) {
+                    pt = pointChunk->points[x][y][z];
+                    neighborMaterialIndex = chunkNode->second.chunk->cells[x][y][z].materialIndex;
+                } else {
+                    world::HashTreeWorld::Cell *neighborNode = hashTreeWorld.lookupChunk(neighborChunk);
+                    if (!neighborNode) {
+                        assert(false);
+                    }
+
+                    pt = neighborNode->second.points->points[x][y][z];
+                    neighborMaterialIndex = neighborNode->second.chunk->cells[x][y][z].materialIndex;
+                }
+
                 if (std::isnan(pt.x)) {
                     continue;
                 }
 
-                world::MaterialIndex neighborMaterialIndex = hashTreeWorld.getMaterialIndex(neighborCoord);
-                bool isTransparent = neighborMaterialIndex != static_cast<world::MaterialIndex>(-1) && hashTreeWorld.isTransparent(neighborMaterialIndex);
+                bool isTransparent = neighborMaterialIndex != static_cast<world::MaterialIndex>(-1) && hashTreeWorld.isGas(neighborMaterialIndex);
                 bool shouldHaveSurface = !originIsTransparent && isTransparent;
                 hasSurface |= shouldHaveSurface;
 
@@ -182,19 +228,22 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
     }
 
     if (!originIsTransparent) {
+        assert(hasSurface);
         transparentPosSum /= transparentCount;
         glm::vec3 camPos = context.get<render::Camera>().getEyePos();
-        if (hashTreeWorld.testRay(transparentPosSum, camPos - transparentPosSum, 100.0f).pointDistance < 99.0f) {
-            spatial::UintCoord min = coord - spatial::UintCoord(1);
-            spatial::UintCoord max = coord + spatial::UintCoord(1);
-            spatial::UintCoord neighborCoord;
-            for (neighborCoord.x = min.x; neighborCoord.x <= max.x; neighborCoord.x++) {
-                for (neighborCoord.y = min.y; neighborCoord.y <= max.y; neighborCoord.y++) {
-                    for (neighborCoord.z = min.z; neighborCoord.z <= max.z; neighborCoord.z++) {
-                        if (neighborCoord == coord) {
+        float distance = glm::distance(transparentPosSum, camPos);
+        if (hashTreeWorld.testViewRay(transparentPosSum, camPos - transparentPosSum, distance).result == world::HashTreeWorld::RaytestResult::HitDistanceLimit) {
+            spatial::UintCoord min = cellKey.cellCoord - spatial::UintCoord(1);
+            spatial::UintCoord max = cellKey.cellCoord + spatial::UintCoord(1);
+            spatial::CellKey neighborCell;
+            neighborCell.sizeLog2 = cellKey.sizeLog2;
+            for (neighborCell.cellCoord.x = min.x; neighborCell.cellCoord.x <= max.x; neighborCell.cellCoord.x++) {
+                for (neighborCell.cellCoord.y = min.y; neighborCell.cellCoord.y <= max.y; neighborCell.cellCoord.y++) {
+                    for (neighborCell.cellCoord.z = min.z; neighborCell.cellCoord.z <= max.z; neighborCell.cellCoord.z++) {
+                        if (neighborCell.cellCoord == cellKey.cellCoord) {
                             continue;
                         }
-                        cellUpdateQueue.emplace(neighborCoord, enableDestroyGeometry);
+                        cellUpdateQueue.push(neighborCell);
                     }
                 }
             }
@@ -239,7 +288,7 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
     }
     assert(vertIndices.size() * 3 == verts.size());
 
-    unsigned int cellId = hashTreeWorld.getCellId(coord);
+    unsigned int cellId = chunkNode->second.chunkId + (x * world::Chunk::size + y) * world::Chunk::size + z;
 
     std::vector<int>::const_iterator faceVertsIt = faceVerts.cbegin();
     for (int neighbor : neighbors) {
@@ -274,7 +323,7 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
 
         unsigned int baseVi = vertIndices[faceVertsIt[minI + 0]];
         SceneManager::VertMutator baseVert = meshHandle.mutateVert(baseVi);
-        baseVert.shared.materialIndex = originMaterialIndex;
+        baseVert.shared.materialIndex = static_cast<unsigned int>(originMaterialIndex);
         baseVert.local.surfaceForCell = cellId;
 
         unsigned int prevVi = vertIndices[faceVertsIt[minI + 1 == numVerts ? 0 : minI + 1]];
@@ -358,8 +407,6 @@ void MeshUpdater::updateCell(spatial::UintCoord coord) {
     }
     assert(faceVertsIt == faceVerts.cend());
 }
-template void MeshUpdater::updateCell<false>(spatial::UintCoord coord);
-template void MeshUpdater::updateCell<true>(spatial::UintCoord coord);
 
 /*
 void MeshUpdater::fillHoles() {
