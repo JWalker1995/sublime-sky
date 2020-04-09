@@ -48,26 +48,30 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
     cube.cellCoord.x = chunk->cell_coord()->x();
     cube.cellCoord.y = chunk->cell_coord()->y();
     cube.cellCoord.z = chunk->cell_coord()->z();
-    world::HashTreeWorld::Cell &cell = context.get<world::HashTreeWorld>().lookupChunk(cube);
 
-    if (!cell.second.chunk) {
-        cell.second.chunk = context.get<util::Pool<world::Chunk>>().alloc();
+    world::HashTreeWorld::Cell *cell = context.get<world::HashTreeWorld>().findNodeMatching(cube);
+    if (!cell) {
+        return;
+    }
+
+    if (!cell->second.chunk) {
+        cell->second.chunk = context.get<util::Pool<world::Chunk>>().alloc();
     }
 
     const std::uint32_t *ptPtr = chunk->cell_materials()->data();
     for (unsigned int i = 0; i < pointgen::Chunk::size; i++) {
         for (unsigned int j = 0; j < pointgen::Chunk::size; j++) {
             for (unsigned int k = 0; k < pointgen::Chunk::size; k++) {
-                cell.second.chunk->cells[i][j][k].materialIndex = static_cast<world::MaterialIndex>(materialOffset + *ptPtr++);
+                cell->second.chunk->cells[i][j][k].materialIndex = static_cast<world::MaterialIndex>(materialOffset + *ptPtr++);
             }
         }
     }
 
 #ifndef NDEBUG
-    cell.second.constantMaterialIndex = static_cast<world::MaterialIndex>(-1);
+    cell->second.constantMaterialIndex = static_cast<world::MaterialIndex>(-1);
 #endif
 
-    context.get<world::HashTreeWorld>().updateGasMasks(&cell.second);
+    context.get<world::HashTreeWorld>().updateGasMasks(&cell->second);
 }
 
 }

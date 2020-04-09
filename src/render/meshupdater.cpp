@@ -137,8 +137,9 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
 
     world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
 
-    spatial::CellKey chunk = cellKey.grandParent<world::Chunk::sizeLog2>();
-    if (hashTreeWorld.shouldSubdivForView(chunk)) {
+    spatial::CellKey chunkKey = cellKey.grandParent<world::Chunk::sizeLog2>();
+    world::HashTreeWorld::Cell *chunkNode = hashTreeWorld.getNodeContaining(chunkKey);
+    if (!chunkNode->second.isLeaf()) {
         updateCell(cellKey.child<0, 0, 0>());
         updateCell(cellKey.child<0, 0, 1>());
         updateCell(cellKey.child<0, 1, 0>());
@@ -148,34 +149,34 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
         updateCell(cellKey.child<1, 1, 0>());
         updateCell(cellKey.child<1, 1, 1>());
         return;
-    } else if (!hashTreeWorld.shouldSubdivForView(chunk.parent())) {
-        updateCell(cellKey.parent());
-        return;
     }
 
-    world::HashTreeWorld::Cell &chunkNode = hashTreeWorld.lookupChunk(chunk);
+    while (chunkKey.sizeLog2 < chunkNode->first.sizeLog2) {
+        chunkKey = chunkKey.parent();
+        cellKey = cellKey.parent();
+    }
 
     unsigned int x = cellKey.cellCoord.x % world::Chunk::size;
     unsigned int y = cellKey.cellCoord.y % world::Chunk::size;
     unsigned int z = cellKey.cellCoord.z % world::Chunk::size;
 
     unsigned int cellIndex = (x * world::Chunk::size + y) * world::Chunk::size + z;
-    if (chunkNode.second.hasFaces.get(cellIndex)) {
+    if (chunkNode->second.hasFaces.get(cellIndex)) {
         return;
     }
-    chunkNode.second.hasFaces.set<true>(cellIndex);
+    chunkNode->second.hasFaces.set<true>(cellIndex);
 
     world::MaterialIndex originMaterialIndex;
-    if (chunkNode.second.chunk) {
-        originMaterialIndex = chunkNode.second.chunk->cells[x][y][z].materialIndex;
+    if (chunkNode->second.chunk) {
+        originMaterialIndex = chunkNode->second.chunk->cells[x][y][z].materialIndex;
     } else {
-        originMaterialIndex = chunkNode.second.constantMaterialIndex;
+        originMaterialIndex = chunkNode->second.constantMaterialIndex;
         switch (originMaterialIndex) {
             case world::MaterialIndex::Null:
-                hashTreeWorld.generateChunk(&chunkNode);
-                delayedCellUpdateQueue.push(cellKey);
-                return;
+                hashTreeWorld.generateChunk(chunkNode);
+                // Fall-through intentional
             case world::MaterialIndex::Generating:
+                delayedCellUpdateQueue.push(cellKey);
                 return;
         }
     }
@@ -185,7 +186,7 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
         return;
     }
 
-    const pointgen::Chunk *pointChunk = hashTreeWorld.getChunkPoints(&chunkNode);
+    const pointgen::Chunk *pointChunk = hashTreeWorld.getChunkPoints(chunkNode);
     glm::vec3 origin = pointChunk->points[x][y][z];
     if (std::isnan(origin.x)) {
         return;
@@ -217,37 +218,79 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
                 unsigned int z = neighborCell.cellCoord.z % world::Chunk::size;
 
                 spatial::CellKey neighborChunk = neighborCell.grandParent<world::Chunk::sizeLog2>();
-                if (neighborChunk.cellCoord == chunk.cellCoord) {
+                if (neighborChunk.cellCoord == chunkKey.cellCoord) {
                     pt = pointChunk->points[x][y][z];
-                    if (chunkNode.second.chunk) {
-                        neighborMaterialIndex = chunkNode.second.chunk->cells[x][y][z].materialIndex;
+                    if (chunkNode->second.chunk) {
+                        neighborMaterialIndex = chunkNode->second.chunk->cells[x][y][z].materialIndex;
                     } else {
-                        neighborMaterialIndex = chunkNode.second.constantMaterialIndex;
+                        neighborMaterialIndex = chunkNode->second.constantMaterialIndex;
                     }
                 } else {
-                    if (hashTreeWorld.shouldSubdivForView(neighborChunk)) {
-                        assert(false);
-                    } else if (!hashTreeWorld.shouldSubdivForView(chunk.parent())) {
-                        assert(false);
+                    world::HashTreeWorld::Cell *neighborNode = hashTreeWorld.getNodeContaining(neighborChunk);
+                    if (!neighborNode->second.isLeaf()) {
+                        for (unsigned int i = 0; i < 2; i++) {
+                            for (unsigned int j = 0; j < 2; j++) {
+                                for (unsigned int k = 0; k < 2; k++) {
+                                    spatial::CellKey childCell = neighborCell.grandChild<1>(i, j, k);
+                                    unsigned int x = childCell.cellCoord.x % world::Chunk::size;
+                                    unsigned int y = childCell.cellCoord.y % world::Chunk::size;
+                                    unsigned int z = childCell.cellCoord.z % world::Chunk::size;
+
+                                    spatial::CellKey childChunk = childCell.grandParent<world::Chunk::sizeLog2>();
+                                    world::HashTreeWorld::Cell *childNode = hashTreeWorld.getNodeContaining(childChunk);
+
+                                    if (childNode->second.chunk) {
+                                        neighborMaterialIndex = childNode->second.chunk->cells[x][y][z].materialIndex;
+                                    } else {
+                                        neighborMaterialIndex = childNode->second.constantMaterialIndex;
+                                        switch (neighborMaterialIndex) {
+                                            case world::MaterialIndex::Null:
+                                                hashTreeWorld.generateChunk(childNode);
+                                                // Fall-through intentional
+                                            case world::MaterialIndex::Generating:
+                                                delayedCellUpdateQueue.push(cellKey);
+                                                return;
+                                        }
+                                    }
+
+                                    pt = hashTreeWorld.getChunkPoints(childNode)->points[x][y][z];
+
+                                    if (std::isnan(pt.x)) {
+                                        continue;
+                                    }
+
+                                    bool isTransparent = neighborMaterialIndex != static_cast<world::MaterialIndex>(-1) && hashTreeWorld.isGas(neighborMaterialIndex);
+                                    bool shouldHaveSurface = !originIsTransparent && isTransparent;
+                                    hasSurface |= shouldHaveSurface;
+
+                                    if (shouldHaveSurface) {
+                                        transparentPosSum += pt;
+                                        transparentCount += 1.0f;
+                                    }
+
+                                    pt -= origin;
+                                    cell.nplane(pt.x, pt.y, pt.z, shouldHaveSurface);
+                                }
+                            }
+                        }
+                        continue;
                     }
 
-                    world::HashTreeWorld::Cell &neighborNode = hashTreeWorld.lookupChunk(neighborChunk);
-
-                    if (neighborNode.second.chunk) {
-                        neighborMaterialIndex = neighborNode.second.chunk->cells[x][y][z].materialIndex;
+                    if (neighborNode->second.chunk) {
+                        neighborMaterialIndex = neighborNode->second.chunk->cells[x][y][z].materialIndex;
                     } else {
-                        neighborMaterialIndex = neighborNode.second.constantMaterialIndex;
+                        neighborMaterialIndex = neighborNode->second.constantMaterialIndex;
                         switch (neighborMaterialIndex) {
                             case world::MaterialIndex::Null:
-                                hashTreeWorld.generateChunk(&neighborNode);
-                                delayedCellUpdateQueue.push(neighborCell);
-                                return;
+                                hashTreeWorld.generateChunk(neighborNode);
+                                // Fall-through intentional
                             case world::MaterialIndex::Generating:
+                                delayedCellUpdateQueue.push(cellKey);
                                 return;
                         }
                     }
 
-                    pt = hashTreeWorld.getChunkPoints(&neighborNode)->points[x][y][z];
+                    pt = hashTreeWorld.getChunkPoints(neighborNode)->points[x][y][z];
                 }
 
                 if (std::isnan(pt.x)) {
@@ -334,7 +377,7 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
     }
     assert(vertIndices.size() * 3 == verts.size());
 
-    unsigned int cellId = chunkNode.second.chunkId + (x * world::Chunk::size + y) * world::Chunk::size + z;
+    unsigned int cellId = chunkNode->second.chunkId + (x * world::Chunk::size + y) * world::Chunk::size + z;
 
     std::vector<int>::const_iterator faceVertsIt = faceVerts.cbegin();
     for (int neighbor : neighbors) {

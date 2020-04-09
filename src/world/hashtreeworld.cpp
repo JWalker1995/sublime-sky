@@ -149,29 +149,14 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
     while (true) {
         Cell *cell = getLeafContaining(cellIt.getCurCellKey().getCoord<0, 0, 0>(), cellIt.getCurCellKey().sizeLog2 + Chunk::sizeLog2);
 
-        // Here, we make sure the sizeLog2 is exact.
-        bool shouldParentSubdiv = shouldSubdivForView(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2 + 1>());
-        if (shouldParentSubdiv) {
-            while (true) {
-                bool shouldSubdiv = shouldSubdivForView(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2>());
-                if (!shouldSubdiv) {
-                    break;
-                }
-                cellIt.enterChildCell();
-            }
-        } else {
-            while (true) {
-                cellIt.enterParentCell();
-                bool shouldParentSubdiv = shouldSubdivForView(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2 + 1>());
-                if (shouldParentSubdiv) {
-                    break;
-                }
-            }
+        while (cellIt.getCurCellKey().sizeLog2 < cell->first.sizeLog2) {
+            cellIt.enterParentCell();
+        }
+        while (cellIt.getCurCellKey().sizeLog2 > cell->first.sizeLog2) {
+            cellIt.enterChildCell();
         }
 
-        Cell *cell = getNodeContaining(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2>());
-
-        if (cell.second.chunk) {
+        if (cell->second.chunk) {
             // In this case, we have cells for the chunk (as opposed to it being a constant chunk)
 
             RayDrawer::StepResult step;
@@ -180,7 +165,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
                 unsigned int y = cellIt.getCurCellKey().cellCoord.y % Chunk::size;
                 unsigned int z = cellIt.getCurCellKey().cellCoord.z % Chunk::size;
 
-                MaterialIndex material = cell.second.chunk->cells[x][y][z].materialIndex;
+                MaterialIndex material = cell->second.chunk->cells[x][y][z].materialIndex;
                 RaytestResult res;
                 switch (material) {
                 case MaterialIndex::Null:
@@ -206,11 +191,11 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
                 }
             } while (!step.movedChunk);
         } else {
-            MaterialIndex material = cell.second.constantMaterialIndex;
+            MaterialIndex material = cell->second.constantMaterialIndex;
             RaytestResult res;
             switch (material) {
             case MaterialIndex::Null:
-                generateChunk(&cell);
+                generateChunk(cell);
                 // Fall-through intentional
             case MaterialIndex::Generating:
                 res.result = RaytestResult::HitGenerating;

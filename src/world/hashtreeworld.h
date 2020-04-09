@@ -15,7 +15,9 @@ namespace world {
 
 class CellValue {
 public:
-    void initialize() {
+    enum class Type { Branch, Leaf };
+
+    void initialize(Type setType) {
         chunkId = nextChunkId;
         nextChunkId += Chunk::size * Chunk::size * Chunk::size;
 
@@ -25,6 +27,7 @@ public:
         }
 
         constantMaterialIndex = MaterialIndex::Null;
+        type = setType;
         chunk = 0;
         points = 0;
 
@@ -32,7 +35,7 @@ public:
     }
 
     bool isLeaf() const {
-        return isViewLeaf;
+        return type == Type::Leaf;
     }
 
     static unsigned int nextChunkId;
@@ -43,7 +46,7 @@ public:
     // 1: Generating - The chunk has initiated generation
 
     MaterialIndex constantMaterialIndex;
-    bool isViewLeaf;
+    Type type;
     Chunk *chunk;
     pointgen::Chunk *points;
     std::vector<unsigned int> faceIndices;
@@ -146,10 +149,13 @@ public:
 
     void generateChunk(Cell *cell);
 
-    bool shouldSubdivForPhysics(Cell *cell) const {
-        return cell->first.sizeLog2 > Chunk::sizeLog2;
+//    bool shouldSubdivForPhysics(Cell *cell) const {
+//        return cell->first.sizeLog2 > Chunk::sizeLog2;
+//    }
+    bool shouldSubdiv(Cell *cell) {
+        return shouldSubdiv(cell->first);
     }
-    bool shouldSubdivForView(spatial::CellKey cellKey) {
+    bool shouldSubdiv(spatial::CellKey cellKey) {
         if (cellKey.sizeLog2 <= Chunk::sizeLog2) {
             return false;
         }
@@ -164,8 +170,23 @@ private:
 
     static CellValue makeRootBranch() {
         CellValue res;
-        res.initialize();
+        res.initialize(CellValue::Type::Branch);
         return res;
+    }
+    static void setBranch(Cell *cell) {
+        cell->second.initialize(CellValue::Type::Branch);
+    }
+    static void setBranchWithParent(Cell *cell, const Cell *parent) {
+        (void) parent;
+        setBranch(cell);
+    }
+
+    static void setLeaf(Cell *cell) {
+        cell->second.initialize(CellValue::Type::Leaf);
+    }
+    static void setLeafWithParent(Cell *cell, const Cell *parent) {
+        (void) parent;
+        setLeaf(cell);
     }
 
     signed int guessViewChunkSizeLog2(spatial::UintCoord coord) const {

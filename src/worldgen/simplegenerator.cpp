@@ -37,10 +37,13 @@ SimpleGenerator::SimpleGenerator(game::GameContext &context)
 }
 
 void SimpleGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *points) {
-    world::HashTreeWorld::Cell &cell = context.get<world::HashTreeWorld>().lookupChunk(cube);
+    world::HashTreeWorld::Cell *cell = context.get<world::HashTreeWorld>().findNodeMatching(cube);
+    if (!cell) {
+        return;
+    }
 
-    if (!cell.second.chunk) {
-        cell.second.chunk = context.get<util::Pool<world::Chunk>>().alloc();
+    if (!cell->second.chunk) {
+        cell->second.chunk = context.get<util::Pool<world::Chunk>>().alloc();
     }
 
     bool allSame = true;
@@ -50,7 +53,7 @@ void SimpleGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *poi
         for (unsigned int j = 0; j < world::Chunk::size; j++) {
             for (unsigned int k = 0; k < world::Chunk::size; k++) {
                 bool state = getState(points->points[i][j][k]);
-                cell.second.chunk->cells[i][j][k].materialIndex = static_cast<world::MaterialIndex>(state ? groundMaterialIndex : airMaterialIndex);
+                cell->second.chunk->cells[i][j][k].materialIndex = static_cast<world::MaterialIndex>(state ? groundMaterialIndex : airMaterialIndex);
 
                 allSame &= state == allState;
             }
@@ -69,16 +72,16 @@ void SimpleGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *poi
     allSame = false;
 
     if (allSame) {
-        context.get<util::Pool<world::Chunk>>().free(cell.second.chunk);
-        cell.second.chunk = 0;
-        cell.second.constantMaterialIndex = static_cast<world::MaterialIndex>(allState ? groundMaterialIndex : airMaterialIndex);
+        context.get<util::Pool<world::Chunk>>().free(cell->second.chunk);
+        cell->second.chunk = 0;
+        cell->second.constantMaterialIndex = static_cast<world::MaterialIndex>(allState ? groundMaterialIndex : airMaterialIndex);
     } else {
 #ifndef NDEBUG
-        cell.second.constantMaterialIndex = static_cast<world::MaterialIndex>(-1);
+        cell->second.constantMaterialIndex = static_cast<world::MaterialIndex>(-1);
 #endif
     }
 
-    context.get<world::HashTreeWorld>().updateGasMasks(&cell.second);
+    context.get<world::HashTreeWorld>().updateGasMasks(&cell->second);
 }
 
 bool SimpleGenerator::getState(glm::vec3 point) {
