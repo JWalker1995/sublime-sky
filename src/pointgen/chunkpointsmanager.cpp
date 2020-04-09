@@ -34,8 +34,8 @@ Chunk *ChunkPointsManager::generate(const spatial::CellKey &cellKey) {
         max -= glm::vec3(1e-3f);
 
         spatial::CellKey chunkKey = spatial::CellKey::fromCoords(spatial::UintCoord::fromPoint(min), spatial::UintCoord::fromPoint(max));
-        world::HashTreeWorld::Cell *foundCell = context.get<world::HashTreeWorld>().lookupChunk(chunkKey);
-        if (foundCell->second.points != chunk) {
+        world::HashTreeWorld::Cell &foundCell = context.get<world::HashTreeWorld>().lookupChunk(chunkKey);
+        if (foundCell.second.points != chunk) {
             assert(false);
 
             // This should never happen; but we can deal with it by orphaning the point chunk and trying again.
@@ -52,8 +52,8 @@ Chunk *ChunkPointsManager::generate(const spatial::CellKey &cellKey) {
             return generate(cellKey);
         }
 
-        assert(foundCell->second.points == chunk);
-        foundCell->second.points = 0;
+        assert(foundCell.second.points == chunk);
+        foundCell.second.points = 0;
         // Now the chunk is available because nothing refers to it
     }
 

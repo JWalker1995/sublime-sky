@@ -29,13 +29,16 @@ spatial::UintCoord HashTreeWorld::calcCameraCoord() {
     return spatial::UintCoord::fromPoint(context.get<render::Camera>().getEyePos());
 }
 
-HashTreeWorld::Cell *HashTreeWorld::lookupChunk(spatial::CellKey cellKey) {
-    std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator found = getMap().find(cellKey);
-    if (found == getMap().end()) {
-        return 0;
-    } else {
-        return &*found;
+HashTreeWorld::Cell &HashTreeWorld::lookupChunk(spatial::CellKey cellKey) {
+    std::pair<std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> insert = getMap().emplace(cellKey, CellValue());
+    if (insert.second) {
+        // Inserted new chunk
+        insert.first->second.initialize();
+
+        // Insert parent node recursively
+        lookupChunk(cellKey.parent());
     }
+    return *insert.first;
 }
 
 void HashTreeWorld::updateGasMasks(CellValue *cellValue) {
@@ -162,24 +165,9 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
             }
         }
 
-        // Try to insert/get the desired chunk.
-        std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> insert =
-                getMap().emplace(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2>(), CellValue());
+        Cell &cell = lookupChunk(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2>());
 
-        if (insert.second) {
-            // Inserted new chunk
-            insert.first->second.setChunkId();
-
-            // Insert all parent nodes
-            spatial::CellKey parentCellKey = cellIt.getCurCellKey().grandParent<Chunk::sizeLog2>();
-            std::pair<typename std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> parentInsert;
-            do {
-                parentCellKey = parentCellKey.parent();
-                parentInsert = getMap().emplace(parentCellKey, CellValue());
-            } while (parentInsert.second);
-        }
-
-        if (insert.first->second.chunk) {
+        if (cell.second.chunk) {
             // In this case, we have cells for the chunk (as opposed to it being a constant chunk)
 
             RayDrawer::StepResult step;
@@ -188,7 +176,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
                 unsigned int y = cellIt.getCurCellKey().cellCoord.y % Chunk::size;
                 unsigned int z = cellIt.getCurCellKey().cellCoord.z % Chunk::size;
 
-                MaterialIndex material = insert.first->second.chunk->cells[x][y][z].materialIndex;
+                MaterialIndex material = cell.second.chunk->cells[x][y][z].materialIndex;
                 RaytestResult res;
                 switch (material) {
                 case MaterialIndex::Null:
@@ -209,11 +197,11 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
                 step = cellIt.step();
             } while (!step.movedChunk);
         } else {
-            MaterialIndex material = insert.first->second.constantMaterialIndex;
+            MaterialIndex material = cell.second.constantMaterialIndex;
             RaytestResult res;
             switch (material) {
             case MaterialIndex::Null:
-                generateChunk(&*insert.first);
+                generateChunk(&cell);
                 // Fall-through intentional
             case MaterialIndex::Generating:
                 res.result = RaytestResult::HitGenerating;
@@ -482,28 +470,7 @@ spatial::UintCoord HashTreeWorld::getContainingCoord(glm::vec3 point) {
 
     return closestCoord;
 }
-*/
 
-void HashTreeWorld::generateChunk(Cell *cell) {
-    assert(cell->second.chunk == 0);
-    assert(cell->second.constantMaterialIndex == MaterialIndex::Null);
-
-    if (cell->first.sizeLog2 > Chunk::sizeLog2) {
-        // There might be leaf-level chunks that we can deduce some materials from
-        // There's really three cases here:
-        // 1. There's no leaf-level chunks, so we can just set constantMaterialIndex = MaterialIndex::Generating.
-        // 2. There's some leaf-level chunks, so we should allocate a new world::Chunk
-        //      and fill each cell with either MaterialIndex::Generating or the leaf-level material.
-        // 3. The entire cell's covered with leaf-level chunks, so we can fill this entire chunk and skip the generation request.
-        // For now, just assume there's no leaf-level chunks.
-    }
-
-    cell->second.constantMaterialIndex = MaterialIndex::Generating;
-
-    context.get<worldgen::WorldGenerator>().generate(cell->first, getChunkPoints(cell));
-}
-
-/*
 void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing) {
     static thread_local std::vector<std::pair<unsigned int, glm::vec3>> separatedPoints[2];
     assert(separatedPoints[0].empty());
@@ -562,6 +529,25 @@ bool HashTreeWorld::isGas(MaterialIndex materialIndex) const {
     // TODO: Maybe cache this lookup?
     render::SceneManager &sceneManager = context.get<render::SceneManager>();
     return sceneManager.readMaterial(static_cast<unsigned int>(materialIndex)).local.phase == graphics::MaterialLocal::Phase::Gas;
+}
+
+void HashTreeWorld::generateChunk(Cell *cell) {
+    assert(cell->second.chunk == 0);
+    assert(cell->second.constantMaterialIndex == MaterialIndex::Null);
+
+    if (cell->first.sizeLog2 > Chunk::sizeLog2) {
+        // There might be leaf-level chunks that we can deduce some materials from
+        // There's really three cases here:
+        // 1. There's no leaf-level chunks, so we can just set constantMaterialIndex = MaterialIndex::Generating.
+        // 2. There's some leaf-level chunks, so we should allocate a new world::Chunk
+        //      and fill each cell with either MaterialIndex::Generating or the leaf-level material.
+        // 3. The entire cell's covered with leaf-level chunks, so we can fill this entire chunk and skip the generation request.
+        // For now, just assume there's no leaf-level chunks.
+    }
+
+    cell->second.constantMaterialIndex = MaterialIndex::Generating;
+
+    context.get<worldgen::WorldGenerator>().generate(cell->first, getChunkPoints(cell));
 }
 
 unsigned int CellValue::nextChunkId = 0;

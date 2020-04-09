@@ -15,7 +15,7 @@ namespace world {
 
 class CellValue {
 public:
-    void setChunkId() {
+    void initialize() {
         chunkId = nextChunkId;
         nextChunkId += Chunk::size * Chunk::size * Chunk::size;
 
@@ -23,6 +23,12 @@ public:
             // TODO: Log
             assert(false);
         }
+
+        constantMaterialIndex = MaterialIndex::Null;
+        chunk = 0;
+        points = 0;
+
+        hasFaces.fill<false>();
     }
 
 //    bool isLeaf() const {
@@ -36,11 +42,11 @@ public:
     // 0: Null - The chunk has not initiated generation
     // 1: Generating - The chunk has initiated generation
 
-    MaterialIndex constantMaterialIndex = MaterialIndex::Null;
-    Chunk *chunk = 0;
-    pointgen::Chunk *points = 0;
+    MaterialIndex constantMaterialIndex;
+    Chunk *chunk;
+    pointgen::Chunk *points;
     std::vector<unsigned int> faceIndices;
-    jw_util::Bitset<Chunk::size * Chunk::size * Chunk::size> needsRegen;
+    jw_util::Bitset<Chunk::size * Chunk::size * Chunk::size> hasFaces;
     jw_util::Bitset<Chunk::size * Chunk::size * Chunk::size> gasMasks[3];
 };
 
@@ -102,7 +108,7 @@ public:
 
     void tick(game::TickerContext &tickerContext);
 
-    Cell *lookupChunk(spatial::CellKey cellKey);
+    Cell &lookupChunk(spatial::CellKey cellKey);
 
     void updateGasMasks(CellValue *cellValue);
 
@@ -139,6 +145,8 @@ public:
 
     bool isGas(MaterialIndex materialIndex) const;
 
+    void generateChunk(Cell *cell);
+
     bool shouldSubdivForPhysics(Cell *cell) const {
         return cell->first.sizeLog2 > Chunk::sizeLog2;
     }
@@ -157,27 +165,27 @@ private:
 
     static CellValue makeRootBranch() {
         CellValue res;
-        res.setChunkId();
+        res.initialize();
         return res;
     }
 
     signed int guessViewChunkSizeLog2(spatial::UintCoord coord) const {
-        spatial::UintCoord d = coord - cameraCoord;
-        std::uint64_t dSqX = static_cast<std::int64_t>(d.x) * static_cast<std::int64_t>(d.x);
-        std::uint64_t dSqY = static_cast<std::int64_t>(d.x) * static_cast<std::int64_t>(d.x);
-        std::uint64_t dSqZ = static_cast<std::int64_t>(d.x) * static_cast<std::int64_t>(d.x);
+        spatial::UintCoord::SignedAxisType dx = coord.x - cameraCoord.x;
+        spatial::UintCoord::SignedAxisType dy = coord.y - cameraCoord.y;
+        spatial::UintCoord::SignedAxisType dz = coord.z - cameraCoord.z;
+        std::uint64_t dSqX = static_cast<std::int64_t>(dx) * static_cast<std::int64_t>(dx);
+        std::uint64_t dSqY = static_cast<std::int64_t>(dy) * static_cast<std::int64_t>(dy);
+        std::uint64_t dSqZ = static_cast<std::int64_t>(dz) * static_cast<std::int64_t>(dz);
         std::uint64_t dSq = dSqX + dSqY + dSqZ;
 
         if (!dSq) {
-            return Chunk::sizeLog2;
+            return VIEW_CHUNK_SUBDIV_OFFSET_LOG2;
         }
 
         unsigned int numSigBits = sizeof(dSq) * CHAR_BIT - __builtin_clzll(dSq);
         signed int desiredSizeLog2 = numSigBits / 2 + VIEW_CHUNK_SUBDIV_OFFSET_LOG2;
         return desiredSizeLog2;
     }
-
-    void generateChunk(Cell *cell);
 };
 
 }

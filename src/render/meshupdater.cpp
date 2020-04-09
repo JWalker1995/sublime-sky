@@ -114,7 +114,7 @@ void MeshUpdater::enqueueCellUpdate(spatial::CellKey cellKey) {
 }
 
 void MeshUpdater::updateCell(spatial::CellKey cellKey) {
-    static constexpr bool enableDestroyGeometry = true;
+    static constexpr bool enableDestroyGeometry = false;
 
     world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
 
@@ -129,11 +129,18 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
         updateCell(cellKey.child<1, 1, 0>());
         updateCell(cellKey.child<1, 1, 1>());
         return;
+    } else if (!hashTreeWorld.shouldSubdivForView(chunk.parent())) {
+        updateCell(cellKey.parent());
+        return;
     }
 
-    world::HashTreeWorld::Cell *chunkNode = hashTreeWorld.lookupChunk(chunk);
-    if (!chunkNode) {
-        updateCell(cellKey.parent());
+    world::HashTreeWorld::Cell &chunkNode = hashTreeWorld.lookupChunk(chunk);
+
+    unsigned int x = cellKey.cellCoord.x % world::Chunk::size;
+    unsigned int y = cellKey.cellCoord.y % world::Chunk::size;
+    unsigned int z = cellKey.cellCoord.z % world::Chunk::size;
+
+    if (chunkNode.second.hasFaces.get((x * world::Chunk::size + y) * world::Chunk::size + z)) {
         return;
     }
 
@@ -144,22 +151,23 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
 //        return;
 //    }
 
-    if (!chunkNode->second.chunk) {
-        assert(false);
-        return;
+    world::MaterialIndex originMaterialIndex;
+    if (chunkNode.second.chunk) {
+        originMaterialIndex = chunkNode.second.chunk->cells[x][y][z].materialIndex;
+    } else {
+        originMaterialIndex = chunkNode.second.constantMaterialIndex;
+        switch (originMaterialIndex) {
+            case world::MaterialIndex::Null: hashTreeWorld.generateChunk(&chunkNode); return;
+            case world::MaterialIndex::Generating: return;
+        }
     }
-
-    unsigned int x = cellKey.cellCoord.x % world::Chunk::size;
-    unsigned int y = cellKey.cellCoord.y % world::Chunk::size;
-    unsigned int z = cellKey.cellCoord.z % world::Chunk::size;
-    world::MaterialIndex originMaterialIndex = chunkNode->second.chunk->cells[x][y][z].materialIndex;
 
     bool originIsTransparent = hashTreeWorld.isGas(originMaterialIndex);
     if (!enableDestroyGeometry && originIsTransparent) {
         return;
     }
 
-    const pointgen::Chunk *pointChunk = hashTreeWorld.getChunkPoints(chunkNode);
+    const pointgen::Chunk *pointChunk = hashTreeWorld.getChunkPoints(&chunkNode);
     glm::vec3 origin = pointChunk->points[x][y][z];
     if (std::isnan(origin.x)) {
         return;
@@ -186,22 +194,28 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
                 glm::vec3 pt;
                 world::MaterialIndex neighborMaterialIndex;
 
-                unsigned int x = cellKey.cellCoord.x % world::Chunk::size;
-                unsigned int y = cellKey.cellCoord.y % world::Chunk::size;
-                unsigned int z = cellKey.cellCoord.z % world::Chunk::size;
+                unsigned int x = neighborCell.cellCoord.x % world::Chunk::size;
+                unsigned int y = neighborCell.cellCoord.y % world::Chunk::size;
+                unsigned int z = neighborCell.cellCoord.z % world::Chunk::size;
 
                 spatial::CellKey neighborChunk = neighborCell.grandParent<world::Chunk::sizeLog2>();
                 if (neighborChunk.cellCoord == chunk.cellCoord) {
                     pt = pointChunk->points[x][y][z];
-                    neighborMaterialIndex = chunkNode->second.chunk->cells[x][y][z].materialIndex;
+                    neighborMaterialIndex = chunkNode.second.chunk->cells[x][y][z].materialIndex;
                 } else {
-                    world::HashTreeWorld::Cell *neighborNode = hashTreeWorld.lookupChunk(neighborChunk);
-                    if (!neighborNode) {
-                        assert(false);
+                    world::HashTreeWorld::Cell &neighborNode = hashTreeWorld.lookupChunk(neighborChunk);
+
+                    if (neighborNode.second.chunk) {
+                        neighborMaterialIndex = neighborNode.second.chunk->cells[x][y][z].materialIndex;
+                    } else {
+                        neighborMaterialIndex = neighborNode.second.constantMaterialIndex;
+                        switch (neighborMaterialIndex) {
+                            case world::MaterialIndex::Null: hashTreeWorld.generateChunk(&neighborNode); return;
+                            case world::MaterialIndex::Generating: return;
+                        }
                     }
 
-                    pt = neighborNode->second.points->points[x][y][z];
-                    neighborMaterialIndex = neighborNode->second.chunk->cells[x][y][z].materialIndex;
+                    pt = hashTreeWorld.getChunkPoints(&neighborNode)->points[x][y][z];
                 }
 
                 if (std::isnan(pt.x)) {
@@ -288,7 +302,7 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
     }
     assert(vertIndices.size() * 3 == verts.size());
 
-    unsigned int cellId = chunkNode->second.chunkId + (x * world::Chunk::size + y) * world::Chunk::size + z;
+    unsigned int cellId = chunkNode.second.chunkId + (x * world::Chunk::size + y) * world::Chunk::size + z;
 
     std::vector<int>::const_iterator faceVertsIt = faceVerts.cbegin();
     for (int neighbor : neighbors) {
