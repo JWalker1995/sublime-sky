@@ -29,6 +29,7 @@ spatial::UintCoord HashTreeWorld::calcCameraCoord() {
     return spatial::UintCoord::fromPoint(context.get<render::Camera>().getEyePos());
 }
 
+/*
 HashTreeWorld::Cell &HashTreeWorld::lookupChunk(spatial::CellKey cellKey) {
     std::pair<std::unordered_map<spatial::CellKey, CellValue, spatial::CellKeyHasher>::iterator, bool> insert = getMap().emplace(cellKey, CellValue());
     if (insert.second) {
@@ -40,6 +41,7 @@ HashTreeWorld::Cell &HashTreeWorld::lookupChunk(spatial::CellKey cellKey) {
     }
     return *insert.first;
 }
+*/
 
 void HashTreeWorld::updateGasMasks(CellValue *cellValue) {
     using BitsetType = jw_util::Bitset<Chunk::size * Chunk::size * Chunk::size>;
@@ -145,6 +147,8 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
     RayDrawer cellIt(origin, dir, spatial::CellKey::fromCoord(initCoord, sizeLog2 - Chunk::sizeLog2));
 
     while (true) {
+        Cell *cell = getLeafContaining(cellIt.getCurCellKey().getCoord<0, 0, 0>(), cellIt.getCurCellKey().sizeLog2 + Chunk::sizeLog2);
+
         // Here, we make sure the sizeLog2 is exact.
         bool shouldParentSubdiv = shouldSubdivForView(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2 + 1>());
         if (shouldParentSubdiv) {
@@ -165,7 +169,7 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
             }
         }
 
-        Cell &cell = lookupChunk(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2>());
+        Cell *cell = getNodeContaining(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2>());
 
         if (cell.second.chunk) {
             // In this case, we have cells for the chunk (as opposed to it being a constant chunk)
@@ -195,6 +199,11 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
                 }
 
                 step = cellIt.step();
+                if (step.distance >= distanceLimit) {
+                    res.result = RaytestResult::HitDistanceLimit;
+                    res.surfaceMaterialIndex = material;
+                    return res;
+                }
             } while (!step.movedChunk);
         } else {
             MaterialIndex material = cell.second.constantMaterialIndex;
@@ -208,7 +217,15 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
                 return res;
             default:
                 if (isGas(material)) {
-                    while (!cellIt.step().movedChunk) {}
+                    RayDrawer::StepResult step;
+                    do {
+                        step = cellIt.step();
+                    } while (!step.movedChunk);
+                    if (step.distance >= distanceLimit) {
+                        res.result = RaytestResult::HitDistanceLimit;
+                        res.surfaceMaterialIndex = material;
+                        return res;
+                    }
                 } else {
                     res.result = RaytestResult::HitSurface;
                     res.surfaceMaterialIndex = material;

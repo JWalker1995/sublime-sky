@@ -136,6 +136,7 @@ public:
 //        glm::vec2 planeImpactPoint;
 //        bool towardsPositive;
 //        unsigned char stepAxis;
+        float distance;
         bool movedChunk;
     };
 
@@ -180,14 +181,18 @@ private:
 
         if (timeStepSize[stepAxis] >= 0.0f) {
 //            res.towardsPositive = true;
+            res.movedChunk = cellKey.cellCoord[stepAxis] % chunkSize == chunkSize - 1;
+            res.distance = timeToPlane[stepAxis];
+
             cellKey.cellCoord[stepAxis]++;
             timeToPlane[stepAxis] += timeStepSize[stepAxis];
-            res.movedChunk = cellKey.cellCoord.z % chunkSize == 0;
         } else {
 //            res.towardsPositive = false;
+            res.movedChunk = cellKey.cellCoord[stepAxis] % chunkSize == 0;
+            res.distance = timeToPlane[stepAxis];
+
             cellKey.cellCoord[stepAxis]--;
             timeToPlane[stepAxis] -= timeStepSize[stepAxis];
-            res.movedChunk = cellKey.cellCoord.z % chunkSize == chunkSize - 1;
         }
 
 //        res.stepAxis = stepAxis;

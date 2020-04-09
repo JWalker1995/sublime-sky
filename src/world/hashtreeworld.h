@@ -31,9 +31,9 @@ public:
         hasFaces.fill<false>();
     }
 
-//    bool isLeaf() const {
-//        return type != Type::Branch;
-//    }
+    bool isLeaf() const {
+        return isViewLeaf;
+    }
 
     static unsigned int nextChunkId;
     unsigned int chunkId;
@@ -43,6 +43,7 @@ public:
     // 1: Generating - The chunk has initiated generation
 
     MaterialIndex constantMaterialIndex;
+    bool isViewLeaf;
     Chunk *chunk;
     pointgen::Chunk *points;
     std::vector<unsigned int> faceIndices;
@@ -50,12 +51,10 @@ public:
     jw_util::Bitset<Chunk::size * Chunk::size * Chunk::size> gasMasks[3];
 };
 
-class HashTreeWorld : private spatial::HashTree<HashTreeWorld, CellValue>, public game::TickerContext::TickableBase<HashTreeWorld> {
+class HashTreeWorld : public spatial::HashTree<HashTreeWorld, CellValue>, public game::TickerContext::TickableBase<HashTreeWorld> {
     friend class spatial::HashTree<HashTreeWorld, CellValue>;
 
 public:
-    using spatial::HashTree<HashTreeWorld, CellValue>::Cell;
-
     template <bool populateState, bool populatePoints>
     class CellIterator {
     public:
@@ -108,7 +107,7 @@ public:
 
     void tick(game::TickerContext &tickerContext);
 
-    Cell &lookupChunk(spatial::CellKey cellKey);
+//    Cell &lookupChunk(spatial::CellKey cellKey);
 
     void updateGasMasks(CellValue *cellValue);
 
@@ -128,7 +127,7 @@ public:
         };
         Result result;
 
-        // These properties are only set if result == HitSurface:
+        // These properties are only guaranteed to be set if result == HitSurface:
         MaterialIndex surfaceMaterialIndex;
         spatial::CellKey surfaceHitCell;
 //        float surfacePointDistance;

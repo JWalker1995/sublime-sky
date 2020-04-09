@@ -36,6 +36,7 @@ private:
     SceneManager::MeshHandle meshHandle;
 
     std::queue<spatial::CellKey> cellUpdateQueue;
+    std::queue<spatial::CellKey> delayedCellUpdateQueue;
 
     // TODO: This doesn't really even have to store the pair.
     // A vector, that maps a hash to a uint and forces the user to check equality should suffice.

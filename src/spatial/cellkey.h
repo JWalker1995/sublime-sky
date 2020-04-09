@@ -15,7 +15,9 @@ struct CellKey {
     CellKey(UintCoord cellCoord, unsigned int sizeLog2)
         : cellCoord(cellCoord)
         , sizeLog2(sizeLog2)
-    {}
+    {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+    }
 
     bool isNearby(CellKey other) const {
         assert(sizeLog2 == other.sizeLog2);

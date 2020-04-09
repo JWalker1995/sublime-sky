@@ -80,13 +80,12 @@ void RayCaster::castNew() {
 }
 
 void RayCaster::castRay(glm::vec3 origin, glm::vec3 dir) {
-    world::HashTreeWorld::RaytestResult res = context.get<world::HashTreeWorld>().testViewRay(origin, dir, 100.0f);
+    world::HashTreeWorld::RaytestResult res = context.get<world::HashTreeWorld>().testViewRay(origin, dir, 1000.0f);
 
-    if (res.result == world::HashTreeWorld::RaytestResult::HitGenerating) {
-        retryRays.emplace_back(origin, dir);
-    } else {
-//        context.get<world::TimeManager>().incTimeAround(res.surfaceHitCell, 1.0f);
-        context.get<render::MeshUpdater>().enqueueCellUpdate(res.surfaceHitCell);
+    switch (res.result) {
+        case world::HashTreeWorld::RaytestResult::HitSurface: context.get<render::MeshUpdater>().enqueueCellUpdate(res.surfaceHitCell); break;
+        case world::HashTreeWorld::RaytestResult::HitGenerating: retryRays.emplace_back(origin, dir); break;
+        case world::HashTreeWorld::RaytestResult::HitDistanceLimit: break;
     }
 }
 
