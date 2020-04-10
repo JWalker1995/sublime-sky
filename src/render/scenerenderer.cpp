@@ -9,9 +9,11 @@
 
 namespace render {
 
-SceneRenderer::SceneRenderer(game::GameContext &context)
+SceneRenderer::SceneRenderer(game::GameContext &context, const SsProtocol::Config::Render *config)
     : TickableBase(context)
 {
+    (void) config;
+
     graphics::GpuProgram::printExtensions(context);
 
     //mesh_scene.setup_vao<IsosurfaceScene>();

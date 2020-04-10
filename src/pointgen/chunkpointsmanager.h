@@ -13,6 +13,7 @@ public:
 
     Chunk *generate(const spatial::CellKey &cellKey);
     void use(Chunk *chunk);
+    void release(Chunk *chunk);
 
 private:
     game::GameContext &context;

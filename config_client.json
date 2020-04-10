@@ -10,6 +10,13 @@
   "render": {
     "use_log_depth_buffer": true
   },
+  "mesh_generator": {
+    "cell_updates_per_tick": 1024,
+    "ungenerated_retry_delay": 8
+  },
+  "hash_tree_world": {
+    "view_chunk_subdiv_offset_log2": -2
+  },
   "network": {
     "servers": [
       { "protocol": "WebSocket", "hostname": "127.0.0.1", "port": 8765 }

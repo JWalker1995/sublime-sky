@@ -9,6 +9,10 @@
 #include "game/tickercontext.h"
 #include "graphics/gl.h"
 
+namespace SsProtocol {
+namespace Config { struct Window; }
+}
+
 namespace game { class GameContext; }
 
 namespace application {
@@ -63,7 +67,7 @@ public:
         double y;
     };
 
-    Window(game::GameContext &context);
+    Window(game::GameContext &context, const SsProtocol::Config::Window *config);
     ~Window();
 
     Dimensions dimensions;

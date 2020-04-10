@@ -2,18 +2,20 @@
 
 #include <queue>
 
+#include "schemas/config_client_generated.h"
 #include "pointgen/chunkpointsmanager.h"
 #include "worldgen/worldgenerator.h"
 #include "render/meshupdater.h"
 #include "render/camera.h"
 #include "query/rectquery.h"
 #include "util/pool.h"
-#include "world/raydrawer.h"
+#include "spatial/raydrawer.h"
 
 namespace world {
 
-HashTreeWorld::HashTreeWorld(game::GameContext &gameContext)
+HashTreeWorld::HashTreeWorld(game::GameContext &gameContext, const SsProtocol::Config::HashTreeWorld *config)
     : TickableBase(gameContext)
+    , viewChunkSubdivOffsetLog2(config->view_chunk_subdiv_offset_log2())
     , cameraCoord(calcCameraCoord())
 {}
 
@@ -42,6 +44,24 @@ HashTreeWorld::Cell &HashTreeWorld::lookupChunk(spatial::CellKey cellKey) {
     return *insert.first;
 }
 */
+
+void HashTreeWorld::fixChunk(Cell *cell) {
+    (void) cell;
+}
+
+void HashTreeWorld::removeChunk(Cell *cell) {
+    context.get<util::Pool<world::Chunk>>().free(cell->second.chunk);
+    cell->second.chunk = 0;
+
+    pointgen::ChunkPointsManager &chunkPointsManager = context.get<pointgen::ChunkPointsManager>();
+    chunkPointsManager.release(cell->second.points);
+    cell->second.points = 0;
+
+    cell->second.destroy();
+
+    bool erased = getMap().erase(cell->first);
+    assert(erased);
+}
 
 void HashTreeWorld::updateGasMasks(CellValue *cellValue) {
     using BitsetType = jw_util::Bitset<Chunk::size * Chunk::size * Chunk::size>;
@@ -144,28 +164,31 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
     unsigned int sizeLog2 = std::max(static_cast<signed int>(Chunk::sizeLog2), guessViewChunkSizeLog2(initCoord));
 
     // TODO: Iterate by chunk
-    RayDrawer cellIt(origin, dir, spatial::CellKey::fromCoord(initCoord, sizeLog2 - Chunk::sizeLog2));
+    spatial::RayDrawer<glm::vec3> cellIt(origin, dir, spatial::CellKey::fromCoord(initCoord, sizeLog2 - Chunk::sizeLog2));
 
     while (true) {
-        Cell *cell = getLeafContaining(cellIt.getCurCellKey().getCoord<0, 0, 0>(), cellIt.getCurCellKey().sizeLog2 + Chunk::sizeLog2);
-
-        while (cellIt.getCurCellKey().sizeLog2 < cell->first.sizeLog2) {
-            cellIt.enterParentCell();
-        }
-        while (cellIt.getCurCellKey().sizeLog2 > cell->first.sizeLog2) {
+        Cell *chunkNode;
+        while (true) {
+            chunkNode = getNodeContaining(cellIt.getCurCellKey().grandParent<Chunk::sizeLog2>());
+            if (chunkNode->second.isLeaf()) {
+                break;
+            }
             cellIt.enterChildCell();
         }
+        while (cellIt.getCurCellKey().sizeLog2 < chunkNode->first.sizeLog2 - Chunk::sizeLog2) {
+            cellIt.enterParentCell();
+        }
 
-        if (cell->second.chunk) {
+        if (chunkNode->second.chunk) {
             // In this case, we have cells for the chunk (as opposed to it being a constant chunk)
 
-            RayDrawer::StepResult step;
+            spatial::RayDrawer<glm::vec3>::StepResult step;
             do {
                 unsigned int x = cellIt.getCurCellKey().cellCoord.x % Chunk::size;
                 unsigned int y = cellIt.getCurCellKey().cellCoord.y % Chunk::size;
                 unsigned int z = cellIt.getCurCellKey().cellCoord.z % Chunk::size;
 
-                MaterialIndex material = cell->second.chunk->cells[x][y][z].materialIndex;
+                MaterialIndex material = chunkNode->second.chunk->cells[x][y][z].materialIndex;
                 RaytestResult res;
                 switch (material) {
                 case MaterialIndex::Null:
@@ -191,18 +214,18 @@ HashTreeWorld::RaytestResult HashTreeWorld::testViewRay(glm::vec3 origin, glm::v
                 }
             } while (!step.movedChunk);
         } else {
-            MaterialIndex material = cell->second.constantMaterialIndex;
+            MaterialIndex material = chunkNode->second.constantMaterialIndex;
             RaytestResult res;
             switch (material) {
             case MaterialIndex::Null:
-                generateChunk(cell);
+                generateChunk(chunkNode);
                 // Fall-through intentional
             case MaterialIndex::Generating:
                 res.result = RaytestResult::HitGenerating;
                 return res;
             default:
                 if (isGas(material)) {
-                    RayDrawer::StepResult step;
+                    spatial::RayDrawer<glm::vec3>::StepResult step;
                     do {
                         step = cellIt.step();
                     } while (!step.movedChunk);

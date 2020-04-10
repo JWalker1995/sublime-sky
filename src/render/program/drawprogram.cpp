@@ -1,6 +1,6 @@
 #include "drawprogram.h"
 
-#include <spdlog/logger.h>
+#include "spdlog/logger.h"
 
 #include "graphics/glbufferbase.h"
 #include "render/shaders.h"

@@ -81,6 +81,17 @@ void ChunkPointsManager::use(Chunk *chunk) {
     mostRecentlyUsed = chunk;
 }
 
+void ChunkPointsManager::release(Chunk *chunk) {
+    numChunks--;
+
+    Chunk *chunkLru = chunk->lessRecentlyUsed;
+    Chunk *chunkMru = chunk->moreRecentlyUsed;
+    chunkMru->lessRecentlyUsed = chunkLru;
+    chunkLru->moreRecentlyUsed = chunkMru;
+
+    context.get<util::Pool<Chunk>>().free(chunk);
+}
+
 Chunk *ChunkPointsManager::addAvailableChunk() {
     Chunk *chunk = context.get<util::Pool<Chunk>>().alloc();
 

@@ -1,7 +1,10 @@
 #include "meshupdater.h"
 
+#include "spdlog/logger.h"
+
 #include "voro++-0.4.6/src/cell.hh"
 
+#include "schemas/config_client_generated.h"
 #include "util/pool.h"
 #include "render/hashtreevertindex.h"
 #include "render/camera.h"
@@ -12,14 +15,17 @@
 
 namespace render {
 
-MeshUpdater::MeshUpdater(game::GameContext &context)
+MeshUpdater::MeshUpdater(game::GameContext &context, const SsProtocol::Config::MeshGenerator *config)
     : TickableBase(context)
     , facesVecManager(context.get<util::SmallVectorManager<unsigned int>>())
     , meshHandle(context.get<render::SceneManager>().createMesh())
+    , cellUpdatesPerTick(config->cell_updates_per_tick())
 {
     // Add sentinel values
-    static constexpr unsigned int delayQueueTicks = 16;
-    for (unsigned int i = 0; i < delayQueueTicks; i++) {
+    if (!config->ungenerated_retry_delay()) {
+        context.get<spdlog::logger>().warn("Client config mesh_generator.ungenerated_retry_delay is zero; this is likely to cause performance problems. Set it to 16 or so.");
+    }
+    for (unsigned int i = 0; i < config->ungenerated_retry_delay(); i++) {
         delayedCellUpdateQueue.emplace();
         delayedCellUpdateQueue.back().cellCoord = spatial::UintCoord(0);
         delayedCellUpdateQueue.back().sizeLog2 = 100;
@@ -40,25 +46,17 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
     tickerContext.get<render::ImguiRenderer::Ticker>();
 
     if (ImGui::Begin("Debug")) {
-        ImGui::Text("Cell update queue size = %zu", cellUpdateQueue.size());
+        ImGui::Text("Cell update / delay queue size = %zu / %zu", cellUpdateQueue.size(), delayedCellUpdateQueue.size());
     }
     ImGui::End();
 
     SceneManager::MeshMutator meshMutator = meshHandle.mutateMesh();
     meshMutator.shared.transform = context.get<render::Camera>().getTransform();
 
-    static constexpr unsigned int maxCellUpdatesPerTick = 256 * 8;
-    for (unsigned int i = 0; i < maxCellUpdatesPerTick; i++) {
-        if (cellUpdateQueue.empty()) {
-            break;
-        }
+    unsigned int remainingCellUpdates = cellUpdatesPerTick;
+    while (remainingCellUpdates > 0) {
+        remainingCellUpdates--;
 
-        spatial::CellKey front = cellUpdateQueue.front();
-        cellUpdateQueue.pop();
-        updateCell(front);
-    }
-
-    while (true) {
         assert(!delayedCellUpdateQueue.empty());
 
         spatial::CellKey front = delayedCellUpdateQueue.front();
@@ -70,6 +68,18 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
         } else {
             updateCell(front);
         }
+    }
+
+    while (remainingCellUpdates > 0) {
+        remainingCellUpdates--;
+
+        if (cellUpdateQueue.empty()) {
+            break;
+        }
+
+        spatial::CellKey front = cellUpdateQueue.front();
+        cellUpdateQueue.pop();
+        updateCell(front);
     }
 }
 
@@ -129,6 +139,7 @@ void MeshUpdater::finishMeshGen(MeshGenRequest *meshGenRequest) {
 void MeshUpdater::enqueueCellUpdate(spatial::CellKey cellKey) {
 //    assert(false);
 //    context.get<world::HashTreeWorld>().getNeedsRegen(coord) = true;
+
     cellUpdateQueue.push(cellKey);
 }
 
@@ -193,7 +204,8 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
     }
 
     voro::voronoicell_neighbor cell;
-    cell.init(-2.0, 2.0, -2.0, 2.0, -2.0, 2.0);
+    double boundarySize = std::ldexp(2.0, cellKey.sizeLog2);
+    cell.init(-boundarySize, boundarySize, -boundarySize, boundarySize, -boundarySize, boundarySize);
 
     glm::vec3 transparentPosSum(0.0f);
     float transparentCount = 0.0f;
@@ -238,6 +250,13 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
 
                                     spatial::CellKey childChunk = childCell.grandParent<world::Chunk::sizeLog2>();
                                     world::HashTreeWorld::Cell *childNode = hashTreeWorld.getNodeContaining(childChunk);
+                                    if (!childNode->second.isLeaf()) {
+                                        hashTreeWorld.fixChunk(chunkNode);
+                                        hashTreeWorld.fixChunk(childNode);
+                                        chunkNode->second.hasFaces.set<false>(cellIndex);
+                                        delayedCellUpdateQueue.push(cellKey);
+                                        return;
+                                    }
 
                                     if (childNode->second.chunk) {
                                         neighborMaterialIndex = childNode->second.chunk->cells[x][y][z].materialIndex;
@@ -248,6 +267,7 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
                                                 hashTreeWorld.generateChunk(childNode);
                                                 // Fall-through intentional
                                             case world::MaterialIndex::Generating:
+                                                chunkNode->second.hasFaces.set<false>(cellIndex);
                                                 delayedCellUpdateQueue.push(cellKey);
                                                 return;
                                         }
@@ -285,6 +305,7 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
                                 hashTreeWorld.generateChunk(neighborNode);
                                 // Fall-through intentional
                             case world::MaterialIndex::Generating:
+                                chunkNode->second.hasFaces.set<false>(cellIndex);
                                 delayedCellUpdateQueue.push(cellKey);
                                 return;
                         }
@@ -319,9 +340,9 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
     if (!originIsTransparent) {
         assert(hasSurface);
         transparentPosSum /= transparentCount;
-        glm::vec3 camPos = context.get<render::Camera>().getEyePos();
-        float distance = glm::distance(transparentPosSum, camPos);
-        if (hashTreeWorld.testViewRay(transparentPosSum, camPos - transparentPosSum, distance).result == world::HashTreeWorld::RaytestResult::HitDistanceLimit) {
+        glm::vec3 dir = context.get<render::Camera>().getEyePos() - transparentPosSum;
+        dir /= glm::length(dir);
+        if (hashTreeWorld.testViewRay(transparentPosSum + dir * 2.0f, dir, 1.0f).result == world::HashTreeWorld::RaytestResult::HitDistanceLimit) {
             spatial::UintCoord min = cellKey.cellCoord - spatial::UintCoord(1);
             spatial::UintCoord max = cellKey.cellCoord + spatial::UintCoord(1);
             spatial::CellKey neighborCell;

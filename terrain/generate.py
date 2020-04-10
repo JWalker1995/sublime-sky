@@ -105,11 +105,13 @@ def generate_terrain(seed, points):
 	# Create an empty array of air
 	res = np.full(points.shape[:1], 0, dtype=np.uint32)
 
+	norms = np.linalg.norm(points, axis=-1)
+
 	# Assign dirt
-	res[points[:, 2] + noise_values * 40 < 5.0] = 1
+	res[norms + noise_values * 100 < 1000.0] = 1
 
 	# Assign water
-	res[points[:, 2] < -5.0] = 2
+	res[norms < 1000.0] = 2
 
 	# # Assign clouds
 	# res[(points[:, 2] - 110) ** 2 * 1e-1 + noise_values * 100 < -60.0] = 3

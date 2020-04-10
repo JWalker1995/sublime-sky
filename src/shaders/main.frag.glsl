@@ -36,7 +36,7 @@ highp float rand(float seed) {
 
 const bool blinn = true;
 const vec4 lightColor = vec4(1.0, 1.0, 1.0, 1.0);
-const float lightPower = 10000.0;
+const float lightPower = 100000000.0;
 //const vec4 ambientColor = vec4(0.0, 0.0, 0.0, 1.0);
 //const vec3 diffuseColor = vec3(188/256.0,143/256.0,143/256.0);
 //const vec3 specColor = vec3(1.0, 1.0, 1.0);
@@ -57,7 +57,8 @@ void main(void) {
         vec3 yTangent = dFdy(modelPosition);
         vec3 faceNormal = normalize(cross(xTangent, yTangent));
 
-        vec3 lightPos = eyePos + vec3(0.0, 0.0, 50.0);
+//        vec3 lightPos = eyePos + vec3(0.0, 0.0, 50.0);
+        vec3 lightPos = vec3(0.0, 10000.0, 0.0);
         vec3 lightDir = lightPos - modelPosition;
         float distance = length(lightDir);
         distance = distance * distance;

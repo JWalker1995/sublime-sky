@@ -1,7 +1,5 @@
 #include "tickercontext.h"
 
-#include "spdlog/spdlog.h"
-
 namespace game {
 
 void TickerContext::tick() {

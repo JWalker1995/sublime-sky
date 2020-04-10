@@ -11,6 +11,7 @@ namespace spatial {
 template <typename DerivedType, typename CellValue>
 class HashTree {
 public:
+    typedef std::unordered_map<CellKey, CellValue, CellKeyHasher> MapType;
     typedef std::pair<const CellKey, CellValue> Cell;
 
     template <typename QueryType, bool returnBranches>
@@ -120,14 +121,14 @@ public:
         }
     }
 
-    std::unordered_map<CellKey, CellValue, CellKeyHasher> &getMap() {
+    MapType &getMap() {
         return cellGrid;
     }
 
 private:
     template <bool recurseTowardsRoot, bool recurseTowardsLeaves, typename... ExtraArgs>
     Cell *getCellContaining(UintCoord coord, unsigned int guessSizeLog2, ExtraArgs... args) {
-        std::pair<typename std::unordered_map<CellKey, CellValue, CellKeyHasher>::iterator, bool> insert = cellGrid.emplace(CellKey::fromCoord(coord, guessSizeLog2), CellValue());
+        std::pair<typename MapType::iterator, bool> insert = cellGrid.emplace(CellKey::fromCoord(coord, guessSizeLog2), CellValue());
         if (insert.second) {
             if (recurseTowardsRoot) {
                 Cell *parent = getCellContaining<true, false, ExtraArgs...>(coord, guessSizeLog2 + 1, std::forward<ExtraArgs>(args)...);
@@ -191,7 +192,7 @@ private:
         return static_cast<DerivedType *>(this);
     }
 
-    std::unordered_map<CellKey, CellValue, CellKeyHasher> cellGrid;
+    MapType cellGrid;
 };
 
 }

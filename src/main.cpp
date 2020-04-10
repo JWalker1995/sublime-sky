@@ -123,8 +123,8 @@ int main(int argc, char **argv)
         context.get<game::MainLoop>().run();
     } catch (const application::QuitException &) {
         // Normal exit
-        context.get<spdlog::logger>().info("GameContext type counts: managed={}, total={}", context.getManagedTypeCount(), context.getTotalTypeCount());
         context.get<spdlog::logger>().info("Ending...");
+        context.get<spdlog::logger>().info("GameContext type counts: managed={}, total={}", context.getManagedTypeCount(), context.getTotalTypeCount());
         return 0;
     } catch (const std::exception &exception) {
         context.get<spdlog::logger>().critical("Uncaught exception: {}", exception.what());

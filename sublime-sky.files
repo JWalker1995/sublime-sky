@@ -179,6 +179,8 @@ src/spatial/raycastlookuptable.cpp
 src/spatial/raycastlookuptable.h
 src/spatial/raychunklookuptable.cpp
 src/spatial/raychunklookuptable.h
+src/spatial/raydrawer.h
+src/spatial/raydrawer.test.cpp
 src/spatial/uintcoord.h
 src/spatial/uniformpointindexer.h
 src/util/hashforwarder.h
@@ -192,13 +194,13 @@ src/util/testrunner.cpp
 src/util/testrunner.h
 src/world/chunk.cpp
 src/world/chunk.h
+src/world/chunkgarbagecollector.cpp
+src/world/chunkgarbagecollector.h
 src/world/hashtreeworld.cpp
 src/world/hashtreeworld.h
 src/world/materialindex.h
 src/world/particle.cpp
 src/world/particle.h
-src/world/raydrawer.h
-src/world/raydrawer.test.cpp
 src/world/timemanager.cpp
 src/world/timemanager.h
 src/world/voronoicell.cpp

@@ -11,13 +11,17 @@
 #include "render/scenemanager.h"
 #include "spatial/cellkey.h"
 
+namespace SsProtocol {
+namespace Config { struct MeshGenerator; }
+}
+
 namespace game { class GameContext; }
 
 namespace render {
 
 class MeshUpdater : public game::TickerContext::TickableBase<MeshUpdater> {
 public:
-    MeshUpdater(game::GameContext &context);
+    MeshUpdater(game::GameContext &context, const SsProtocol::Config::MeshGenerator *config);
     ~MeshUpdater();
 
     void tick(game::TickerContext &tickerContext);
@@ -34,6 +38,8 @@ public:
 private:
     util::SmallVectorManager<unsigned int> &facesVecManager;
     SceneManager::MeshHandle meshHandle;
+
+    unsigned int cellUpdatesPerTick;
 
     std::queue<spatial::CellKey> cellUpdateQueue;
     std::queue<spatial::CellKey> delayedCellUpdateQueue;

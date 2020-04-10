@@ -7,10 +7,12 @@
 
 namespace worldgen {
 
-SimpleGenerator::SimpleGenerator(game::GameContext &context)
+SimpleGenerator::SimpleGenerator(game::GameContext &context, const SsProtocol::Config::SimpleWorldGenerator *config)
     : context(context)
     , noise(123)
 {
+    (void) config;
+
     assert(pointgen::Chunk::size == world::Chunk::size);
 
     render::SceneManager::MaterialMutator airMat = context.get<render::SceneManager>().createMaterial();

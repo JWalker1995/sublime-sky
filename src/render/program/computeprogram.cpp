@@ -1,6 +1,6 @@
 #include "computeprogram.h"
 
-#include <spdlog/logger.h>
+#include "spdlog/logger.h"
 
 #include "render/shaders.h"
 

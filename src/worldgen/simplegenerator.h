@@ -3,13 +3,17 @@
 #include "worldgen/worldgenerator.h"
 #include "worldgen/simplexnoise.h"
 
+namespace SsProtocol {
+namespace Config { struct SimpleWorldGenerator; }
+}
+
 namespace game { class GameContext; }
 
 namespace worldgen {
 
 class SimpleGenerator : public WorldGenerator {
 public:
-    SimpleGenerator(game::GameContext &context);
+    SimpleGenerator(game::GameContext &context, const SsProtocol::Config::SimpleWorldGenerator *config);
 
     void generate(spatial::CellKey cube, const pointgen::Chunk *points);
 

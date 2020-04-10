@@ -4,8 +4,9 @@
 
 namespace pointgen {
 
-CubicLatticeGenerator::CubicLatticeGenerator(game::GameContext &context) {
+CubicLatticeGenerator::CubicLatticeGenerator(game::GameContext &context, const SsProtocol::Config::CubicLatticeGenerator *config) {
     (void) context;
+    (void) config;
 }
 
 void CubicLatticeGenerator::generate(Chunk *dst, const spatial::CellKey &cellKey) {

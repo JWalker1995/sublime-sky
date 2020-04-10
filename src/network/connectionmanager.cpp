@@ -9,14 +9,9 @@
 
 namespace network {
 
-ConnectionManager::ConnectionManager(game::GameContext &context)
+ConnectionManager::ConnectionManager(game::GameContext &context, const SsProtocol::Config::Network *config)
     : TickableBase(context)
 {
-    const SsProtocol::Config::Network *config = context.get<const SsProtocol::Config::Client>().network();
-    if (!config) {
-        throw NoNetworkConfigException("Trying to create a ConnectionManager but there's no network config!");
-    }
-
     const flatbuffers::Vector<flatbuffers::Offset<SsProtocol::Config::ServerConnectionSpec>> *servers = config->servers();
     for (std::size_t i = 0; i < servers->size(); i++) {
         const SsProtocol::Config::ServerConnectionSpec *scs = servers->Get(i);

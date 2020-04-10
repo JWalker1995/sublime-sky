@@ -1,7 +1,7 @@
 #include "websocketclient.h"
 
 #include "schemas/message_generated.h"
-#include "spdlog/spdlog.h"
+#include "spdlog/logger.h"
 
 namespace network {
 

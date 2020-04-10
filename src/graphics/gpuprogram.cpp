@@ -3,7 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <assert.h>
-#include <spdlog/logger.h>
+#include "spdlog/logger.h"
 
 namespace graphics {
 

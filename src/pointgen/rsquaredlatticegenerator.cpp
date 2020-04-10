@@ -6,8 +6,9 @@
 
 namespace pointgen {
 
-RSquaredLatticeGenerator::RSquaredLatticeGenerator(game::GameContext &context) {
+RSquaredLatticeGenerator::RSquaredLatticeGenerator(game::GameContext &context, const SsProtocol::Config::RSquaredLatticeGenerator *config) {
     (void) context;
+    (void) config;
 }
 
 void RSquaredLatticeGenerator::generate(Chunk *dst, const spatial::CellKey &cellKey) {
@@ -25,7 +26,7 @@ void RSquaredLatticeGenerator::generate(Chunk *dst, const spatial::CellKey &cell
 
         glm::vec3 &dstPt = dst->points[static_cast<unsigned int>(pt.x)][static_cast<unsigned int>(pt.y)][static_cast<unsigned int>(pt.z)];
         if (std::isnan(dstPt.x)) {
-            dstPt = cellKey.getCoord<0, 0, 0>().toPoint() + pt;
+            dstPt = cellKey.grandChild<Chunk::sizeLog2>(0, 0, 0).getPoint(pt);
         } else {
             // TODO: Do something here
 //            assert(false);

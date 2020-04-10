@@ -2,7 +2,9 @@
 
 #include <unistd.h>
 
+#include "spdlog/logger.h"
 #include "schemas/config_client_generated.h"
+#include "schemas/config_game_generated.h"
 #include "game/gamecontext.h"
 #include "game/tickercontext.h"
 #include "util/testrunner.h"
@@ -11,6 +13,7 @@
 #include "application/signalhandler.h"
 #include "application/window.h"
 #include "render/scenerenderer.h"
+#include "render/meshupdater.h"
 #include "game/cameraflycontroller.h"
 #include "network/connectionmanager.h"
 #include "render/raycaster.h"
@@ -21,6 +24,7 @@
 #include "network/baseconnection.h"
 #include "game/digger.h"
 #include "material/materialeditor.h"
+#include "world/hashtreeworld.h"
 #include "util/refset.h"
 
 namespace game {
@@ -30,40 +34,62 @@ MainLoop::MainLoop(GameContext &context)
 {}
 
 void MainLoop::load() {
-    const SsProtocol::Config::Client &config = context.get<const SsProtocol::Config::Client>();
+    const SsProtocol::Config::Client &clientConfig = context.get<const SsProtocol::Config::Client>();
+    const SsProtocol::Config::Game &gameConfig = context.get<const SsProtocol::Config::Game>();
 
     context.get<application::CallQueue>();
     context.get<application::SyncPoint>();
 
-    if (config.test_runner()) {
-        util::TestRunner::getInstance().run();
+    if (clientConfig.test_runner()) {
+        util::TestRunner::getInstance().run(clientConfig.test_runner());
     }
-    if (config.signal_handler()) {
-        context.get<application::SignalHandler>();
+    if (clientConfig.signal_handler()) {
+        context.construct<application::SignalHandler>(clientConfig.signal_handler());
     }
-    if (config.window()) {
-        context.get<application::Window>();
+    if (clientConfig.window()) {
+        context.construct<application::Window>(clientConfig.window());
     }
-    if (config.render()) {
-        context.get<render::SceneRenderer>();
+    if (clientConfig.render()) {
+        context.construct<render::SceneRenderer>(clientConfig.render());
     }
-    if (config.network()) {
-        context.get<network::ConnectionManager>();
+    if (clientConfig.mesh_generator()) {
+        context.construct<render::MeshUpdater>(clientConfig.mesh_generator());
+    }
+    if (clientConfig.hash_tree_world()) {
+        context.construct<world::HashTreeWorld>(clientConfig.hash_tree_world());
+    }
+    if (clientConfig.network()) {
+        context.construct<network::ConnectionManager>(clientConfig.network());
     }
 
-    // TODO: Not sure why we have to have this
-//    context.get<util::RefSet<network::BaseConnection>>();
+    switch (gameConfig.lattice_generator_type()) {
+        case SsProtocol::Config::LatticeGenerator_NONE:
+            context.get<spdlog::logger>().warn("No lattice_generator property in game config. You will probably get a fatal error later on.");
+            break;
+        case SsProtocol::Config::LatticeGenerator_CubicLatticeGenerator:
+            context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>(gameConfig.lattice_generator_as_CubicLatticeGenerator());
+            break;
+        case SsProtocol::Config::LatticeGenerator_RSquaredLatticeGenerator:
+            context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>(gameConfig.lattice_generator_as_RSquaredLatticeGenerator());
+            break;
+    }
 
-    context.get<CameraFlyController>();
+    switch (gameConfig.world_generator_type()) {
+        case SsProtocol::Config::WorldGenerator_NONE:
+            context.get<spdlog::logger>().warn("No world_generator property in game config. You will probably get a fatal error later on.");
+            break;
+        case SsProtocol::Config::WorldGenerator_SimpleWorldGenerator:
+            context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>(gameConfig.world_generator_as_SimpleWorldGenerator());
+            break;
+        case SsProtocol::Config::WorldGenerator_ExternalWorldGenerator:
+            context.construct<worldgen::WorldGenerator, worldgen::ExternalGenerator>(gameConfig.world_generator_as_ExternalWorldGenerator());
+            break;
+    }
 
+    context.get<game::CameraFlyController>();
     context.get<render::RayCaster>();
     context.get<game::Digger>();
     context.get<material::MaterialEditor>();
-    // TODO: Maybe load this from config with a union?
-//    context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>();
-    context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>();
-//    context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>();
-    context.construct<worldgen::WorldGenerator, worldgen::ExternalGenerator>();
 }
 
 void MainLoop::run() {

@@ -248,6 +248,7 @@ private:
         if (found == classMap.cend()) {
             emitLog(LogLevel::Error, getTypeName<DerivedType>() + "::get: Cannot find non-constructible type " + getTypeName<InterfaceType>());
             assert(false);
+            std::exit(1);
         }
 
         return *found->second.template getInstance<InterfaceType>();

@@ -12,7 +12,7 @@ namespace game {
 
 CameraFlyController::CameraFlyController(game::GameContext &context)
     : TickableBase(context)
-    , position(0.0f, 0.0f, 10.0f)
+    , position(0.0f, 0.0f, 1500.0f)
     , velocity(0.0f, 0.0f, 0.0f)
     , lookDir(0.0f, 1.0f, -10.0f)
 {
@@ -74,7 +74,7 @@ void CameraFlyController::tick(game::TickerContext &tickerContext) {
         velocity = glm::vec3(0.0f);
     }
 
-    velocity *= 0.97f;
+    velocity *= 0.99f;
 
     static bool prevKeyG = false;
     bool keyG = window.isKeyPressed(GLFW_KEY_G);

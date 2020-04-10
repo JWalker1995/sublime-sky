@@ -18,11 +18,24 @@ table Render {
     use_log_depth_buffer: bool;
 }
 
+table MeshGenerator {
+    cell_updates_per_tick: uint;
+    ungenerated_retry_delay: uint;
+}
+
+table HashTreeWorld {
+    view_chunk_subdiv_offset_log2: int;
+}
+
 table MaterialEditor {}
 
 table Raycaster {
-    // raysPerSecond: uint;
-    // retryQueueLimit: uint;
+    // rays_per_tick: uint;
+    // retry_queue_limit: uint;
+}
+
+table ChunkGarbageCollector {
+    collections_per_tick: float;
 }
 
 enum ConnectionProtocol: uint { WebSocket }
@@ -43,8 +56,11 @@ table Client {
     signal_handler: SignalHandler;
     window: Window;
     render: Render;
+    mesh_generator: MeshGenerator;
+    hash_tree_world: HashTreeWorld;
     material_editor: MaterialEditor;
     raycaster: Raycaster;
+    chunk_garbage_collector: ChunkGarbageCollector;
     network: Network;
 }
 

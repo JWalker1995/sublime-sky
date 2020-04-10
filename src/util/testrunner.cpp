@@ -4,7 +4,9 @@
 
 namespace util {
 
-void TestRunner::run() {
+void TestRunner::run(const SsProtocol::Config::TestRunner *config) {
+    (void) config;
+
     // Lets create a new test context
     game::GameContext testContext;
 

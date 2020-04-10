@@ -1,13 +1,15 @@
 #pragma once
 
-#include "defs/VIEW_CHUNK_SUBDIV_OFFSET_LOG2.h"
-
 #include "jw_util/bitset.h"
 
 #include "spatial/hashtree.h"
 #include "game/tickercontext.h"
 #include "world/chunk.h"
 #include "worldgen/worldgenerator.h"
+
+namespace SsProtocol {
+namespace Config { struct HashTreeWorld; }
+}
 
 namespace pointgen { class Chunk; }
 
@@ -32,6 +34,12 @@ public:
         points = 0;
 
         hasFaces.fill<false>();
+    }
+
+    void destroy() {
+        assert(chunk == 0);
+        assert(points == 0);
+        assert(faceIndices.empty());
     }
 
     bool isLeaf() const {
@@ -106,11 +114,13 @@ public:
         }
     };
 
-    HashTreeWorld(game::GameContext &gameContext);
+    HashTreeWorld(game::GameContext &gameContext, const SsProtocol::Config::HashTreeWorld *config);
 
     void tick(game::TickerContext &tickerContext);
 
 //    Cell &lookupChunk(spatial::CellKey cellKey);
+    void fixChunk(Cell *cell);
+    void removeChunk(Cell *cell);
 
     void updateGasMasks(CellValue *cellValue);
 
@@ -165,6 +175,8 @@ public:
     }
 
 private:
+    signed int viewChunkSubdivOffsetLog2;
+
     spatial::UintCoord cameraCoord;
     spatial::UintCoord calcCameraCoord();
 
@@ -199,11 +211,11 @@ private:
         std::uint64_t dSq = dSqX + dSqY + dSqZ;
 
         if (!dSq) {
-            return VIEW_CHUNK_SUBDIV_OFFSET_LOG2;
+            return viewChunkSubdivOffsetLog2;
         }
 
         unsigned int numSigBits = sizeof(dSq) * CHAR_BIT - __builtin_clzll(dSq);
-        signed int desiredSizeLog2 = numSigBits / 2 + VIEW_CHUNK_SUBDIV_OFFSET_LOG2;
+        signed int desiredSizeLog2 = static_cast<signed int>(numSigBits / 2) + viewChunkSubdivOffsetLog2;
         return desiredSizeLog2;
     }
 };

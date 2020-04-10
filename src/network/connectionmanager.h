@@ -5,10 +5,11 @@
 #include "jw_util/baseexception.h"
 #include "game/tickercontext.h"
 
-namespace network {
+namespace SsProtocol {
+namespace Config { struct Network; }
+}
 
-class BaseConnection;
-class ConnectionPoolBase;
+namespace network {
 
 class ConnectionManager : public game::TickerContext::TickableBase<ConnectionManager> {
 private:
@@ -22,7 +23,7 @@ public:
         {}
     };
 
-    ConnectionManager(game::GameContext &context);
+    ConnectionManager(game::GameContext &context, const SsProtocol::Config::Network *config);
 
     void tick(game::TickerContext &tickerContext);
 };

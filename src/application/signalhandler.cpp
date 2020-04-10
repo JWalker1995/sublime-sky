@@ -10,6 +10,10 @@ namespace {
 static volatile std::sig_atomic_t stopFlag = false;
 
 void handleSignal(int signal) {
+    if (signal != SIGINT) {
+        return;
+    }
+
     if (stopFlag) {
         const char *msg = "Caught a second SIGINT; exiting...\n";
         write(2, msg, strlen(msg));
@@ -27,9 +31,11 @@ void handleSignal(int signal) {
 
 namespace application {
 
-SignalHandler::SignalHandler(game::GameContext &context)
+SignalHandler::SignalHandler(game::GameContext &context, const SsProtocol::Config::SignalHandler *config)
     : TickableBase(context)
 {
+    (void) config;
+
     std::signal(SIGINT, handleSignal);
 }
 

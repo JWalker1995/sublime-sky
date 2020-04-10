@@ -1,6 +1,6 @@
 #include "baseconnection.h"
 
-#include "spdlog/spdlog.h"
+#include "spdlog/logger.h"
 
 #include "game/gamecontext.h"
 #include "network/connectionpoolbase.h"
@@ -109,7 +109,8 @@ void BaseConnection::handleTerrainChunk(const SsProtocol::TerrainChunk *msg) {
         it++;
     }
 
-    context.get<worldgen::ExternalGenerator>().handleResponse(msg, materialOffset);
+    worldgen::ExternalGenerator &gen = dynamic_cast<worldgen::ExternalGenerator &>(context.get<worldgen::WorldGenerator>());
+    gen.handleResponse(msg, materialOffset);
 }
 
 }

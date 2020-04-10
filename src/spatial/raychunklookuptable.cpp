@@ -9,7 +9,7 @@
 
 #include <glm/gtx/norm.hpp>
 
-#include "spdlog/spdlog.h"
+#include "spdlog/logger.h"
 #include "game/gamecontext.h"
 
 namespace spatial {
