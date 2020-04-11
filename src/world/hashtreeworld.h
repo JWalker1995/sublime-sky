@@ -176,6 +176,7 @@ public:
 
 private:
     signed int viewChunkSubdivOffsetLog2;
+    unsigned int viewChunkLockSizeLog2;
 
     spatial::UintCoord cameraCoord;
     spatial::UintCoord calcCameraCoord();
@@ -202,6 +203,10 @@ private:
     }
 
     signed int guessViewChunkSizeLog2(spatial::UintCoord coord) const {
+        if (viewChunkLockSizeLog2) {
+            return viewChunkLockSizeLog2;
+        }
+
         spatial::UintCoord::SignedAxisType dx = coord.x - cameraCoord.x;
         spatial::UintCoord::SignedAxisType dy = coord.y - cameraCoord.y;
         spatial::UintCoord::SignedAxisType dz = coord.z - cameraCoord.z;

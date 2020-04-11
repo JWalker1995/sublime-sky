@@ -18,13 +18,23 @@ public:
 private:
     bool isEnabled = true;
 
+    enum class GameMode : int { Creative, Spectator, Orbital };
+    int gameMode = static_cast<int>(GameMode::Orbital);
+
     glm::vec3 position;
     glm::vec3 velocity;
     glm::vec3 lookDir;
+    glm::vec3 upDir;
 
     glm::dvec2 prevMousePos;
 
     bool enableGravity = false;
+
+    void tickModeCreative();
+    void tickModeSpectator();
+    void tickModeOrbital();
+
+    void tickPhysicalCamera();
 };
 
 }

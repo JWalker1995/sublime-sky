@@ -24,6 +24,7 @@ table MeshGenerator {
 }
 
 table HashTreeWorld {
+    view_chunk_lock_size_log2: uint;
     view_chunk_subdiv_offset_log2: int;
 }
 

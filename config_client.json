@@ -11,10 +11,11 @@
     "use_log_depth_buffer": true
   },
   "mesh_generator": {
-    "cell_updates_per_tick": 1024,
+    "cell_updates_per_tick": 10240,
     "ungenerated_retry_delay": 8
   },
   "hash_tree_world": {
+    "view_chunk_lock_size_log2": 4,
     "view_chunk_subdiv_offset_log2": -2
   },
   "network": {

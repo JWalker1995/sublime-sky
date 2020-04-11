@@ -13,6 +13,8 @@
 #include "graphics/imgui.h"
 #include "render/imguirenderer.h"
 
+static constexpr unsigned int delayCellUpdateQueueSentinelSizeLog2 = 100;
+
 namespace render {
 
 MeshUpdater::MeshUpdater(game::GameContext &context, const SsProtocol::Config::MeshGenerator *config)
@@ -28,7 +30,7 @@ MeshUpdater::MeshUpdater(game::GameContext &context, const SsProtocol::Config::M
     for (unsigned int i = 0; i < config->ungenerated_retry_delay(); i++) {
         delayedCellUpdateQueue.emplace();
         delayedCellUpdateQueue.back().cellCoord = spatial::UintCoord(0);
-        delayedCellUpdateQueue.back().sizeLog2 = 100;
+        delayedCellUpdateQueue.back().sizeLog2 = delayCellUpdateQueueSentinelSizeLog2;
     }
 }
 
@@ -54,6 +56,7 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
     meshMutator.shared.transform = context.get<render::Camera>().getTransform();
 
     unsigned int remainingCellUpdates = cellUpdatesPerTick;
+//    unsigned int remainingCellUpdates = 0;
     while (remainingCellUpdates > 0) {
         remainingCellUpdates--;
 
@@ -62,7 +65,7 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
         spatial::CellKey front = delayedCellUpdateQueue.front();
         delayedCellUpdateQueue.pop();
 
-        if (front.sizeLog2 == 100) {
+        if (front.sizeLog2 == delayCellUpdateQueueSentinelSizeLog2) {
             delayedCellUpdateQueue.push(front);
             break;
         } else {

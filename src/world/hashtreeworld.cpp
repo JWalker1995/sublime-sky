@@ -10,17 +10,25 @@
 #include "query/rectquery.h"
 #include "util/pool.h"
 #include "spatial/raydrawer.h"
+#include "graphics/imgui.h"
+#include "render/imguirenderer.h"
 
 namespace world {
 
 HashTreeWorld::HashTreeWorld(game::GameContext &gameContext, const SsProtocol::Config::HashTreeWorld *config)
     : TickableBase(gameContext)
     , viewChunkSubdivOffsetLog2(config->view_chunk_subdiv_offset_log2())
+    , viewChunkLockSizeLog2(config->view_chunk_lock_size_log2())
     , cameraCoord(calcCameraCoord())
 {}
 
 void HashTreeWorld::tick(game::TickerContext &tickerContext) {
-    (void) tickerContext;
+    tickerContext.get<render::ImguiRenderer::Ticker>();
+
+    if (ImGui::Begin("Debug")) {
+        ImGui::Text("Chunk hashtable size = %zu", getMap().size());
+    }
+    ImGui::End();
 
     assert(context.get<render::SceneManager>().getMaterialBuffer().getExtentSize() < std::numeric_limits<std::underlying_type<MaterialIndex>::type>::max());
 

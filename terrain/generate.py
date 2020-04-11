@@ -107,11 +107,11 @@ def generate_terrain(seed, points):
 
 	norms = np.linalg.norm(points, axis=-1)
 
-	# Assign dirt
-	res[norms + noise_values * 100 < 1000.0] = 1
-
 	# Assign water
 	res[norms < 1000.0] = 2
+
+	# Assign dirt
+	res[norms + noise_values * 50.0 < 1000.0] = 1
 
 	# # Assign clouds
 	# res[(points[:, 2] - 110) ** 2 * 1e-1 + noise_values * 100 < -60.0] = 3
