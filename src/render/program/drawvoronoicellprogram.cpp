@@ -57,34 +57,14 @@ void DrawVoronoiCellProgram::linkProgram() {
 //    showTrianglesLocation = glGetUniformLocation(getProgramId(), "showTriangles");
 //    graphics::GL::catchErrors();
 
-    int a;
-    glGetProgramiv(getProgramId(), GL_DELETE_STATUS, &a);
-    glGetProgramiv(getProgramId(), GL_LINK_STATUS, &a);
-    glGetProgramiv(getProgramId(), GL_VALIDATE_STATUS, &a);
-    glGetProgramiv(getProgramId(), GL_INFO_LOG_LENGTH, &a);
-    glGetProgramiv(getProgramId(), GL_ATTACHED_SHADERS, &a);
-    glGetProgramiv(getProgramId(), GL_ACTIVE_ATTRIBUTES, &a);
-    glGetProgramiv(getProgramId(), GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &a);
-    glGetProgramiv(getProgramId(), GL_ACTIVE_UNIFORMS, &a);
-    glGetProgramiv(getProgramId(), GL_ACTIVE_UNIFORM_MAX_LENGTH, &a);
-
-
-    GLint max_length = 0;
-    glGetProgramiv(getProgramId(), GL_INFO_LOG_LENGTH, &max_length);
-
-    GLchar *error_log = new GLchar[static_cast<std::size_t>(max_length)];
-    glGetProgramInfoLog(getProgramId(), max_length, &max_length, error_log);
-
-    context.get<spdlog::logger>().error("Could not compile GLSL shader:");
-    context.get<spdlog::logger>().error(std::string(error_log, static_cast<std::size_t>(max_length)));
-
-
     eyePosLocation = glGetUniformLocation(getProgramId(), "eyePos");
     assert(eyePosLocation != -1);
     graphics::GL::catchErrors();
 }
 
 void DrawVoronoiCellProgram::draw() {
+    Program::bind();
+
     assertLinked();
 
     Vao &vao = context.get<Vao>();
@@ -114,6 +94,7 @@ void DrawVoronoiCellProgram::draw() {
     glUniform3f(eyePosLocation, eyePos.x, eyePos.y, eyePos.z);
 
     glDrawArrays(GL_POINTS, 0, sceneManager.getVoronoiCellBuffer().getExtentSize());
+//    glDrawArrays(GL_TRIANGLES, 0, sceneManager.getVoronoiCellBuffer().getExtentSize());
     graphics::GL::catchErrors();
 
     vao.unbind();

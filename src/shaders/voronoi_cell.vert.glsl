@@ -64,7 +64,7 @@ void main(void) {
     modelPosition = vec3(uintToFloat(cellPosition.x), uintToFloat(cellPosition.y), uintToFloat(cellPosition.z));
 
     gl_Position = meshes[meshIndex].transform * vec4(modelPosition, 1.0);
-    gl_PointSize = 1.0;
+    gl_PointSize = 100.0;
     //gl_Position = vec4(rand(gl_VertexID) / 16.0 + float(meshes.transforms[1][1][0] == 0.0) - 0.03125, rand(gl_VertexID + 100), 1.0, 1.0);
     //gl_Position = vec4(gl_VertexID / 200.0 - 0.8, float(position.w == 1.01) + cos(gl_VertexID) * 0.1, 1.0, 1.0);
 

@@ -38,10 +38,18 @@ const float screenGamma = 2.2; // Assume the monitor is calibrated to the sRGB c
 
 void main(void) {
     if (true) {
+        /*
         if (gl_FrontFacing) {
-            fragColor = vec4(rand(gl_PrimitiveID), rand(gl_PrimitiveID + 0.3), rand(gl_PrimitiveID + 0.6), 0.0);
+            fragColor = vec4(rand(gl_PrimitiveID), rand(gl_PrimitiveID + 0.3), rand(gl_PrimitiveID + 0.6), 1.0);
         } else {
-            fragColor = vec4(eyePos + vec3(10000.0), 0.0);
+            fragColor = vec4(eyePos + vec3(10000.0), 1.0);
+        }
+        */
+        if (eyePos.x > 0.0) {
+//            fragColor = vec4(eyePos + vec3(10000.0), 1.0);
+            fragColor = vec4(1.0);
+        } else {
+            fragColor = vec4(1.0);
         }
     } else {
         // TODO: This should come from the provoking vertex normal.

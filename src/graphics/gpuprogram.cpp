@@ -154,6 +154,17 @@ void GpuProgram::link() {
     }
     graphics::GL::catchErrors();
 
+    GLint max_length = 0;
+    glGetProgramiv(getProgramId(), GL_INFO_LOG_LENGTH, &max_length);
+
+    GLchar *info_log = new GLchar[static_cast<std::size_t>(max_length)];
+    glGetProgramInfoLog(getProgramId(), max_length, &max_length, info_log);
+
+    context.get<spdlog::logger>().info("GLSL program info log:");
+    context.get<spdlog::logger>().info(std::string(info_log, static_cast<std::size_t>(max_length)));
+
+    graphics::GL::catchErrors();
+
     isLinked = true;
 }
 

@@ -6,7 +6,7 @@ namespace graphics {
 
 void VoronoiCellShared::setupVao(GlVao &vao) {
     GLuint positionLocation = vao.prepareProgramAttribute("CELL_POSITION_LOCATION", 1);
-    glVertexAttribPointer(positionLocation, 3, GL_UNSIGNED_INT, GL_FALSE, sizeof(VoronoiCellShared), reinterpret_cast<void *>(offsetof(VoronoiCellShared, cellPosition)));
+    glVertexAttribIPointer(positionLocation, 3, GL_UNSIGNED_INT, sizeof(VoronoiCellShared), reinterpret_cast<void *>(offsetof(VoronoiCellShared, cellPosition)));
     glEnableVertexAttribArray(positionLocation);
     graphics::GL::catchErrors();
 
@@ -14,7 +14,7 @@ void VoronoiCellShared::setupVao(GlVao &vao) {
     static_assert (neighborCellCount % neighborCellsPerUvec4 == 0, "Not divisible into uvec4's");
     for (unsigned int i = 0; i < numAttributes; i++) {
         GLuint neighborCellLocation = vao.prepareProgramAttribute("NEIGHBOR_CELL_LOCATION_" + std::to_string(i), 1);
-        glVertexAttribPointer(neighborCellLocation, 4, GL_UNSIGNED_INT, GL_FALSE, sizeof(VoronoiCellShared), reinterpret_cast<void *>(offsetof(VoronoiCellShared, neighborCells[i * neighborCellsPerUvec4])));
+        glVertexAttribIPointer(neighborCellLocation, 4, GL_UNSIGNED_INT, sizeof(VoronoiCellShared), reinterpret_cast<void *>(offsetof(VoronoiCellShared, neighborCells[i * neighborCellsPerUvec4])));
         glEnableVertexAttribArray(neighborCellLocation);
         graphics::GL::catchErrors();
     }

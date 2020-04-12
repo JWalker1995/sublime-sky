@@ -56,6 +56,8 @@ void MeshProgram::linkProgram() {
 }
 
 void MeshProgram::bind() {
+    Program::bind();
+
     assertLinked();
 
     Vao &vao = context.get<Vao>();

@@ -30,6 +30,8 @@ SceneRenderer::SceneRenderer(game::GameContext &context, const SsProtocol::Confi
 
     glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
 
+    glEnable(GL_PROGRAM_POINT_SIZE);
+
     graphics::GL::catchErrors();
 
     // ALL construction of managed classes should be managed by the Context
@@ -40,8 +42,8 @@ SceneRenderer::SceneRenderer(game::GameContext &context, const SsProtocol::Confi
     shaders.call(&Shader::load, args);
     */
 
-    context.get<MeshColorProgram>().make();
-//    context.get<DrawVoronoiCellProgram>().make();
+//    context.get<MeshColorProgram>().make();
+    context.get<DrawVoronoiCellProgram>().make();
 
     context.get<ImguiRenderer>();
 }
@@ -59,8 +61,8 @@ void SceneRenderer::tickClose(game::TickerContext &tickerContext) {
 
     // context.get<FaceFragCounter>().update();
 
-    context.get<MeshColorProgram>().draw();
-//    context.get<DrawVoronoiCellProgram>().draw();
+//    context.get<MeshColorProgram>().draw();
+    context.get<DrawVoronoiCellProgram>().draw();
 
     /*
     unsigned int faceIndex = rand() % sceneManager.getFaceBuffer().getSize();
