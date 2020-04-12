@@ -14,9 +14,13 @@ namespace game {
 
 CameraFlyController::CameraFlyController(game::GameContext &context)
     : TickableBase(context)
-    , position(1200.0f, 0.0f, 0.0f)
+//    , position(1200.0f, 0.0f, 0.0f)
+//    , velocity(0.0f, 0.0f, 0.0f)
+//    , lookDir(-1.0f, 0.0f, 0.0f)
+//    , upDir(0.0f, 0.0f, 1.0f)
+    , position(1025.0f, 13.0f, 2.0f)
     , velocity(0.0f, 0.0f, 0.0f)
-    , lookDir(-1.0f, 0.0f, 0.0f)
+    , lookDir(-1.0f, -1.0f, 0.0f)
     , upDir(0.0f, 0.0f, 1.0f)
 {
     application::Window &window = context.get<application::Window>();

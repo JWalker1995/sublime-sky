@@ -17,7 +17,6 @@ public:
     // This can't be the width of AxisType because bit shifting by equal to or greater than the bit width is undefined
     static_assert(maxSizeLog2 == 15 || maxSizeLog2 == 31 || maxSizeLog2 == 63, "Unexpected maxSizeLog2");
 
-private:
     static constexpr AxisType center = (0x5555555555555555ull & ((1ull << (maxSizeLog2 - 1)) - 1)) | (1ull << (maxSizeLog2 - 2));
 
 public:

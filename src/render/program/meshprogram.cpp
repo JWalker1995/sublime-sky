@@ -1,31 +1,31 @@
-#include "drawprogram.h"
+#include "meshprogram.h"
 
 #include "spdlog/logger.h"
 
 #include "graphics/glbufferbase.h"
 #include "render/shaders.h"
-#include "render/vao.h"
 #include "schemas/config_client_generated.h"
 
 namespace render {
 
-DrawProgram::DrawProgram(game::GameContext &context)
+MeshProgram::MeshProgram(game::GameContext &context)
     : Program(context)
     , meshBufferNewVboListener(
           context.get<SceneManager>().getMeshBuffer().onNewVbo,
-          jw_util::MethodCallback<SceneManager::MeshBuffer &>::create<DrawProgram, &DrawProgram::onNewMeshBufferVbo>(this))
+          jw_util::MethodCallback<SceneManager::MeshBuffer &>::create<MeshProgram, &MeshProgram::onNewMeshBufferVbo>(this))
     , materialBufferNewVboListener(
           context.get<SceneManager>().getMaterialBuffer().onNewVbo,
-          jw_util::MethodCallback<SceneManager::MaterialBuffer &>::create<DrawProgram, &DrawProgram::onNewMaterialBufferVbo>(this))
+          jw_util::MethodCallback<SceneManager::MaterialBuffer &>::create<MeshProgram, &MeshProgram::onNewMaterialBufferVbo>(this))
 {}
 
-void DrawProgram::insertDefines(Defines &defines) {
+void MeshProgram::insertDefines(Defines &defines) {
     Program::insertDefines(defines);
 
     const SsProtocol::Config::Render *render = context.get<const SsProtocol::Config::Client>().render();
     if (!render) {
         throw NoRenderConfigException("Trying to create a DrawProgram but there's no render config!");
     }
+
     defines.set("USE_LOG_DEPTH_BUFFER", render->use_log_depth_buffer());
 
     context.get<Vao>().insertDefines(defines);
@@ -39,33 +39,51 @@ void DrawProgram::insertDefines(Defines &defines) {
     */
 }
 
-void DrawProgram::linkProgram() {
-    Program::linkProgram();
-}
-
-void DrawProgram::setupProgram(const Defines &defines) {
+void MeshProgram::setupProgram(const Defines &defines) {
     Program::setupProgram(defines);
 
-    context.get<spdlog::logger>().debug("Compiling vertex shader");
+    context.get<spdlog::logger>().debug("Compiling main vertex shader");
     std::string vertShaderStr = std::string(Shaders::mainVert);
     attachShader(GL_VERTEX_SHADER, std::move(vertShaderStr), defines);
 
-    context.get<spdlog::logger>().debug("Compiling fragment shader");
+    context.get<spdlog::logger>().debug("Compiling main fragment shader");
     std::string fragShaderStr = std::string(Shaders::mainFrag);
     attachShader(GL_FRAGMENT_SHADER, std::move(fragShaderStr), defines);
 }
 
-void DrawProgram::onNewMeshBufferVbo(SceneManager::MeshBuffer &meshBuffer) {
+void MeshProgram::linkProgram() {
+    Program::linkProgram();
+}
+
+void MeshProgram::bind() {
     assertLinked();
 
-    meshBuffer.getGlBuffer().bind_base();
+    Vao &vao = context.get<Vao>();
+    vao.bind();
+
+    SceneManager &sceneManager = context.get<SceneManager>();
+    sceneManager.getMeshBuffer().sync(vao);
+    sceneManager.getVertBuffer().sync(vao);
+    sceneManager.getFaceBuffer().sync(vao);
+    sceneManager.getMaterialBuffer().sync(vao);
+}
+
+void MeshProgram::unbind() {
+    Vao &vao = context.get<Vao>();
+    vao.unbind();
+}
+
+void MeshProgram::onNewMeshBufferVbo(SceneManager::MeshBuffer &meshBuffer) {
+    assertLinked();
+
+    meshBuffer.getGlBuffer().bind();
     bindUniformBlock("MeshesBlock", meshBuffer.getGlBuffer().get_base_binding());
 }
 
-void DrawProgram::onNewMaterialBufferVbo(SceneManager::MaterialBuffer &materialBuffer) {
+void MeshProgram::onNewMaterialBufferVbo(SceneManager::MaterialBuffer &materialBuffer) {
     assertLinked();
 
-    materialBuffer.getGlBuffer().bind_base();
+    materialBuffer.getGlBuffer().bind();
     bindUniformBlock("MaterialsBlock", materialBuffer.getGlBuffer().get_base_binding());
 }
 

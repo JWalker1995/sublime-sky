@@ -5,6 +5,7 @@
 #include "graphics/type/vert.h"
 #include "graphics/type/face.h"
 #include "graphics/type/material.h"
+#include "graphics/type/voronoicell.h"
 
 namespace graphics {
 
@@ -19,6 +20,7 @@ public:
     typedef SplitBuffer<VertShared, VertLocal> VertBuffer;
     typedef SplitBuffer<FaceShared, FaceLocal> FaceBuffer;
     typedef SplitBuffer<MaterialShared, MaterialLocal> MaterialBuffer;
+    typedef SplitBuffer<VoronoiCellShared, VoronoiCellLocal> VoronoiCellBuffer;
 
     typedef MeshBuffer::Reader MeshReader;
     typedef MeshBuffer::Mutator MeshMutator;
@@ -28,6 +30,8 @@ public:
     typedef FaceBuffer::Mutator FaceMutator;
     typedef MaterialBuffer::Reader MaterialReader;
     typedef MaterialBuffer::Mutator MaterialMutator;
+    typedef VoronoiCellBuffer::Reader VoronoiCellReader;
+    typedef VoronoiCellBuffer::Mutator VoronoiCellMutator;
 
     class MeshHandle {
     public:
@@ -85,6 +89,21 @@ public:
             return sceneManager.faceBuffer.mutate(index);
         }
 
+        VoronoiCellMutator createVoronoiCell() {
+            VoronoiCellMutator res = sceneManager.voronoiCellBuffer.create();
+            res.shared.meshIndex = meshIndex;
+            return res;
+        }
+        void destroyVoronoiCell(unsigned int index) {
+            sceneManager.voronoiCellBuffer.destroy(index);
+        }
+        VoronoiCellReader readVoronoiCell(unsigned int index) const {
+            return sceneManager.voronoiCellBuffer.read(index);
+        }
+        VoronoiCellMutator mutateVoronoiCell(unsigned int index) const {
+            return sceneManager.voronoiCellBuffer.mutate(index);
+        }
+
         SceneManager &getSceneManager() const {
             return sceneManager;
         }
@@ -112,6 +131,9 @@ public:
     MaterialBuffer &getMaterialBuffer() {
         return materialBuffer;
     }
+    VoronoiCellBuffer &getVoronoiCellBuffer() {
+        return voronoiCellBuffer;
+    }
 
     const MeshBuffer &getMeshBuffer() const {
         return meshBuffer;
@@ -119,11 +141,14 @@ public:
     const VertBuffer &getVertBuffer() const {
         return vertBuffer;
     }
-    const FaceBuffer &getFaceBuffer() const{
+    const FaceBuffer &getFaceBuffer() const {
         return faceBuffer;
     }
     const MaterialBuffer &getMaterialBuffer() const {
         return materialBuffer;
+    }
+    const VoronoiCellBuffer &getVoronoiCellBuffer() const {
+        return voronoiCellBuffer;
     }
 
     MeshHandle createMesh() {
@@ -148,6 +173,7 @@ private:
     VertBuffer vertBuffer;
     FaceBuffer faceBuffer;
     MaterialBuffer materialBuffer;
+    VoronoiCellBuffer voronoiCellBuffer;
 };
 
 }

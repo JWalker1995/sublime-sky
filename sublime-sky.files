@@ -57,6 +57,8 @@ src/graphics/type/mesh.cpp
 src/graphics/type/mesh.h
 src/graphics/type/vert.cpp
 src/graphics/type/vert.h
+src/graphics/type/voronoicell.cpp
+src/graphics/type/voronoicell.h
 src/jw_util/README.md
 src/jw_util/baseexception.h
 src/jw_util/bitinterface.h
@@ -141,12 +143,14 @@ src/render/meshupdater.cpp
 src/render/meshupdater.h
 src/render/program/computeprogram.cpp
 src/render/program/computeprogram.h
-src/render/program/drawcolorprogram.cpp
-src/render/program/drawcolorprogram.h
-src/render/program/drawdepthprogram.cpp
-src/render/program/drawdepthprogram.h
-src/render/program/drawprogram.cpp
-src/render/program/drawprogram.h
+src/render/program/drawvoronoicellprogram.cpp
+src/render/program/drawvoronoicellprogram.h
+src/render/program/meshcolorprogram.cpp
+src/render/program/meshcolorprogram.h
+src/render/program/meshdepthprogram.cpp
+src/render/program/meshdepthprogram.h
+src/render/program/meshprogram.cpp
+src/render/program/meshprogram.h
 src/render/program/program.cpp
 src/render/program/program.h
 src/render/raycaster.cpp
@@ -159,8 +163,6 @@ src/render/scenevalidator.cpp
 src/render/scenevalidator.h
 src/render/shaders.cpp
 src/render/shaders.h
-src/render/vao.cpp
-src/render/vao.h
 src/render/vertspatialindex.cpp
 src/render/vertspatialindex.h
 src/shaders/Tupfile
@@ -170,6 +172,8 @@ src/shaders/main.frag.glsl
 src/shaders/main.vert.glsl
 src/shaders/spheres.frag.glsl
 src/shaders/spheres.geom.glsl
+src/shaders/voronoi_cell.frag.glsl
+src/shaders/voronoi_cell.vert.glsl
 src/spatial/alignedcube.h
 src/spatial/cellkey.h
 src/spatial/hashtree.h

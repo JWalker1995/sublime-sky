@@ -17,10 +17,11 @@ public:
     }
 
     void bind() const;
+    void unbind() const;
     void assertBound() const;
 
-    GLuint prepareProgramAttribute(const char *name, GLuint locationSize);
-    void prepareDefine(const char *name, GLuint value);
+    GLuint prepareProgramAttribute(const std::string &name, GLuint locationSize);
+    void prepareDefine(const std::string &name, GLuint value);
 
     void insertDefines(GpuProgram::Defines &defines) const;
 
@@ -29,7 +30,7 @@ private:
     GLuint nextAttributeLocation = 0;
 
     struct Define {
-        const char *name;
+        std::string name;
         GLuint value;
     };
 

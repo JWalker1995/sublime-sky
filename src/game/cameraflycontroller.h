@@ -19,7 +19,7 @@ private:
     bool isEnabled = true;
 
     enum class GameMode : int { Creative, Spectator, Orbital };
-    int gameMode = static_cast<int>(GameMode::Orbital);
+    int gameMode = static_cast<int>(GameMode::Spectator);
 
     glm::vec3 position;
     glm::vec3 velocity;

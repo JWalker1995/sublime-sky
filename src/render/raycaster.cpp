@@ -82,11 +82,13 @@ void RayCaster::castNew() {
 void RayCaster::castRay(glm::vec3 origin, glm::vec3 dir) {
     world::HashTreeWorld::RaytestResult res = context.get<world::HashTreeWorld>().testViewRay(origin, dir, 2000.0f);
 
+    /*
     switch (res.result) {
         case world::HashTreeWorld::RaytestResult::HitSurface: context.get<render::MeshUpdater>().enqueueCellUpdate(res.surfaceHitCell); break;
         case world::HashTreeWorld::RaytestResult::HitGenerating: retryRays.emplace_back(origin, dir); break;
         case world::HashTreeWorld::RaytestResult::HitDistanceLimit: break;
     }
+    */
 }
 
 

@@ -1,5 +1,7 @@
 #include "computeprogram.h"
 
+#if 0
+
 #include "spdlog/logger.h"
 
 #include "render/shaders.h"
@@ -33,3 +35,5 @@ void ComputeProgram::setupProgram(const Defines &defines) {
 }
 
 }
+
+#endif

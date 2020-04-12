@@ -1,5 +1,7 @@
 #pragma once
 
+#if 0
+
 #include "game/gamecontext.h"
 
 #include "render/program/program.h"
@@ -15,3 +17,5 @@ public:
 };
 
 }
+
+#endif

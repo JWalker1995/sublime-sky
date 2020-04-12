@@ -14,6 +14,19 @@ public:
     {
         glGenBuffers(1, &vbo_id);
         graphics::GL::catchErrors();
+
+        static GLuint nextTransformFeedbackBufferIndex = 0;
+        static GLuint nextUniformBufferIndex = 0;
+        static GLuint nextAtomicCounterBufferIndex = 0;
+        static GLuint nextShaderStorageBufferIndex = 0;
+
+        switch (target) {
+            case GL_TRANSFORM_FEEDBACK_BUFFER: base_binding = nextTransformFeedbackBufferIndex++; break;
+            case GL_UNIFORM_BUFFER: base_binding = nextUniformBufferIndex++; break;
+            case GL_ATOMIC_COUNTER_BUFFER: base_binding = nextAtomicCounterBufferIndex++; break;
+            case GL_SHADER_STORAGE_BUFFER: base_binding = nextShaderStorageBufferIndex++; break;
+            default: base_binding = static_cast<GLuint>(-1);
+        }
     }
 
     ~GlBufferBase()
@@ -24,8 +37,18 @@ public:
 
     void bind() const
     {
-        glBindBuffer(target, vbo_id);
+        if (base_binding == static_cast<GLuint>(-1)) {
+            glBindBuffer(target, vbo_id);
+        } else {
+            glBindBufferBase(target, base_binding, vbo_id);
+        }
+
         graphics::GL::catchErrors();
+    }
+
+    GLuint get_base_binding() {
+        assert(base_binding != static_cast<GLuint>(-1));
+        return base_binding;
     }
 
     void assert_bound() const
@@ -115,22 +138,14 @@ public:
 #endif
     }
 
-    GLuint get_base_binding() {
-        static GLuint nextIndex = 0;
-        if (base_binding == static_cast<GLuint>(-1)) {
-            base_binding = nextIndex++;
-        }
-        return base_binding;
-    }
-    void bind_base()
-    {
-        glBindBufferBase(target, get_base_binding(), vbo_id);
-        graphics::GL::catchErrors();
-    }
-
     void unbind() const
     {
-        glBindBuffer(target, 0);
+        if (base_binding == static_cast<GLuint>(-1)) {
+            glBindBuffer(target, 0);
+        } else {
+            glBindBufferBase(target, base_binding, 0);
+        }
+
         graphics::GL::catchErrors();
     }
 

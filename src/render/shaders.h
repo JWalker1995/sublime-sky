@@ -6,7 +6,8 @@ class Shaders {
 public:
     static const char mainVert[];
     static const char mainFrag[];
-    static const char fragCounterCompute[];
+    static const char voronoiCellVert[];
+    static const char voronoiCellFrag[];
 };
 
 }

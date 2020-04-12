@@ -2,25 +2,25 @@
 
 #include "game/gamecontext.h"
 
-#include "render/program/drawprogram.h"
+#include "render/program/meshprogram.h"
 
 namespace render {
 
-class DrawColorProgram : public DrawProgram {
+class MeshColorProgram : public MeshProgram {
 public:
-    DrawColorProgram(game::GameContext &context);
+    MeshColorProgram(game::GameContext &context);
 
     virtual void insertDefines(Defines &defines);
     virtual void linkProgram();
 
-    void bind();
+    void draw();
 
 private:
-    GLuint showTrianglesLocation;
+    GLint showTrianglesLocation;
     bool showTrianglesValue = false;
     bool showTrianglesDirty = true;
 
-    GLuint eyePosLocation;
+    GLint eyePosLocation;
 };
 
 }

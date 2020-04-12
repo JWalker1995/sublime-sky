@@ -16,6 +16,10 @@ void GlVao::bind() const {
     glBindVertexArray(vaoId);
 }
 
+void GlVao::unbind() const {
+    glBindVertexArray(0);
+}
+
 void GlVao::assertBound() const {
 #if GLVAO_ASSERT_BINDINGS
     GLint binding;
@@ -24,10 +28,10 @@ void GlVao::assertBound() const {
 #endif
 }
 
-GLuint GlVao::prepareProgramAttribute(const char *name, GLuint locationSize) {
+GLuint GlVao::prepareProgramAttribute(const std::string &name, GLuint locationSize) {
     std::vector<Define>::const_iterator i = preparedDefines.cbegin();
     while (i != preparedDefines.cend()) {
-        if (std::strcmp(i->name, name) == 0) {
+        if (i->name == name) {
             return i->value;
         }
         i++;
@@ -40,10 +44,14 @@ GLuint GlVao::prepareProgramAttribute(const char *name, GLuint locationSize) {
 
     nextAttributeLocation += locationSize;
 
+    int maxAttributes;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxAttributes);
+    assert(nextAttributeLocation <= static_cast<unsigned int>(maxAttributes));
+
     return attr.value;
 }
 
-void GlVao::prepareDefine(const char *name, GLuint value) {
+void GlVao::prepareDefine(const std::string &name, GLuint value) {
     Define attr;
     attr.name = name;
     attr.value = value;

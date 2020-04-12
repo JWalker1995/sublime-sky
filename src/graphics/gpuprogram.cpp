@@ -1,9 +1,22 @@
 #include "gpuprogram.h"
 
+#ifndef NDEBUG
 #include <fstream>
+#endif
 #include <sstream>
 #include <assert.h>
 #include "spdlog/logger.h"
+
+namespace {
+static std::string replaceAll(std::string subject, const std::string &search, const std::string &replace) {
+    std::size_t pos = 0;
+    while ((pos = subject.find(search, pos)) != std::string::npos) {
+        subject.replace(pos, search.length(), replace);
+        pos += replace.length();
+    }
+    return subject;
+}
+}
 
 namespace graphics {
 
@@ -28,7 +41,7 @@ GpuProgram::~GpuProgram() {
 }
 
 void GpuProgram::attachShader(GLenum type, std::string &&source, const Defines &defines) {
-    const std::string defines_directive = "#defines";
+    static thread_local const std::string defines_directive = "#defines";
     std::size_t defines_pos = source.find(defines_directive);
     if (defines_pos != std::string::npos) {
         std::string defines_str;
@@ -36,7 +49,40 @@ void GpuProgram::attachShader(GLenum type, std::string &&source, const Defines &
         source.replace(defines_pos, defines_directive.length(), defines_str);
     }
 
+    static thread_local const std::string repeat_directive = "#repeat";
+    while (true) {
+        std::size_t repeat_pos = source.find(repeat_directive);
+        if (repeat_pos == std::string::npos) { break; }
+
+        std::size_t end_pos = source.find('\n', repeat_pos);
+        if (end_pos == std::string::npos) {
+            context.get<spdlog::logger>().error("#repeat must be eventually followed by a newline");
+            throw Exception("Could not compile GLSL shader");
+        }
+
+        const char *str = source.data() + repeat_pos + repeat_directive.length();
+        const char *end = source.data() + end_pos;
+        long long int a = std::strtoll(str, const_cast<char **>(&str), 10);
+        if (str >= end) {
+            context.get<spdlog::logger>().error("#repeat must be followed by a start index");
+            throw Exception("Could not compile GLSL shader");
+        }
+        long long int b = std::strtoll(str, const_cast<char **>(&str), 10);
+        if (str >= end) {
+            context.get<spdlog::logger>().error("#repeat must be followed by an end index");
+            throw Exception("Could not compile GLSL shader");
+        }
+
+        std::string repeat_str;
+        for (long long int i = a; i < b; i++) {
+            repeat_str += replaceAll(std::string(str, end), "%", std::to_string(i));
+        }
+
+        source.replace(repeat_pos, end_pos - repeat_pos, repeat_str);
+    }
+
     GLuint shader = glCreateShader(type);
+    assert(shader != 0);
     graphics::GL::catchErrors();
     shaders.push_back(shader);
 
@@ -58,10 +104,12 @@ void GpuProgram::attachShader(GLenum type, std::string &&source, const Defines &
         context.get<spdlog::logger>().error("Could not compile GLSL shader:");
         context.get<spdlog::logger>().error(std::string(error_log, static_cast<std::size_t>(max_length)));
 
+#ifndef NDEBUG
         std::ofstream file;
         file.open("bad_shader.glsl");
         file << source;
         file.close();
+#endif
 
         delete[] error_log;
 
@@ -73,7 +121,7 @@ void GpuProgram::attachShader(GLenum type, std::string &&source, const Defines &
 }
 
 void GpuProgram::Defines::writeInto(std::string &str) const {
-    std::unordered_map<std::string, std::string>::const_iterator i = define_map.cbegin();
+    std::map<std::string, std::string>::const_iterator i = define_map.cbegin();
     while (i != define_map.cend()) {
         str += "#define ";
         str += i->first;

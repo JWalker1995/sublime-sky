@@ -143,7 +143,6 @@ private:
     std::deque<LocalType> localData;
     std::vector<unsigned int> availableIndices;
 
-    GLuint vaoId = static_cast<GLuint>(-1);
     GlBuffer<SharedType, allocRatio> remoteBuffer;
 };
 

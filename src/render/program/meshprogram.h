@@ -7,10 +7,10 @@
 
 namespace render {
 
-class DrawProgram : public Program {
+class MeshProgram : public Program {
 public:
     class NoRenderConfigException : public jw_util::BaseException {
-        friend class DrawProgram;
+        friend class MeshProgram;
 
     private:
         NoRenderConfigException(const std::string &msg)
@@ -18,13 +18,31 @@ public:
         {}
     };
 
-    DrawProgram(game::GameContext &context);
+    MeshProgram(game::GameContext &context);
 
     virtual void insertDefines(Defines &defines);
     virtual void setupProgram(const Defines &defines);
     virtual void linkProgram();
 
+    void bind();
+    void unbind();
+
 private:
+    class Vao : public graphics::GlVao {
+    public:
+        Vao(game::GameContext &context) {
+            bind();
+
+            SceneManager &sceneManager = context.get<SceneManager>();
+            sceneManager.getMeshBuffer().setupVao(*this);
+            sceneManager.getVertBuffer().setupVao(*this);
+            sceneManager.getFaceBuffer().setupVao(*this);
+            sceneManager.getMaterialBuffer().setupVao(*this);
+
+            unbind();
+        }
+    };
+
     jw_util::Signal<SceneManager::MeshBuffer &>::Listener meshBufferNewVboListener;
     jw_util::Signal<SceneManager::MaterialBuffer &>::Listener materialBufferNewVboListener;
 

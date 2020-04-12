@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
+#include <map>
 #include <vector>
 
 #include "jw_util/baseexception.h"
@@ -32,7 +32,7 @@ public:
         void writeInto(std::string &str) const;
 
     private:
-        std::unordered_map<std::string, std::string> define_map;
+        std::map<std::string, std::string> define_map;
     };
 
     GpuProgram(game::GameContext &context);

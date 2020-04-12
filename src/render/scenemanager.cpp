@@ -20,15 +20,9 @@ void SceneManager::tick(game::TickerContext &tickerContext) {
         ImGui::Text("Vert counts active/extent = %zu / %zu", getVertBuffer().getActiveSize(), getVertBuffer().getExtentSize());
         ImGui::Text("Face counts active/extent = %zu / %zu", getFaceBuffer().getActiveSize(), getFaceBuffer().getExtentSize());
         ImGui::Text("Material counts active/extent = %zu / %zu", getMaterialBuffer().getActiveSize(), getMaterialBuffer().getExtentSize());
+        ImGui::Text("Voronoi cell counts active/extent = %zu / %zu", getVoronoiCellBuffer().getActiveSize(), getVoronoiCellBuffer().getExtentSize());
     }
     ImGui::End();
-}
-
-void SceneManager::sync(graphics::GlVao &vao) {
-    getMeshBuffer().sync(vao);
-    getVertBuffer().sync(vao);
-    getFaceBuffer().sync(vao);
-    getMaterialBuffer().sync(vao);
 }
 
 void SceneManager::createNullMaterial() {

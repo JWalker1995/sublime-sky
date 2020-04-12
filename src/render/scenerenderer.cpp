@@ -1,9 +1,8 @@
 #include "scenerenderer.h"
 
 #include "graphics/gpuprogram.h"
-#include "render/vao.h"
-#include "render/program/drawcolorprogram.h"
-#include "render/program/computeprogram.h"
+#include "render/program/meshcolorprogram.h"
+#include "render/program/drawvoronoicellprogram.h"
 #include "application/window.h"
 #include "render/imguirenderer.h"
 
@@ -41,8 +40,8 @@ SceneRenderer::SceneRenderer(game::GameContext &context, const SsProtocol::Confi
     shaders.call(&Shader::load, args);
     */
 
-    context.get<DrawColorProgram>().make();
-    //context.get<ComputeProgram>().make();
+    context.get<MeshColorProgram>().make();
+//    context.get<DrawVoronoiCellProgram>().make();
 
     context.get<ImguiRenderer>();
 }
@@ -58,17 +57,10 @@ void SceneRenderer::tickClose(game::TickerContext &tickerContext) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     graphics::GL::catchErrors();
 
-    graphics::GlVao &vao = context.get<Vao>();
-    vao.bind();
-
-    SceneManager &sceneManager = context.get<SceneManager>();
-    sceneManager.sync(vao);
-
     // context.get<FaceFragCounter>().update();
 
-    context.get<DrawColorProgram>().bind();
-    glDrawRangeElements(GL_TRIANGLES, 0, sceneManager.getVertBuffer().getExtentSize(), sceneManager.getFaceBuffer().getExtentSize() * 3, GL_UNSIGNED_INT, reinterpret_cast<char *>(0));
-    graphics::GL::catchErrors();
+    context.get<MeshColorProgram>().draw();
+//    context.get<DrawVoronoiCellProgram>().draw();
 
     /*
     unsigned int faceIndex = rand() % sceneManager.getFaceBuffer().getSize();

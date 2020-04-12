@@ -29,7 +29,7 @@ public:
                 strings += ", " + errorString(err);
             }
             assert(false);
-            throw Exception("GL errors: "  +strings);
+            throw Exception("GL errors: " + strings);
         }
     }
 

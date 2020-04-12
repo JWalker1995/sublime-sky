@@ -2,13 +2,13 @@
 
 #include "game/gamecontext.h"
 
-#include "render/program/drawprogram.h"
+#include "render/program/meshprogram.h"
 
 namespace render {
 
-class DrawDepthProgram : public DrawProgram {
+class MeshDepthProgram : public MeshProgram {
 public:
-    DrawDepthProgram(game::GameContext &context);
+    MeshDepthProgram(game::GameContext &context);
 
     virtual void insertDefines(Defines &defines);
 

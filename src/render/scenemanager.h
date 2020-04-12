@@ -13,8 +13,6 @@ public:
 
     void tick(game::TickerContext &tickerContext);
 
-    void sync(graphics::GlVao &vao);
-
 private:
     void createNullMaterial();
 };
