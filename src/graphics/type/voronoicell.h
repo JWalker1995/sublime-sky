@@ -12,7 +12,7 @@ class GlVao;
 class VoronoiCellShared {
 public:
     static constexpr unsigned int neighborCellsPerUvec4 = 2 * 4;
-    static constexpr unsigned int neighborCellCount = neighborCellsPerUvec4 * 13;
+    static constexpr unsigned int neighborCellCount = neighborCellsPerUvec4 * 3;
 
     GLuint cellPosition[3];
 

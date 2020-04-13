@@ -30,6 +30,7 @@ SceneRenderer::SceneRenderer(game::GameContext &context, const SsProtocol::Confi
 
     glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
 
+//    glHint(GL_POINT_SMOOTH_HINT, GL_FASTEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     graphics::GL::catchErrors();

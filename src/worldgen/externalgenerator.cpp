@@ -113,7 +113,7 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
                                 }
                                 pt -= (cellKey.cellCoord + spatial::UintCoord(-2)).toPoint();
                                 pt *= 32.0f / 5.0f;
-                                unsigned int nc = !hashTreeWorld.isGas(cell->second.chunk->cells[i][j][k].materialIndex);
+                                unsigned int nc = 0;
                                 nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.x), 31));
                                 nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.y), 31));
                                 nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.z), 31));
@@ -123,6 +123,9 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
                                 for (signed int di = -2; di <= 2; di++) {
                                     for (signed int dj = -2; dj <= 2; dj++) {
                                         for (signed int dk = -2; dk <= 2; dk++) {
+                                            if (nci == graphics::VoronoiCellShared::neighborCellCount) {
+                                                break;
+                                            }
                                             if (di == 0 && dj == 0 && dk == 0) {
                                                 continue;
                                             }
@@ -132,7 +135,7 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
                                             }
                                             pt -= (cellKey.cellCoord + spatial::UintCoord(-2)).toPoint();
                                             pt *= 32.0f / 5.0f;
-                                            unsigned int nc = !hashTreeWorld.isGas(cell->second.chunk->cells[i + di][j + dj][k + dk].materialIndex);
+                                            unsigned int nc = hashTreeWorld.isGas(cell->second.chunk->cells[i + di][j + dj][k + dk].materialIndex);
                                             nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.x), 31));
                                             nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.y), 31));
                                             nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.z), 31));

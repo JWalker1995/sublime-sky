@@ -28,6 +28,7 @@ public:
 
 private:
     GLint eyePosLocation;
+    GLint eyeDirLocation;
 
     class Vao : public graphics::GlVao {
     public:

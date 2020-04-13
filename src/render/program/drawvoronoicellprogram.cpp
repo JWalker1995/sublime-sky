@@ -58,7 +58,9 @@ void DrawVoronoiCellProgram::linkProgram() {
 //    graphics::GL::catchErrors();
 
     eyePosLocation = glGetUniformLocation(getProgramId(), "eyePos");
-    assert(eyePosLocation != -1);
+    graphics::GL::catchErrors();
+
+    eyeDirLocation = glGetUniformLocation(getProgramId(), "eyeDir");
     graphics::GL::catchErrors();
 }
 
@@ -90,11 +92,18 @@ void DrawVoronoiCellProgram::draw() {
 //        showTrianglesDirty = false;
 //    }
 
-    glm::vec3 eyePos = context.get<render::Camera>().getEyePos();
-    glUniform3f(eyePosLocation, eyePos.x, eyePos.y, eyePos.z);
+    if (eyePosLocation != -1) {
+        glm::vec3 eyePos = context.get<render::Camera>().getEyePos();
+        glUniform3f(eyePosLocation, eyePos.x, eyePos.y, eyePos.z);
+    }
+
+    if (eyeDirLocation != -1) {
+        glm::vec3 eyeDir = context.get<render::Camera>().getEyeDir();
+        glUniform3f(eyeDirLocation, eyeDir.x, eyeDir.y, eyeDir.z);
+    }
 
     glDrawArrays(GL_POINTS, 0, sceneManager.getVoronoiCellBuffer().getExtentSize());
-//    glDrawArrays(GL_TRIANGLES, 0, sceneManager.getVoronoiCellBuffer().getExtentSize());
+//    glDrawArrays(GL_POINTS, 0, !!sceneManager.getVoronoiCellBuffer().getExtentSize());
     graphics::GL::catchErrors();
 
     vao.unbind();
