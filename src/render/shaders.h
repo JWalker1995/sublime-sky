@@ -10,6 +10,8 @@ public:
     static const char voronoiCellFrag[];
     static const char pointCloudVert[];
     static const char pointCloudFrag[];
+    static const char pixelMatchFetcherVert[];
+    static const char pixelMatchFetcherFrag[];
 };
 
 }

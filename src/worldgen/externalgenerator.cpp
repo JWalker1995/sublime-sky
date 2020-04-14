@@ -1,5 +1,7 @@
 #include "externalgenerator.h"
 
+#include <random>
+
 #include "spdlog/logger.h"
 
 #include "game/gamecontext.h"
@@ -54,9 +56,9 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
 
     assert(materialOffset != static_cast<unsigned int>(-1));
 
-    static unsigned int chunksLeft = 10;
+    static unsigned int chunksLeft = 20;
     if (chunksLeft == 0) {
-//        return;
+        return;
     }
 
     spatial::CellKey cube;
@@ -82,6 +84,9 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
 
     bool hasNonGas = false;
 
+    static thread_local std::default_random_engine gen;
+    std::normal_distribution<float> dist(0.0f, 1.0f);
+
     const std::uint32_t *ptPtr = chunk->cell_materials()->data();
     for (unsigned int i = 0; i < pointgen::Chunk::size; i++) {
         for (unsigned int j = 0; j < pointgen::Chunk::size; j++) {
@@ -92,20 +97,25 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
                 hasNonGas |= isNotGas;
 
                 if (isNotGas) {
-                    render::SceneManager::PointMutator point = meshUpdater.getMeshHandle().createPoint();
+                    glm::vec3 basePos = pointChunk->points[i][j][k];
 
-                    point.shared.materialIndex = static_cast<unsigned int>(materialIndex);
+                    for (unsigned int x = 0; x < 256; x++) {
+                        glm::vec3 position = basePos + glm::vec3(dist(gen), dist(gen), dist(gen));
 
-                    glm::vec3 position = pointChunk->points[i][j][k];
-                    assert(!std::isnan(position.x));
-                    point.shared.position[0] = position.x;
-                    point.shared.position[1] = position.y;
-                    point.shared.position[2] = position.z;
+                        render::SceneManager::PointMutator point = meshUpdater.getMeshHandle().createPoint();
 
-                    glm::vec3 normal(0.0f);
-                    point.shared.normal[0] = normal.x;
-                    point.shared.normal[1] = normal.y;
-                    point.shared.normal[2] = normal.z;
+                        point.shared.materialIndex = static_cast<unsigned int>(materialIndex);
+
+                        assert(!std::isnan(position.x));
+                        point.shared.position[0] = position.x;
+                        point.shared.position[1] = position.y;
+                        point.shared.position[2] = position.z;
+
+                        glm::vec3 normal(0.0f);
+                        point.shared.normal[0] = normal.x;
+                        point.shared.normal[1] = normal.y;
+                        point.shared.normal[2] = normal.z;
+                    }
                 }
             }
         }

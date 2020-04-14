@@ -7,10 +7,10 @@
 
 namespace render {
 
-class DrawPointCloudProgram : public Program {
+class PointCloudProgram : public Program {
 public:
     class NoRenderConfigException : public jw_util::BaseException {
-        friend class DrawPointCloudProgram;
+        friend class PointCloudProgram;
 
     private:
         NoRenderConfigException(const std::string &msg)
@@ -18,13 +18,13 @@ public:
         {}
     };
 
-    DrawPointCloudProgram(game::GameContext &context);
+    PointCloudProgram(game::GameContext &context);
 
     virtual void insertDefines(Defines &defines);
     virtual void setupProgram(const Defines &defines);
     virtual void linkProgram();
 
-    void draw();
+    virtual void draw();
 
 private:
     GLint eyePosLocation;

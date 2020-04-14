@@ -1,4 +1,4 @@
-#include "drawpointcloudprogram.h"
+#include "pointcloudprogram.h"
 
 #include "spdlog/logger.h"
 
@@ -11,17 +11,17 @@
 
 namespace render {
 
-DrawPointCloudProgram::DrawPointCloudProgram(game::GameContext &context)
+PointCloudProgram::PointCloudProgram(game::GameContext &context)
     : Program(context)
     , meshBufferNewVboListener(
           context.get<SceneManager>().getMeshBuffer().onNewVbo,
-          jw_util::MethodCallback<SceneManager::MeshBuffer &>::create<DrawPointCloudProgram, &DrawPointCloudProgram::onNewMeshBufferVbo>(this))
+          jw_util::MethodCallback<SceneManager::MeshBuffer &>::create<PointCloudProgram, &PointCloudProgram::onNewMeshBufferVbo>(this))
     , materialBufferNewVboListener(
           context.get<SceneManager>().getMaterialBuffer().onNewVbo,
-          jw_util::MethodCallback<SceneManager::MaterialBuffer &>::create<DrawPointCloudProgram, &DrawPointCloudProgram::onNewMaterialBufferVbo>(this))
+          jw_util::MethodCallback<SceneManager::MaterialBuffer &>::create<PointCloudProgram, &PointCloudProgram::onNewMaterialBufferVbo>(this))
 {}
 
-void DrawPointCloudProgram::insertDefines(Defines &defines) {
+void PointCloudProgram::insertDefines(Defines &defines) {
     Program::insertDefines(defines);
 
     const SsProtocol::Config::Render *render = context.get<const SsProtocol::Config::Client>().render();
@@ -39,7 +39,7 @@ void DrawPointCloudProgram::insertDefines(Defines &defines) {
     context.get<Vao>().insertDefines(defines);
 }
 
-void DrawPointCloudProgram::setupProgram(const Defines &defines) {
+void PointCloudProgram::setupProgram(const Defines &defines) {
     Program::setupProgram(defines);
 
     context.get<spdlog::logger>().debug("Compiling point cloud vertex shader");
@@ -51,7 +51,7 @@ void DrawPointCloudProgram::setupProgram(const Defines &defines) {
     attachShader(GL_FRAGMENT_SHADER, std::move(fragShaderStr), defines);
 }
 
-void DrawPointCloudProgram::linkProgram() {
+void PointCloudProgram::linkProgram() {
     Program::linkProgram();
 
 //    showTrianglesLocation = glGetUniformLocation(getProgramId(), "showTriangles");
@@ -64,7 +64,7 @@ void DrawPointCloudProgram::linkProgram() {
     graphics::GL::catchErrors();
 }
 
-void DrawPointCloudProgram::draw() {
+void PointCloudProgram::draw() {
     Program::bind();
 
     assertLinked();
@@ -108,14 +108,14 @@ void DrawPointCloudProgram::draw() {
     vao.unbind();
 }
 
-void DrawPointCloudProgram::onNewMeshBufferVbo(SceneManager::MeshBuffer &meshBuffer) {
+void PointCloudProgram::onNewMeshBufferVbo(SceneManager::MeshBuffer &meshBuffer) {
     assertLinked();
 
     meshBuffer.getGlBuffer().bind();
     bindUniformBlock("MeshesBlock", meshBuffer.getGlBuffer().get_base_binding());
 }
 
-void DrawPointCloudProgram::onNewMaterialBufferVbo(SceneManager::MaterialBuffer &materialBuffer) {
+void PointCloudProgram::onNewMaterialBufferVbo(SceneManager::MaterialBuffer &materialBuffer) {
     assertLinked();
 
     materialBuffer.getGlBuffer().bind();

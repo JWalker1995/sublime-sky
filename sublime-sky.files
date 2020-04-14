@@ -145,8 +145,6 @@ src/render/meshupdater.cpp
 src/render/meshupdater.h
 src/render/program/computeprogram.cpp
 src/render/program/computeprogram.h
-src/render/program/drawpointcloudprogram.cpp
-src/render/program/drawpointcloudprogram.h
 src/render/program/drawvoronoicellprogram.cpp
 src/render/program/drawvoronoicellprogram.h
 src/render/program/meshcolorprogram.cpp
@@ -155,6 +153,14 @@ src/render/program/meshdepthprogram.cpp
 src/render/program/meshdepthprogram.h
 src/render/program/meshprogram.cpp
 src/render/program/meshprogram.h
+src/render/program/pixelmatchfetcherprogram.cpp
+src/render/program/pixelmatchfetcherprogram.h
+src/render/program/pointcloudcolorprogram.cpp
+src/render/program/pointcloudcolorprogram.h
+src/render/program/pointclouddepthprogram.cpp
+src/render/program/pointclouddepthprogram.h
+src/render/program/pointcloudprogram.cpp
+src/render/program/pointcloudprogram.h
 src/render/program/program.cpp
 src/render/program/program.h
 src/render/raycaster.cpp
@@ -174,6 +180,8 @@ src/shaders/frag_counter.comp.glsl
 src/shaders/gather_emittance.comp.glsl
 src/shaders/main.frag.glsl
 src/shaders/main.vert.glsl
+src/shaders/pixel_match_fetcher.frag.glsl
+src/shaders/pixel_match_fetcher.vert.glsl
 src/shaders/point_cloud.frag.glsl
 src/shaders/point_cloud.vert.glsl
 src/shaders/spheres.frag.glsl

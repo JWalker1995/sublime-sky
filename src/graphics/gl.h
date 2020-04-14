@@ -22,6 +22,7 @@ public:
     };
 
     static void catchErrors() {
+#ifndef NDEBUG
         GLenum err = glGetError();
         if (err) {
             std::string strings = errorString(err);
@@ -31,6 +32,7 @@ public:
             assert(false);
             throw Exception("GL errors: " + strings);
         }
+#endif
     }
 
     static std::string getErrors() {

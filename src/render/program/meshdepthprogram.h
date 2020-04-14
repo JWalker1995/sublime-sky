@@ -11,8 +11,6 @@ public:
     MeshDepthProgram(game::GameContext &context);
 
     virtual void insertDefines(Defines &defines);
-
-private:
 };
 
 }

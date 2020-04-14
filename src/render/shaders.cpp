@@ -26,4 +26,12 @@ const char Shaders::pointCloudFrag[] = {
     #include "shaders/point_cloud.frag.glsl.h"
 };
 
+const char Shaders::pixelMatchFetcherVert[] = {
+    #include "shaders/pixel_match_fetcher.vert.glsl.h"
+};
+
+const char Shaders::pixelMatchFetcherFrag[] = {
+    #include "shaders/pixel_match_fetcher.frag.glsl.h"
+};
+
 }
