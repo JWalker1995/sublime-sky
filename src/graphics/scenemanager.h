@@ -6,6 +6,7 @@
 #include "graphics/type/face.h"
 #include "graphics/type/material.h"
 #include "graphics/type/voronoicell.h"
+#include "graphics/type/point.h"
 
 namespace graphics {
 
@@ -21,6 +22,7 @@ public:
     typedef SplitBuffer<FaceShared, FaceLocal> FaceBuffer;
     typedef SplitBuffer<MaterialShared, MaterialLocal> MaterialBuffer;
     typedef SplitBuffer<VoronoiCellShared, VoronoiCellLocal> VoronoiCellBuffer;
+    typedef SplitBuffer<PointShared, PointLocal> PointBuffer;
 
     typedef MeshBuffer::Reader MeshReader;
     typedef MeshBuffer::Mutator MeshMutator;
@@ -32,6 +34,8 @@ public:
     typedef MaterialBuffer::Mutator MaterialMutator;
     typedef VoronoiCellBuffer::Reader VoronoiCellReader;
     typedef VoronoiCellBuffer::Mutator VoronoiCellMutator;
+    typedef PointBuffer::Reader PointReader;
+    typedef PointBuffer::Mutator PointMutator;
 
     class MeshHandle {
     public:
@@ -104,6 +108,21 @@ public:
             return sceneManager.voronoiCellBuffer.mutate(index);
         }
 
+        PointMutator createPoint() {
+            PointMutator res = sceneManager.pointBuffer.create();
+            res.shared.meshIndex = meshIndex;
+            return res;
+        }
+        void destroyPoint(unsigned int index) {
+            sceneManager.pointBuffer.destroy(index);
+        }
+        PointReader readPoint(unsigned int index) const {
+            return sceneManager.pointBuffer.read(index);
+        }
+        PointMutator mutatePoint(unsigned int index) const {
+            return sceneManager.pointBuffer.mutate(index);
+        }
+
         SceneManager &getSceneManager() const {
             return sceneManager;
         }
@@ -134,6 +153,9 @@ public:
     VoronoiCellBuffer &getVoronoiCellBuffer() {
         return voronoiCellBuffer;
     }
+    PointBuffer &getPointBuffer() {
+        return pointBuffer;
+    }
 
     const MeshBuffer &getMeshBuffer() const {
         return meshBuffer;
@@ -149,6 +171,9 @@ public:
     }
     const VoronoiCellBuffer &getVoronoiCellBuffer() const {
         return voronoiCellBuffer;
+    }
+    const PointBuffer &getPointBuffer() const {
+        return pointBuffer;
     }
 
     MeshHandle createMesh() {
@@ -174,6 +199,7 @@ private:
     FaceBuffer faceBuffer;
     MaterialBuffer materialBuffer;
     VoronoiCellBuffer voronoiCellBuffer;
+    PointBuffer pointBuffer;
 };
 
 }

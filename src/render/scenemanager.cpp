@@ -21,6 +21,7 @@ void SceneManager::tick(game::TickerContext &tickerContext) {
         ImGui::Text("Face counts active/extent = %zu / %zu", getFaceBuffer().getActiveSize(), getFaceBuffer().getExtentSize());
         ImGui::Text("Material counts active/extent = %zu / %zu", getMaterialBuffer().getActiveSize(), getMaterialBuffer().getExtentSize());
         ImGui::Text("Voronoi cell counts active/extent = %zu / %zu", getVoronoiCellBuffer().getActiveSize(), getVoronoiCellBuffer().getExtentSize());
+        ImGui::Text("Point counts active/extent = %zu / %zu", getPointBuffer().getActiveSize(), getPointBuffer().getExtentSize());
     }
     ImGui::End();
 }

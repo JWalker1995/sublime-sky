@@ -56,7 +56,7 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
 
     static unsigned int chunksLeft = 10;
     if (chunksLeft == 0) {
-        return;
+//        return;
     }
 
     spatial::CellKey cube;
@@ -92,66 +92,20 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
                 hasNonGas |= isNotGas;
 
                 if (isNotGas) {
-                    if (i >= 2 && i < pointgen::Chunk::size - 2) {
-                        if (j >= 2 && j < pointgen::Chunk::size - 2) {
-                            if (k >= 2 && k < pointgen::Chunk::size - 2) {
-                                render::SceneManager::VoronoiCellMutator voronoiCell = meshUpdater.getMeshHandle().createVoronoiCell();
+                    render::SceneManager::PointMutator point = meshUpdater.getMeshHandle().createPoint();
 
-                                voronoiCell.shared.materialIndex = static_cast<unsigned int>(materialIndex);
+                    point.shared.materialIndex = static_cast<unsigned int>(materialIndex);
 
-                                spatial::CellKey cellKey = cube.grandChild<world::Chunk::sizeLog2>(i, j, k);
-                                assert(cellKey.sizeLog2 == 0);
-                                voronoiCell.shared.cellPosition[0] = cellKey.cellCoord.x;
-                                voronoiCell.shared.cellPosition[1] = cellKey.cellCoord.y;
-                                voronoiCell.shared.cellPosition[2] = cellKey.cellCoord.z;
+                    glm::vec3 position = pointChunk->points[i][j][k];
+                    assert(!std::isnan(position.x));
+                    point.shared.position[0] = position.x;
+                    point.shared.position[1] = position.y;
+                    point.shared.position[2] = position.z;
 
-                                unsigned int nci = 0;
-
-                                glm::vec3 pt = pointChunk->points[i][j][k];
-                                if (std::isnan(pt.x)) {
-                                    continue;
-                                }
-                                pt -= (cellKey.cellCoord + spatial::UintCoord(-2)).toPoint();
-                                pt *= 32.0f / 5.0f;
-                                unsigned int nc = 0;
-                                nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.x), 31));
-                                nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.y), 31));
-                                nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.z), 31));
-                                assert(nc < 0x10000);
-                                voronoiCell.shared.neighborCells[nci++] = nc;
-
-                                for (signed int di = -2; di <= 2; di++) {
-                                    for (signed int dj = -2; dj <= 2; dj++) {
-                                        for (signed int dk = -2; dk <= 2; dk++) {
-                                            if (nci == graphics::VoronoiCellShared::neighborCellCount) {
-                                                break;
-                                            }
-                                            if (di == 0 && dj == 0 && dk == 0) {
-                                                continue;
-                                            }
-                                            glm::vec3 pt = pointChunk->points[i + di][j + dj][k + dk];
-                                            if (std::isnan(pt.x)) {
-                                                continue;
-                                            }
-                                            pt -= (cellKey.cellCoord + spatial::UintCoord(-2)).toPoint();
-                                            pt *= 32.0f / 5.0f;
-                                            unsigned int nc = hashTreeWorld.isGas(cell->second.chunk->cells[i + di][j + dj][k + dk].materialIndex);
-                                            nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.x), 31));
-                                            nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.y), 31));
-                                            nc = nc * 32 + std::max(0, std::min(static_cast<signed int>(pt.z), 31));
-                                            assert(nc < 0x10000);
-                                            voronoiCell.shared.neighborCells[nci++] = nc;
-                                        }
-                                    }
-                                }
-
-                                assert(nci <= graphics::VoronoiCellShared::neighborCellCount);
-                                while (nci < graphics::VoronoiCellShared::neighborCellCount) {
-                                    voronoiCell.shared.neighborCells[nci++] = 0;
-                                }
-                            }
-                        }
-                    }
+                    glm::vec3 normal(0.0f);
+                    point.shared.normal[0] = normal.x;
+                    point.shared.normal[1] = normal.y;
+                    point.shared.normal[2] = normal.z;
                 }
             }
         }

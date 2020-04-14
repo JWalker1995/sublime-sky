@@ -55,6 +55,8 @@ src/graphics/type/material.cpp
 src/graphics/type/material.h
 src/graphics/type/mesh.cpp
 src/graphics/type/mesh.h
+src/graphics/type/point.cpp
+src/graphics/type/point.h
 src/graphics/type/vert.cpp
 src/graphics/type/vert.h
 src/graphics/type/voronoicell.cpp
@@ -143,6 +145,8 @@ src/render/meshupdater.cpp
 src/render/meshupdater.h
 src/render/program/computeprogram.cpp
 src/render/program/computeprogram.h
+src/render/program/drawpointcloudprogram.cpp
+src/render/program/drawpointcloudprogram.h
 src/render/program/drawvoronoicellprogram.cpp
 src/render/program/drawvoronoicellprogram.h
 src/render/program/meshcolorprogram.cpp
@@ -170,6 +174,8 @@ src/shaders/frag_counter.comp.glsl
 src/shaders/gather_emittance.comp.glsl
 src/shaders/main.frag.glsl
 src/shaders/main.vert.glsl
+src/shaders/point_cloud.frag.glsl
+src/shaders/point_cloud.vert.glsl
 src/shaders/spheres.frag.glsl
 src/shaders/spheres.geom.glsl
 src/shaders/voronoi_cell.frag.glsl

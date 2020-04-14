@@ -3,6 +3,7 @@
 #include "graphics/gpuprogram.h"
 #include "render/program/meshcolorprogram.h"
 #include "render/program/drawvoronoicellprogram.h"
+#include "render/program/drawpointcloudprogram.h"
 #include "application/window.h"
 #include "render/imguirenderer.h"
 
@@ -44,7 +45,8 @@ SceneRenderer::SceneRenderer(game::GameContext &context, const SsProtocol::Confi
     */
 
 //    context.get<MeshColorProgram>().make();
-    context.get<DrawVoronoiCellProgram>().make();
+//    context.get<DrawVoronoiCellProgram>().make();
+    context.get<DrawPointCloudProgram>().make();
 
     context.get<ImguiRenderer>();
 }
@@ -63,7 +65,8 @@ void SceneRenderer::tickClose(game::TickerContext &tickerContext) {
     // context.get<FaceFragCounter>().update();
 
 //    context.get<MeshColorProgram>().draw();
-    context.get<DrawVoronoiCellProgram>().draw();
+//    context.get<DrawVoronoiCellProgram>().draw();
+    context.get<DrawPointCloudProgram>().draw();
 
     /*
     unsigned int faceIndex = rand() % sceneManager.getFaceBuffer().getSize();
