@@ -99,7 +99,7 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
                 if (isNotGas) {
                     glm::vec3 basePos = pointChunk->points[i][j][k];
 
-                    for (unsigned int x = 0; x < 256; x++) {
+                    for (unsigned int x = 0; x < 1; x++) {
                         glm::vec3 position = basePos + glm::vec3(dist(gen), dist(gen), dist(gen));
 
                         render::SceneManager::PointMutator point = meshUpdater.getMeshHandle().createPoint();

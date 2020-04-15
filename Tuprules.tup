@@ -8,7 +8,7 @@ BIN_TARGET = $(ROOT)/sublime-sky
 CC = clang
 CXX = clang++
 
-CFLAGS += -std=c++14
+CFLAGS += -std=c++17
 CFLAGS += -Wall -Werror -Wno-missing-braces -Wno-unused
 CFLAGS += -I$(SRC_PATH) -I$(THIRD_PARTY_PATH)
 CFLAGS += -I/Users/`whoami`/source/tonk

@@ -137,6 +137,8 @@ src/query/rectquery.h
 src/query/spherequery.h
 src/render/camera.cpp
 src/render/camera.h
+src/render/depthbufferprocessor.cpp
+src/render/depthbufferprocessor.h
 src/render/hashtreevertindex.cpp
 src/render/hashtreevertindex.h
 src/render/imguirenderer.cpp

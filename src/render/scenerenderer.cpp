@@ -4,6 +4,7 @@
 #include "render/program/pointclouddepthprogram.h"
 #include "render/program/pointcloudcolorprogram.h"
 #include "render/program/pixelmatchfetcherprogram.h"
+#include "render/depthbufferprocessor.h"
 #include "application/window.h"
 #include "render/imguirenderer.h"
 
@@ -50,7 +51,7 @@ SceneRenderer::SceneRenderer(game::GameContext &context, const SsProtocol::Confi
 //    context.get<DrawVoronoiCellProgram>().make();
     context.get<PointCloudDepthProgram>().make();
     context.get<PointCloudColorProgram>().make();
-    context.get<PixelMatchFetcherProgram>().make();
+//    context.get<PixelMatchFetcherProgram>().make();
 
     context.get<ImguiRenderer>();
 }
@@ -71,7 +72,8 @@ void SceneRenderer::tickClose(game::TickerContext &tickerContext) {
     graphics::GL::catchErrors();
     context.get<PointCloudDepthProgram>().draw();
 
-    context.get<PixelMatchFetcherProgram>().draw();
+//    context.get<PixelMatchFetcherProgram>().draw();
+    context.get<DepthBufferProcessor>().takeDepthSnapshot();
 
     glPointSize(2.0f);
     glDepthFunc(GL_EQUAL);

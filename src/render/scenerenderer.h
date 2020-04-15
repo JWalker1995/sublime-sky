@@ -19,9 +19,9 @@ public:
     void tickOpen(game::TickerContext &tickerContext);
     void tickClose(game::TickerContext &tickerContext);
 
-    void setMeshTransform(SceneManager::MeshMutator meshMutator, const geometry::Transform &transform) {
-        meshMutator.shared.transform = context.get<Camera>().getTransform() * transform.toMat4x4();
-    }
+//    void setMeshTransform(SceneManager::MeshMutator meshMutator, const geometry::Transform &transform) {
+//        meshMutator.shared.transform = context.get<Camera>().getTransform() * transform.toMat4x4();
+//    }
 };
 
 }

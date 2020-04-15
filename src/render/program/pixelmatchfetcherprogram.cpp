@@ -14,12 +14,26 @@ namespace render {
 
 PixelMatchFetcherProgram::PixelMatchFetcherProgram(game::GameContext &context)
     : Program(context)
-{}
+{
+    glGenBuffers(numDownloadVbos, downloadVbos);
+
+    for (unsigned int i = 0; i < numDownloadVbos; i++) {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, downloadVbos[i]);
+        graphics::GL::catchErrors();
+
+        glBufferData(GL_PIXEL_PACK_BUFFER, maxDownloadSize, 0, GL_DYNAMIC_READ);
+        graphics::GL::catchErrors();
+    }
+}
+
+PixelMatchFetcherProgram::~PixelMatchFetcherProgram() {
+    glDeleteBuffers(numDownloadVbos, downloadVbos);
+}
 
 void PixelMatchFetcherProgram::insertDefines(Defines &defines) {
     Program::insertDefines(defines);
 
-    context.get<Vao>().insertDefines(defines);
+    context.get<TransferVao>().insertDefines(defines);
 }
 
 void PixelMatchFetcherProgram::setupProgram(const Defines &defines) {
@@ -43,7 +57,7 @@ void PixelMatchFetcherProgram::draw() {
 
     assertLinked();
 
-    Vao &vao = context.get<Vao>();
+    TransferVao &vao = context.get<TransferVao>();
     vao.bind();
 
     application::Window::Dimensions dims = context.get<application::Window>().dimensions;
@@ -65,6 +79,30 @@ void PixelMatchFetcherProgram::draw() {
     graphics::GL::catchErrors();
 
     vao.unbind();
+
+
+    unsigned int downloadSize = static_cast<unsigned int>(dims.width) < maxDownloadSize ? dims.width : maxDownloadSize;
+
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, downloadVbos[nextDownloadVbo]);
+    GLfloat *ptr = static_cast<GLfloat *>(glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY));
+    if (ptr) {
+        for (unsigned int i = 0; i < downloadSize; i++) {
+            float vf = ptr[i];
+            unsigned int vi = vf;
+            if (static_cast<float>(vi) == vf && vi > 0 && vi < size) {
+                // TODO
+            }
+        }
+        glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+    }
+
+    nextDownloadVbo++;
+    if (nextDownloadVbo == numDownloadVbos) {
+        nextDownloadVbo = 0;
+    }
+
+    glReadPixels(0, 0, downloadSize, 1, GL_RED, GL_FLOAT, 0);
+    graphics::GL::catchErrors();
 }
 
 }

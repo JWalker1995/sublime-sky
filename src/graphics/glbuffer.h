@@ -50,6 +50,22 @@ public:
         return size > vbo_size;
     }
 
+    void update_size_nocopy(Index size) {
+        if (needs_resize(size))
+        {
+            // Need to allocate a larger vbo
+
+            static_assert(alloc_ratio::num && alloc_ratio::den, "Cannot change the size of this buffer");
+            Index new_vbo_size = size * alloc_ratio::num / alloc_ratio::den;
+
+            glBindBuffer(target, vbo_id);
+            glBufferData(target, new_vbo_size * sizeof(Type), 0, buffer_hint);
+            GL::catchErrors();
+
+            vbo_size = new_vbo_size;
+        }
+    }
+
     void update_size(Index size)
     {
         if (needs_resize(size))
@@ -78,7 +94,7 @@ public:
             }
             else
             {
-                bind();
+                glBindBuffer(target, vbo_id);
                 glBufferData(target, new_vbo_size * sizeof(Type), 0, buffer_hint);
             }
 
@@ -212,14 +228,13 @@ public:
 
     const jw_util::IntervalSet<Index> &get_flags() const {return flags;}
 
+    static constexpr GLbitfield map_write_access = GL_MAP_WRITE_BIT /* | GL_MAP_UNSYNCHRONIZED_BIT */;
+    static constexpr GLbitfield map_read_access = GL_MAP_READ_BIT;
+
 private:
     Index vbo_size;
 
     jw_util::IntervalSet<Index> flags;
-
-    static constexpr GLbitfield map_write_access = GL_MAP_WRITE_BIT /* | GL_MAP_UNSYNCHRONIZED_BIT */;
-    static constexpr GLbitfield map_read_access = GL_MAP_READ_BIT;
-
 
     void load_fill_formats(unsigned int stride, GLenum &dst_format, GLenum &src_format, GLenum &src_type) const
     {

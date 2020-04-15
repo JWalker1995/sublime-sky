@@ -26,6 +26,7 @@
 #include "material/materialeditor.h"
 #include "world/hashtreeworld.h"
 #include "util/refset.h"
+#include "render/depthbufferprocessor.h"
 
 namespace game {
 
@@ -54,6 +55,9 @@ void MainLoop::load() {
     }
     if (clientConfig.mesh_generator()) {
         context.construct<render::MeshUpdater>(clientConfig.mesh_generator());
+    }
+    if (clientConfig.depth_buffer_processor()) {
+        context.construct<render::DepthBufferProcessor>(clientConfig.depth_buffer_processor());
     }
     if (clientConfig.hash_tree_world()) {
         context.construct<world::HashTreeWorld>(clientConfig.hash_tree_world());

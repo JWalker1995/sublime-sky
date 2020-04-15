@@ -8,14 +8,14 @@
 namespace jw_util
 {
 
-template <unsigned int num_threads, typename... ArgTypes>
-class WorkQueueInsomniac : public WorkQueueBase<WorkQueueInsomniac<num_threads, ArgTypes...>, num_threads, ArgTypes...>
+template <typename... ArgTypes>
+class WorkQueueInsomniac : public WorkQueueBase<WorkQueueInsomniac<ArgTypes...>, ArgTypes...>
 {
-    typedef WorkQueueBase<WorkQueueInsomniac<num_threads, ArgTypes...>, num_threads, ArgTypes...> BaseType;
+    typedef WorkQueueBase<WorkQueueInsomniac<ArgTypes...>, ArgTypes...> BaseType;
     friend BaseType;
 
 public:
-    using WorkQueueBase<WorkQueueInsomniac<num_threads, ArgTypes...>, num_threads, ArgTypes...>::WorkQueueBase;
+    using WorkQueueBase<WorkQueueInsomniac<ArgTypes...>, ArgTypes...>::WorkQueueBase;
 
     void set_wakeup_worker(jw_util::MethodCallback<> worker)
     {

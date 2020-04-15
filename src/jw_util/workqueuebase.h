@@ -8,27 +8,25 @@
 #include <condition_variable>
 #include <queue>
 
-#include "methodcallback.h"
-
 namespace jw_util
 {
 
-template <typename Derived, unsigned int num_threads, typename... ArgTypes>
+template <typename Derived, typename... ArgTypes>
 class WorkQueueBase
 {
 public:
     struct construct_paused_t {};
     static constexpr construct_paused_t construct_paused {};
 
-    WorkQueueBase(jw_util::MethodCallback<ArgTypes...> worker)
-        : worker(worker)
-        , running(false)
+    WorkQueueBase(unsigned int num_threads)
+        : WorkQueueBase(num_threads, construct_paused)
     {
         start();
     }
 
-    WorkQueueBase(jw_util::MethodCallback<ArgTypes...> worker, construct_paused_t)
-        : worker(worker)
+    WorkQueueBase(unsigned int num_threads, construct_paused_t)
+        : num_threads(num_threads)
+        , threads(num_threads ? new std::thread[num_threads] : 0)
         , running(false)
     {}
 
@@ -38,9 +36,11 @@ public:
         {
             pause();
         }
+
+        delete[] threads;
     }
 
-    void push(ArgTypes... args)
+    void push(void (*method)(ArgTypes...), ArgTypes... args)
     {
         assert(running);
 
@@ -49,13 +49,13 @@ public:
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 (void) lock;
-                queue.emplace(std::forward<ArgTypes>(args)...);
+                queue.emplace(method, std::forward<ArgTypes>(args)...);
             }
             conditional_variable.notify_one();
         }
         else
         {
-            worker.call(std::forward<ArgTypes>(args)...);
+            (*method)(std::forward<ArgTypes>(args)...);
         }
     }
 
@@ -67,7 +67,7 @@ public:
 
         for (unsigned int i = 0; i < num_threads; i++)
         {
-            threads[i] = std::thread(&WorkQueueBase<Derived, num_threads, ArgTypes...>::loop, this);
+            threads[i] = std::thread(&WorkQueueBase<Derived, ArgTypes...>::loop, this);
         }
     }
 
@@ -90,11 +90,10 @@ public:
     }
 
 protected:
-    typedef std::tuple<typename std::remove_reference<ArgTypes>::type...> TupleType;
+    typedef std::tuple<void (*)(ArgTypes...), ArgTypes...> TupleType;
 
-    const jw_util::MethodCallback<ArgTypes...> worker;
-
-    std::array<std::thread, num_threads> threads;
+    std::size_t num_threads;
+    std::thread *threads;
 
     std::mutex mutex;
     std::condition_variable conditional_variable;
@@ -121,21 +120,15 @@ protected:
                 queue.pop();
 
                 lock.unlock();
-                dispatch(std::move(args));
+                std::apply(dispatch, std::move(args));
                 lock.lock();
             }
         }
     }
 
-    void dispatch(TupleType &&args)
+    static void dispatch(void (*method)(ArgTypes...), ArgTypes... args)
     {
-        call(std::forward<TupleType>(args), std::index_sequence_for<ArgTypes...>{});
-    }
-
-    template<std::size_t... Indices>
-    void call(TupleType &&args, std::index_sequence<Indices...>)
-    {
-        worker.call(std::forward<ArgTypes>(std::get<Indices>(std::forward<TupleType>(args)))...);
+        (*method)(std::forward<ArgTypes>(args)...);
     }
 
     Derived *get_derived()

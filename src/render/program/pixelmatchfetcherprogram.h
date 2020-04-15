@@ -10,6 +10,7 @@ namespace render {
 class PixelMatchFetcherProgram : public Program {
 public:
     PixelMatchFetcherProgram(game::GameContext &context);
+    virtual ~PixelMatchFetcherProgram();
 
     virtual void insertDefines(Defines &defines);
     virtual void setupProgram(const Defines &defines);
@@ -18,18 +19,18 @@ public:
     virtual void draw();
 
 private:
-    class Vao : public graphics::GlVao {
+    class TransferVao : public graphics::GlVao {
     public:
-        Vao(game::GameContext &context) {
+        TransferVao(game::GameContext &context) {
             (void) context;
 
             bind();
 
-            glGenBuffers(1, &transferBufferId);
+            glGenBuffers(1, &vboId);
             graphics::GL::catchErrors();
 
-            glBindBuffer(GL_ARRAY_BUFFER, transferBufferId);
-            glBindBuffer(GL_PIXEL_PACK_BUFFER, transferBufferId);
+            glBindBuffer(GL_ARRAY_BUFFER, vboId);
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, vboId);
             graphics::GL::catchErrors();
 
             GLuint valuesLocation = prepareProgramAttribute("VALUES_LOCATION", 1);
@@ -43,21 +44,26 @@ private:
         void ensureTransferBufferSize(unsigned int sizeBytes) {
             assertBound();
 
-            if (sizeBytes > transferBufferSize) {
+            if (sizeBytes > size) {
                 glBufferData(GL_PIXEL_PACK_BUFFER, sizeBytes, 0, GL_DYNAMIC_COPY);
                 graphics::GL::catchErrors();
-                transferBufferSize = sizeBytes;
+                size = sizeBytes;
             }
         }
 
-        ~Vao() {
-            glDeleteBuffers(1, &transferBufferId);
+        ~TransferVao() {
+            glDeleteBuffers(1, &vboId);
         }
 
     private:
-        GLuint transferBufferId;
-        unsigned int transferBufferSize = 0;
+        GLuint vboId;
+        unsigned int size = 0;
     };
+
+    static constexpr unsigned int maxDownloadSize = 1024 * 8;
+    static constexpr unsigned int numDownloadVbos = 4;
+    GLuint downloadVbos[numDownloadVbos];
+    unsigned int nextDownloadVbo = 0;
 };
 
 }
