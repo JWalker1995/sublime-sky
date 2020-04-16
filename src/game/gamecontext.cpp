@@ -4,16 +4,6 @@
 
 namespace game {
 
-void GameContext::tick() {
-    /*
-    if (ImGui::Begin("Debug")) {
-        ImGui::Text("GameContext gets: %d", gets);
-        gets = 0;
-    }
-    ImGui::End();
-    */
-}
-
 void GameContext::log(LogLevel level, const std::string &msg) {
     switch (level) {
         case LogLevel::Trace: spdlog::trace(msg); break;

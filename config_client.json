@@ -15,9 +15,9 @@
     "ungenerated_retry_delay": 8
   },
   "depth_buffer_processor": {
-    "num_pixel_buffer_objects": 4,
-    "num_threads": 7,
-    "num_work_parts": 4
+    "num_pixel_buffer_objects": 1,
+    "num_threads": 1,
+    "num_work_parts": 1
   },
   "hash_tree_world": {
     "view_chunk_lock_size_log2": 4,

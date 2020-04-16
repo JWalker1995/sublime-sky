@@ -26,6 +26,15 @@ public:
     // The more often this is called, the better
     void tryAdvance();
 
+    static float getFillColorRed() {
+        std::uint32_t pointId = getNullPointId();
+        float red = *reinterpret_cast<float *>(&pointId);
+        // Make sure clamping won't change it
+        assert(red >= 0.0f);
+        assert(red <= 1.0f);
+        return red;
+    }
+
     void takeDepthSnapshot();
 
 private:
@@ -53,17 +62,23 @@ private:
         unsigned int width;
         unsigned int height;
 
-        graphics::GlBuffer<float> pbo;
+        graphics::GlBuffer<std::uint32_t> pointIdPbo;
+        graphics::GlBuffer<float> depthPbo;
         GLsync sync;
-        const float *mappedData = 0;
+        const std::uint32_t *mappedPointIdData = 0;
+        const float *mappedDepthData = 0;
         std::atomic_uint jobsRemainingCount = 0;
     };
 
     DownloadBuffer *buffers;
     unsigned int numBuffers;
 
-    std::mutex roiMutex;
+    std::mutex processingResultsMutex;
+    float framesProcessedCount = 0.0f;
     std::vector<RegionOfInterest> rois;
+
+    std::atomic_flag *unseenPoints = 0;
+    std::size_t numUnseenPoints = 0;
 
     unsigned int numWorkParts;
     jw_util::WorkQueue<DownloadBuffer *, unsigned int, unsigned int> processQueue;
@@ -72,6 +87,23 @@ private:
     void takeDepthSnapshot(DownloadBuffer &buffer);
     void checkForSynced(DownloadBuffer &buffer);
     void checkForProcessed(DownloadBuffer &buffer);
+
+    static constexpr std::uint32_t getNullPointId() {
+        // Largest uint whose float representation will not be clamped by glClearColor
+
+        // Can be calculated with this loop:
+        /*
+        for (std::uint32_t i = static_cast<std::uint32_t>(-1); i > 0; i--) {
+            float r = *reinterpret_cast<float *>(&i);
+            if (r > 0.0f && r <= 1.0f) {
+                return i;
+            }
+        }
+        // Ends up being 1.0
+        */
+
+        return 0x3F800000;
+    }
 };
 
 }

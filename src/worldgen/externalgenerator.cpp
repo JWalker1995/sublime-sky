@@ -56,11 +56,6 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
 
     assert(materialOffset != static_cast<unsigned int>(-1));
 
-    static unsigned int chunksLeft = 20;
-    if (chunksLeft == 0) {
-        return;
-    }
-
     spatial::CellKey cube;
     cube.sizeLog2 = chunk->cell_size_log2();
     cube.cellCoord.x = chunk->cell_coord()->x();
@@ -111,7 +106,7 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
                         point.shared.position[1] = position.y;
                         point.shared.position[2] = position.z;
 
-                        glm::vec3 normal(0.0f);
+                        glm::vec3 normal(1.0f);
                         point.shared.normal[0] = normal.x;
                         point.shared.normal[1] = normal.y;
                         point.shared.normal[2] = normal.z;
@@ -119,10 +114,6 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
                 }
             }
         }
-    }
-
-    if (hasNonGas) {
-        chunksLeft--;
     }
 
 #ifndef NDEBUG

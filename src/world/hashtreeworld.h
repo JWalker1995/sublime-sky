@@ -153,6 +153,8 @@ public:
 
 //    void emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, float pointSpacing);
 
+    MaterialIndex queryMaterialAt(glm::vec3 point);
+
     const pointgen::Chunk *getChunkPoints(Cell *cell);
 
     bool isGas(MaterialIndex materialIndex) const;

@@ -35,8 +35,6 @@ layout(location = NORMAL_LOCATION) in vec4 normal;
 layout(location = MATERIAL_INDEX_LOCATION) in uint materialIndex;
 #endif
 
-//in int gl_VertexID;
-
 flat out vec3 modelPosition;
 
 #if ENABLE_SHADING
@@ -46,6 +44,8 @@ flat out vec4 colorDiffuse;
 flat out vec4 colorSpecular;
 flat out float shininess;
 flat out uint renderModel;
+#else
+flat out float vertexId;
 #endif
 
 
@@ -72,6 +72,8 @@ void main(void) {
     colorSpecular = materials[materialIndex].colorSpecular;
     shininess = materials[materialIndex].shininess;
     renderModel = materials[materialIndex].renderModel;
+#else
+    vertexId = uintBitsToFloat(gl_VertexID);
 #endif
 
     /*

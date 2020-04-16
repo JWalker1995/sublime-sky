@@ -89,6 +89,10 @@ public:
         }
     }
 
+    std::size_t getQueueSize() const {
+        return queue.size();
+    }
+
 protected:
     typedef std::tuple<void (*)(ArgTypes...), ArgTypes...> TupleType;
 

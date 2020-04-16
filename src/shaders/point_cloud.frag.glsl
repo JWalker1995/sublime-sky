@@ -10,6 +10,7 @@ uniform vec3 eyeDir;
 // layout(binding = NUM_FRAGMENTS_BINDING) uniform atomic_uint num_fragments;
 
 flat in vec3 modelPosition;
+
 flat in vec3 modelNormal;
 flat in vec4 colorAmbient;
 flat in vec4 colorDiffuse;
@@ -70,6 +71,12 @@ void main(void) {
 
 #else
 
-void main(void) {}
+flat in float vertexId;
+
+layout(location = 0) out vec4 fragColor;
+
+void main(void) {
+    fragColor.r = vertexId;
+}
 
 #endif

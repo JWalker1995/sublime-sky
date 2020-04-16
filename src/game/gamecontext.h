@@ -19,8 +19,6 @@ public:
     }
     */
 
-    void tick();
-
     void log(LogLevel level, const std::string &msg);
 
 private:

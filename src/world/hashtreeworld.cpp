@@ -547,6 +547,38 @@ void HashTreeWorld::emitMeshUpdate(glm::vec3 changedMin, glm::vec3 changedMax, f
 }
 */
 
+MaterialIndex HashTreeWorld::queryMaterialAt(glm::vec3 point) {
+    spatial::UintCoord coord = spatial::UintCoord::fromPoint(point);
+
+    float minDistSq = std::numeric_limits<float>::infinity();
+    MaterialIndex closestMaterialIndex;
+
+    spatial::UintCoord min = coord - spatial::UintCoord(1);
+    spatial::UintCoord max = coord + spatial::UintCoord(1);
+    spatial::UintCoord neighborCoord;
+    for (neighborCoord.x = min.x; neighborCoord.x <= max.x; neighborCoord.x++) {
+        for (neighborCoord.y = min.y; neighborCoord.y <= max.y; neighborCoord.y++) {
+            for (neighborCoord.z = min.z; neighborCoord.z <= max.z; neighborCoord.z++) {
+                Cell *cell = getLeafContaining(neighborCoord, Chunk::sizeLog2);
+                unsigned int x = neighborCoord.x % Chunk::size;
+                unsigned int y = neighborCoord.y % Chunk::size;
+                unsigned int z = neighborCoord.z % Chunk::size;
+                glm::vec3 cellPoint = getChunkPoints(cell)->points[x][y][z];
+
+                if (!std::isnan(cellPoint.x)) {
+                    float distSq = glm::distance2(point, cellPoint);
+                    if (distSq < minDistSq) {
+                        minDistSq = distSq;
+                        closestMaterialIndex = cell->second.chunk ? cell->second.chunk->cells[x][y][z].materialIndex : cell->second.constantMaterialIndex;
+                    }
+                }
+            }
+        }
+    }
+
+    return closestMaterialIndex;
+}
+
 const pointgen::Chunk *HashTreeWorld::getChunkPoints(Cell *cell) {
     pointgen::ChunkPointsManager &chunkPointsManager = context.get<pointgen::ChunkPointsManager>();
     if (!cell->second.points) {

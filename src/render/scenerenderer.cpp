@@ -19,7 +19,7 @@ SceneRenderer::SceneRenderer(game::GameContext &context, const SsProtocol::Confi
 
     //mesh_scene.setup_vao<IsosurfaceScene>();
 
-    glClearColor(0.0, 0.0, 0.2, 0.0);
+    glClearColor(DepthBufferProcessor::getFillColorRed(), 1.0f, 1.0f, 0.0f);
 
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     //glEnable(GL_BLEND);
