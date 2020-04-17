@@ -73,7 +73,7 @@ void SceneRenderer::tickClose(game::TickerContext &tickerContext) {
     context.get<PointCloudDepthProgram>().draw();
 
 //    context.get<PixelMatchFetcherProgram>().draw();
-    context.get<DepthBufferProcessor>().takeDepthSnapshot();
+//    context.get<DepthBufferProcessor>().takeDepthSnapshot();
 
     glPointSize(2.0f);
     glDepthFunc(GL_EQUAL);

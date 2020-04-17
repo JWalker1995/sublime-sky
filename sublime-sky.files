@@ -97,6 +97,8 @@ src/jw_util/var.h
 src/jw_util/workqueue.h
 src/jw_util/workqueuebase.h
 src/jw_util/workqueueinsomniac.h
+src/lookup/closestpoint.cpp
+src/lookup/closestpoint.h
 src/main.cpp
 src/material/materialeditor.cpp
 src/material/materialeditor.h
@@ -143,6 +145,8 @@ src/render/hashtreevertindex.cpp
 src/render/hashtreevertindex.h
 src/render/imguirenderer.cpp
 src/render/imguirenderer.h
+src/render/jumpflooder.cpp
+src/render/jumpflooder.h
 src/render/meshupdater.cpp
 src/render/meshupdater.h
 src/render/program/computeprogram.cpp
@@ -180,6 +184,8 @@ src/render/vertspatialindex.h
 src/shaders/Tupfile
 src/shaders/frag_counter.comp.glsl
 src/shaders/gather_emittance.comp.glsl
+src/shaders/jump_flooder.frag.glsl
+src/shaders/jump_flooder.vert.glsl
 src/shaders/main.frag.glsl
 src/shaders/main.vert.glsl
 src/shaders/pixel_match_fetcher.frag.glsl
