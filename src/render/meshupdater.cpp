@@ -22,6 +22,7 @@ MeshUpdater::MeshUpdater(game::GameContext &context, const SsProtocol::Config::M
     , facesVecManager(context.get<util::SmallVectorManager<unsigned int>>())
     , meshHandle(context.get<render::SceneManager>().createMesh())
     , cellUpdatesPerTick(config->cell_updates_per_tick())
+    , cellUpdateQueue(cellKeyComparator)
 {
     // Add sentinel values
     if (!config->ungenerated_retry_delay()) {
@@ -55,6 +56,8 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
     SceneManager::MeshMutator meshMutator = meshHandle.mutateMesh();
     meshMutator.shared.transform = context.get<render::Camera>().getTransform();
 
+    cellKeyComparator.center = spatial::UintCoord::fromPoint(context.get<render::Camera>().getEyePos());
+
     unsigned int remainingCellUpdates = cellUpdatesPerTick;
 //    unsigned int remainingCellUpdates = 0;
     while (remainingCellUpdates > 0) {
@@ -80,7 +83,7 @@ void MeshUpdater::tick(game::TickerContext &tickerContext) {
             break;
         }
 
-        spatial::CellKey front = cellUpdateQueue.front();
+        spatial::CellKey front = cellUpdateQueue.top();
         cellUpdateQueue.pop();
         updateCell(front);
     }
@@ -206,7 +209,7 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
         return;
     }
 
-    voro::voronoicell_neighbor cell;
+    static thread_local voro::voronoicell_neighbor cell;
     double boundarySize = std::ldexp(2.0, cellKey.sizeLog2);
     cell.init(-boundarySize, boundarySize, -boundarySize, boundarySize, -boundarySize, boundarySize);
 
@@ -473,6 +476,8 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
                 meshHandle.readVert(baseVi).local.facesVec.push_back(facesVecManager, newFace.index);
                 meshHandle.readVert(prevVi).local.facesVec.push_back(facesVecManager, newFace.index);
                 meshHandle.readVert(vi).local.facesVec.push_back(facesVecManager, newFace.index);
+
+                chunkNode->second.faceIndices.push_back(newFace.index);
             }
 
             prevVi = vi;
@@ -511,6 +516,8 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
                 meshHandle.readVert(baseVi).local.facesVec.push_back(facesVecManager, newFace.index);
                 meshHandle.readVert(prevVi).local.facesVec.push_back(facesVecManager, newFace.index);
                 meshHandle.readVert(vi).local.facesVec.push_back(facesVecManager, newFace.index);
+
+                chunkNode->second.faceIndices.push_back(newFace.index);
             }
 
             prevVi = vi;
@@ -519,6 +526,16 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
         faceVertsIt += numVerts;
     }
     assert(faceVertsIt == faceVerts.cend());
+}
+
+void MeshUpdater::clearChunkGeometry(world::CellValue &cellValue) {
+    for (unsigned int faceIndex : cellValue.faceIndices) {
+        for (unsigned int i = 0; i < 3; i++) {
+            meshHandle.readVert(meshHandle.readFace(faceIndex).shared.verts[i]).local.facesVec.remove(facesVecManager, faceIndex);
+        }
+        meshHandle.destroyFace(faceIndex);
+    }
+    cellValue.faceIndices.clear();
 }
 
 /*

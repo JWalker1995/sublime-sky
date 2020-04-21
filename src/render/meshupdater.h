@@ -17,6 +17,8 @@ namespace Config { struct MeshGenerator; }
 
 namespace game { class GameContext; }
 
+namespace world { class CellValue; }
+
 namespace render {
 
 class MeshUpdater : public game::TickerContext::TickableBase<MeshUpdater> {
@@ -31,6 +33,8 @@ public:
 //    template <bool enableDestroyGeometry>
     void updateCell(spatial::CellKey cellKey);
 
+    void clearChunkGeometry(world::CellValue &cellValue);
+
     render::SceneManager::MeshHandle getMeshHandle() const {
         return meshHandle;
     }
@@ -41,7 +45,19 @@ private:
 
     unsigned int cellUpdatesPerTick;
 
-    std::queue<spatial::CellKey> cellUpdateQueue;
+    class CellKeyComparator {
+    public:
+        bool operator()(const spatial::CellKey &a, const spatial::CellKey &b) const {
+            spatial::UintCoord ca = a.sizeLog2 > 0 ? a.child<1, 1, 1>().getCoord<0, 0, 0>() : a.getCoord<0, 0, 0>();
+            spatial::UintCoord cb = b.sizeLog2 > 0 ? b.child<1, 1, 1>().getCoord<0, 0, 0>() : b.getCoord<0, 0, 0>();
+            return spatial::UintCoord::distanceSq(ca, center) > spatial::UintCoord::distanceSq(cb, center);
+        }
+
+        spatial::UintCoord center;
+    };
+
+    CellKeyComparator cellKeyComparator;
+    std::priority_queue<spatial::CellKey, std::vector<spatial::CellKey>, CellKeyComparator &> cellUpdateQueue;
     std::queue<spatial::CellKey> delayedCellUpdateQueue;
 
     // TODO: This doesn't really even have to store the pair.

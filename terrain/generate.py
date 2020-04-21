@@ -89,7 +89,7 @@ def generate_materials(seed):
 
 def generate_terrain(seed, points):
 	coords = fns.empty_coords(points.shape[0])
-	coords[:] = points.T
+	coords[:] = points.T / 16.0
 
 	# Cellular, PerlinFractal, ValueFractal, Cubic, Simplex, WhiteNoise, CubicFractal, SimplexFractal, Perlin, Value
 
@@ -111,7 +111,7 @@ def generate_terrain(seed, points):
 	res[norms < 1000.0] = 2
 
 	# Assign dirt
-	res[norms + noise_values * 50.0 < 1000.0] = 1
+	res[norms + noise_values * 500.0 < 1000.0] = 1
 
 	# # Assign clouds
 	# res[(points[:, 2] - 110) ** 2 * 1e-1 + noise_values * 100 < -60.0] = 3

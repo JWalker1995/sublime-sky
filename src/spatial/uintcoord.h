@@ -60,6 +60,17 @@ public:
     static UintCoord middle(const UintCoord &a, const UintCoord &b) {
         return UintCoord((a.x >> 1) + (b.x >> 1), (a.y >> 1) + (b.y >> 1), (a.z >> 1) + (b.z >> 1));
     }
+
+    static std::uint64_t distanceSq(const UintCoord &a, const UintCoord &b) {
+        spatial::UintCoord::SignedAxisType dx = a.x - b.x;
+        spatial::UintCoord::SignedAxisType dy = a.y - b.y;
+        spatial::UintCoord::SignedAxisType dz = a.z - b.z;
+        std::uint64_t dSqX = static_cast<std::int64_t>(dx) * static_cast<std::int64_t>(dx);
+        std::uint64_t dSqY = static_cast<std::int64_t>(dy) * static_cast<std::int64_t>(dy);
+        std::uint64_t dSqZ = static_cast<std::int64_t>(dz) * static_cast<std::int64_t>(dz);
+        std::uint64_t dSq = dSqX + dSqY + dSqZ;
+        return dSq;
+    }
 };
 
 }

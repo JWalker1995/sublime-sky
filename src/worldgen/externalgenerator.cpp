@@ -91,6 +91,7 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
                 bool isNotGas = !hashTreeWorld.isGas(materialIndex);
                 hasNonGas |= isNotGas;
 
+                /*
                 if (isNotGas) {
                     glm::vec3 basePos = pointChunk->points[i][j][k];
 
@@ -112,6 +113,7 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
                         point.shared.normal[2] = normal.z;
                     }
                 }
+                */
             }
         }
     }

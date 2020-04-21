@@ -20,8 +20,8 @@
     "num_work_parts": 1
   },
   "hash_tree_world": {
-    "view_chunk_lock_size_log2": 4,
-    "view_chunk_subdiv_offset_log2": -2
+    "view_chunk_lock_size_log2": 0,
+    "view_chunk_subdiv_offset_log2": -3
   },
   "network": {
     "servers": [

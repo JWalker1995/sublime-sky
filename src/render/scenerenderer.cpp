@@ -1,9 +1,10 @@
 #include "scenerenderer.h"
 
-#include "graphics/gpuprogram.h"
-#include "render/program/pointclouddepthprogram.h"
-#include "render/program/pointcloudcolorprogram.h"
-#include "render/program/pixelmatchfetcherprogram.h"
+//#include "render/program/meshdepthprogram.h"
+#include "render/program/meshcolorprogram.h"
+//#include "render/program/pointclouddepthprogram.h"
+//#include "render/program/pointcloudcolorprogram.h"
+//#include "render/program/pixelmatchfetcherprogram.h"
 #include "render/depthbufferprocessor.h"
 #include "application/window.h"
 #include "render/imguirenderer.h"
@@ -19,7 +20,8 @@ SceneRenderer::SceneRenderer(game::GameContext &context, const SsProtocol::Confi
 
     //mesh_scene.setup_vao<IsosurfaceScene>();
 
-    glClearColor(DepthBufferProcessor::getFillColorRed(), 1.0f, 1.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.2f, 0.0f);
+//    glClearColor(DepthBufferProcessor::getFillColorRed(), 1.0f, 1.0f, 0.0f);
 
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     //glEnable(GL_BLEND);
@@ -47,10 +49,10 @@ SceneRenderer::SceneRenderer(game::GameContext &context, const SsProtocol::Confi
     shaders.call(&Shader::load, args);
     */
 
-//    context.get<MeshColorProgram>().make();
+    context.get<MeshColorProgram>().make();
 //    context.get<DrawVoronoiCellProgram>().make();
-    context.get<PointCloudDepthProgram>().make();
-    context.get<PointCloudColorProgram>().make();
+//    context.get<PointCloudDepthProgram>().make();
+//    context.get<PointCloudColorProgram>().make();
 //    context.get<PixelMatchFetcherProgram>().make();
 
     context.get<ImguiRenderer>();
@@ -61,26 +63,28 @@ void SceneRenderer::tickOpen(game::TickerContext &tickerContext) {
 }
 
 void SceneRenderer::tickClose(game::TickerContext &tickerContext) {
-//    context.get<MeshColorProgram>().draw();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    context.get<MeshColorProgram>().draw();
+
 //    context.get<DrawVoronoiCellProgram>().draw();
 
-    glPointSize(2.0f);
-    glDepthFunc(GL_LESS);
-    glDepthMask(GL_TRUE);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    graphics::GL::catchErrors();
-    context.get<PointCloudDepthProgram>().draw();
+//    glPointSize(2.0f);
+//    glDepthFunc(GL_LESS);
+//    glDepthMask(GL_TRUE);
+//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+//    graphics::GL::catchErrors();
+//    context.get<PointCloudDepthProgram>().draw();
 
-//    context.get<PixelMatchFetcherProgram>().draw();
-//    context.get<DepthBufferProcessor>().takeDepthSnapshot();
+////    context.get<PixelMatchFetcherProgram>().draw();
+////    context.get<DepthBufferProcessor>().takeDepthSnapshot();
 
-    glPointSize(2.0f);
-    glDepthFunc(GL_EQUAL);
-    glDepthMask(GL_FALSE);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    graphics::GL::catchErrors();
-    context.get<PointCloudColorProgram>().draw();
+//    glPointSize(2.0f);
+//    glDepthFunc(GL_EQUAL);
+//    glDepthMask(GL_FALSE);
+//    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+//    graphics::GL::catchErrors();
+//    context.get<PointCloudColorProgram>().draw();
 
     /*
     unsigned int faceIndex = rand() % sceneManager.getFaceBuffer().getSize();

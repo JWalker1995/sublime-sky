@@ -5,13 +5,13 @@
 #include "schemas/config_client_generated.h"
 #include "pointgen/chunkpointsmanager.h"
 #include "worldgen/worldgenerator.h"
-#include "render/meshupdater.h"
 #include "render/camera.h"
 #include "query/rectquery.h"
 #include "util/pool.h"
 #include "spatial/raydrawer.h"
 #include "graphics/imgui.h"
 #include "render/imguirenderer.h"
+#include "render/scenemanager.h"
 
 namespace world {
 
@@ -58,12 +58,18 @@ void HashTreeWorld::fixChunk(Cell *cell) {
 }
 
 void HashTreeWorld::removeChunk(Cell *cell) {
+    assert(cell);
+
+    assert(cell->second.faceIndices.empty());
+
     context.get<util::Pool<world::Chunk>>().free(cell->second.chunk);
     cell->second.chunk = 0;
 
-    pointgen::ChunkPointsManager &chunkPointsManager = context.get<pointgen::ChunkPointsManager>();
-    chunkPointsManager.release(cell->second.points);
-    cell->second.points = 0;
+    if (cell->second.points) {
+        pointgen::ChunkPointsManager &chunkPointsManager = context.get<pointgen::ChunkPointsManager>();
+        chunkPointsManager.release(cell->second.points);
+        cell->second.points = 0;
+    }
 
     cell->second.destroy();
 
