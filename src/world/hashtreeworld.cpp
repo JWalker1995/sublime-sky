@@ -62,8 +62,10 @@ void HashTreeWorld::removeChunk(Cell *cell) {
 
     assert(cell->second.faceIndices.empty());
 
-    context.get<util::Pool<world::Chunk>>().free(cell->second.chunk);
-    cell->second.chunk = 0;
+    if (cell->second.chunk) {
+        context.get<util::Pool<world::Chunk>>().free(cell->second.chunk);
+        cell->second.chunk = 0;
+    }
 
     if (cell->second.points) {
         pointgen::ChunkPointsManager &chunkPointsManager = context.get<pointgen::ChunkPointsManager>();
@@ -75,6 +77,24 @@ void HashTreeWorld::removeChunk(Cell *cell) {
 
     bool erased = getMap().erase(cell->first);
     assert(erased);
+
+    Cell *parent = findNodeMatching(cell->first.parent());
+    assert(parent);
+
+    // TODO: More agressive about removing sibling chunks?
+    // That would involve removing geometry from this method
+    for (unsigned int i = 0; i < 2; i++) {
+        for (unsigned int j = 0; j < 2; j++) {
+            for (unsigned int k = 0; k < 2; k++) {
+                Cell *child = findNodeMatching(parent->first.grandChild<1>(i, j, k));
+                if (child) {
+                    return;
+                }
+            }
+        }
+    }
+
+    removeChunk(parent);
 }
 
 void HashTreeWorld::updateGasMasks(CellValue *cellValue) {

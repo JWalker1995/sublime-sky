@@ -27,6 +27,7 @@
 #include "world/hashtreeworld.h"
 #include "util/refset.h"
 #include "render/depthbufferprocessor.h"
+#include "world/chunkgarbagecollector.h"
 
 namespace game {
 
@@ -61,6 +62,9 @@ void MainLoop::load() {
     }
     if (clientConfig.hash_tree_world()) {
         context.construct<world::HashTreeWorld>(clientConfig.hash_tree_world());
+    }
+    if (clientConfig.chunk_garbage_collector()) {
+        context.construct<world::ChunkGarbageCollector>(clientConfig.chunk_garbage_collector());
     }
     if (clientConfig.network()) {
         context.construct<network::ConnectionManager>(clientConfig.network());

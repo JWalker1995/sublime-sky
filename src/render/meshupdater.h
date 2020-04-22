@@ -64,6 +64,12 @@ private:
     // A vector, that maps a hash to a uint and forces the user to check equality should suffice.
 //    std::unordered_multimap<std::pair<spatial::UintCoord, spatial::UintCoord>, unsigned int> faceIndexMap;
 
+    void updateCellCubical(spatial::CellKey cellKey);
+    void updateCellVoronoi(spatial::CellKey cellKey);
+
+    unsigned int createVert(spatial::UintCoord coord);
+    unsigned int createFace(world::CellValue &cellValue, unsigned int v0, unsigned int v1, unsigned int v2);
+
 
 
 

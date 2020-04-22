@@ -11,7 +11,7 @@
     "use_log_depth_buffer": true
   },
   "mesh_generator": {
-    "cell_updates_per_tick": 10240,
+    "cell_updates_per_tick": 100240,
     "ungenerated_retry_delay": 8
   },
   "depth_buffer_processor": {
@@ -22,6 +22,9 @@
   "hash_tree_world": {
     "view_chunk_lock_size_log2": 0,
     "view_chunk_subdiv_offset_log2": -3
+  },
+  "chunk_garbage_collector": {
+    "collections_per_tick": 100
   },
   "network": {
     "servers": [

@@ -6,7 +6,9 @@
 
 namespace pointgen {
 
-RSquaredLatticeGenerator::RSquaredLatticeGenerator(game::GameContext &context, const SsProtocol::Config::RSquaredLatticeGenerator *config) {
+RSquaredLatticeGenerator::RSquaredLatticeGenerator(game::GameContext &context, const SsProtocol::Config::RSquaredLatticeGenerator *config)
+    : PointGenerator(false)
+{
     (void) context;
     (void) config;
 }

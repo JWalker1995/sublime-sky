@@ -54,6 +54,7 @@ public:
     }
 
     void free(const Type *type) {
+        assert(type);
         type->Type::~Type();
         freed.push_back(const_cast<Type *>(type));
     }

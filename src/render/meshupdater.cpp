@@ -12,6 +12,7 @@
 #include "spatial/raycastlookuptable.h"
 #include "graphics/imgui.h"
 #include "render/imguirenderer.h"
+#include "pointgen/pointgenerator.h"
 
 static constexpr unsigned int delayCellUpdateQueueSentinelSizeLog2 = 100;
 
@@ -150,6 +151,14 @@ void MeshUpdater::enqueueCellUpdate(spatial::CellKey cellKey) {
 }
 
 void MeshUpdater::updateCell(spatial::CellKey cellKey) {
+    if (context.get<pointgen::PointGenerator>().isCubical) {
+        updateCellCubical(cellKey);
+    } else {
+        updateCellVoronoi(cellKey);
+    }
+}
+
+void MeshUpdater::updateCellCubical(spatial::CellKey cellKey) {
     static constexpr bool enableDestroyGeometry = false;
 
     world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
@@ -157,14 +166,184 @@ void MeshUpdater::updateCell(spatial::CellKey cellKey) {
     spatial::CellKey chunkKey = cellKey.grandParent<world::Chunk::sizeLog2>();
     world::HashTreeWorld::Cell *chunkNode = hashTreeWorld.getNodeContaining(chunkKey);
     if (!chunkNode->second.isLeaf()) {
-        updateCell(cellKey.child<0, 0, 0>());
-        updateCell(cellKey.child<0, 0, 1>());
-        updateCell(cellKey.child<0, 1, 0>());
-        updateCell(cellKey.child<0, 1, 1>());
-        updateCell(cellKey.child<1, 0, 0>());
-        updateCell(cellKey.child<1, 0, 1>());
-        updateCell(cellKey.child<1, 1, 0>());
-        updateCell(cellKey.child<1, 1, 1>());
+        updateCellCubical(cellKey.child<0, 0, 0>());
+        updateCellCubical(cellKey.child<0, 0, 1>());
+        updateCellCubical(cellKey.child<0, 1, 0>());
+        updateCellCubical(cellKey.child<0, 1, 1>());
+        updateCellCubical(cellKey.child<1, 0, 0>());
+        updateCellCubical(cellKey.child<1, 0, 1>());
+        updateCellCubical(cellKey.child<1, 1, 0>());
+        updateCellCubical(cellKey.child<1, 1, 1>());
+        return;
+    }
+
+    while (chunkKey.sizeLog2 < chunkNode->first.sizeLog2) {
+        chunkKey = chunkKey.parent();
+        cellKey = cellKey.parent();
+    }
+
+    unsigned int x = cellKey.cellCoord.x % world::Chunk::size;
+    unsigned int y = cellKey.cellCoord.y % world::Chunk::size;
+    unsigned int z = cellKey.cellCoord.z % world::Chunk::size;
+
+    unsigned int cellIndex = (x * world::Chunk::size + y) * world::Chunk::size + z;
+    if (chunkNode->second.hasFaces.get(cellIndex)) {
+        return;
+    }
+    chunkNode->second.hasFaces.set<true>(cellIndex);
+
+    world::MaterialIndex originMaterialIndex;
+    if (chunkNode->second.chunk) {
+        originMaterialIndex = chunkNode->second.chunk->cells[x][y][z].materialIndex;
+    } else {
+        originMaterialIndex = chunkNode->second.constantMaterialIndex;
+        switch (originMaterialIndex) {
+            case world::MaterialIndex::Null:
+                hashTreeWorld.generateChunk(chunkNode);
+                // Fall-through intentional
+            case world::MaterialIndex::Generating:
+                delayedCellUpdateQueue.push(cellKey);
+                return;
+        }
+    }
+
+    bool originIsTransparent = hashTreeWorld.isGas(originMaterialIndex);
+    if (!enableDestroyGeometry && originIsTransparent) {
+        return;
+    }
+
+    spatial::CellKey neighborCell;
+    neighborCell.sizeLog2 = cellKey.sizeLog2;
+    for (unsigned int i = 0; i < 6; i++) {
+        neighborCell.cellCoord = cellKey.cellCoord;
+        neighborCell.cellCoord[i / 2] += i % 2 ? +1 : -1;
+
+        world::MaterialIndex neighborMaterialIndex;
+
+        unsigned int x = neighborCell.cellCoord.x % world::Chunk::size;
+        unsigned int y = neighborCell.cellCoord.y % world::Chunk::size;
+        unsigned int z = neighborCell.cellCoord.z % world::Chunk::size;
+
+        spatial::CellKey neighborChunk = neighborCell.grandParent<world::Chunk::sizeLog2>();
+        if (neighborChunk.cellCoord == chunkKey.cellCoord) {
+            if (chunkNode->second.chunk) {
+                neighborMaterialIndex = chunkNode->second.chunk->cells[x][y][z].materialIndex;
+            } else {
+                neighborMaterialIndex = chunkNode->second.constantMaterialIndex;
+            }
+        } else {
+            world::HashTreeWorld::Cell *neighborNode = hashTreeWorld.getNodeContaining(neighborChunk);
+            if (!neighborNode->second.isLeaf()) {
+                continue;
+            }
+
+            if (neighborNode->second.chunk) {
+                // TODO: Fix this in the case where the neighbor is larger than the cell
+                neighborMaterialIndex = neighborNode->second.chunk->cells[x][y][z].materialIndex;
+            } else {
+                neighborMaterialIndex = neighborNode->second.constantMaterialIndex;
+                switch (neighborMaterialIndex) {
+                    case world::MaterialIndex::Null:
+                        hashTreeWorld.generateChunk(neighborNode);
+                        // Fall-through intentional
+                    case world::MaterialIndex::Generating:
+                        chunkNode->second.hasFaces.set<false>(cellIndex);
+                        delayedCellUpdateQueue.push(cellKey);
+                        return;
+                }
+            }
+
+        }
+
+        bool isTransparent = neighborMaterialIndex != static_cast<world::MaterialIndex>(-1) && hashTreeWorld.isGas(neighborMaterialIndex);
+        bool shouldHaveSurface = !originIsTransparent && isTransparent;
+
+        if (shouldHaveSurface) {
+            unsigned int vi[4];
+
+            unsigned int d[3] = {0};
+            d[i / 2] = i % 2;
+            vi[0] = createVert(cellKey.getCoord(d[0], d[1], d[2]));
+            d[(i / 2 + 1) % 3] = 1;
+            vi[1] = createVert(cellKey.getCoord(d[0], d[1], d[2]));
+            d[(i / 2 + 2) % 3] = 1;
+            vi[2] = createVert(cellKey.getCoord(d[0], d[1], d[2]));
+            d[(i / 2 + 1) % 3] = 0;
+            vi[3] = createVert(cellKey.getCoord(d[0], d[1], d[2]));
+
+            if (i % 2 == 0) {
+                std::swap(vi[1], vi[3]);
+            }
+
+            unsigned int j = 0;
+            while (meshHandle.readVert(vi[j]).local.surfaceForCell != static_cast<unsigned int>(-1)) {
+                j++;
+                if (j == 4) {
+                    // TODO: Create vert that can be the provoking vertex
+                    j = 0;
+                    break;
+                }
+            }
+
+            SceneManager::VertMutator baseVert = meshHandle.mutateVert(vi[j]);
+            baseVert.shared.materialIndex = static_cast<unsigned int>(originMaterialIndex);
+            baseVert.local.surfaceForCell = chunkNode->second.chunkId + cellIndex;
+
+            createFace(chunkNode->second, vi[j], vi[(j + 1) % 4], vi[(j + 2) % 4]);
+            createFace(chunkNode->second, vi[j], vi[(j + 2) % 4], vi[(j + 3) % 4]);
+        }
+
+        if (!isTransparent) {
+            cellUpdateQueue.push(neighborCell);
+        }
+    }
+}
+
+unsigned int MeshUpdater::createVert(spatial::UintCoord coord) {
+    glm::vec3 pt = coord.toPoint();
+
+    std::pair<std::unordered_map<glm::vec3, unsigned int>::iterator, bool> insert = vertIndexMap.emplace(pt, 0);
+    if (insert.second) {
+        // Create new vert
+        SceneManager::VertMutator newVert = meshHandle.createVert();
+        newVert.shared.setPoint(pt);
+        insert.first->second = newVert.index;
+    }
+
+    return insert.first->second;
+}
+
+unsigned int MeshUpdater::createFace(world::CellValue &cellValue, unsigned int v0, unsigned int v1, unsigned int v2) {
+    SceneManager::FaceMutator newFace = meshHandle.createFace();
+    newFace.shared.verts[0] = v0;
+    newFace.shared.verts[1] = v1;
+    newFace.shared.verts[2] = v2;
+
+    meshHandle.readVert(v0).local.facesVec.push_back(facesVecManager, newFace.index);
+    meshHandle.readVert(v1).local.facesVec.push_back(facesVecManager, newFace.index);
+    meshHandle.readVert(v2).local.facesVec.push_back(facesVecManager, newFace.index);
+
+    cellValue.faceIndices.push_back(newFace.index);
+
+    return newFace.index;
+}
+
+void MeshUpdater::updateCellVoronoi(spatial::CellKey cellKey) {
+    static constexpr bool enableDestroyGeometry = false;
+
+    world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
+
+    spatial::CellKey chunkKey = cellKey.grandParent<world::Chunk::sizeLog2>();
+    world::HashTreeWorld::Cell *chunkNode = hashTreeWorld.getNodeContaining(chunkKey);
+    if (!chunkNode->second.isLeaf()) {
+        updateCellVoronoi(cellKey.child<0, 0, 0>());
+        updateCellVoronoi(cellKey.child<0, 0, 1>());
+        updateCellVoronoi(cellKey.child<0, 1, 0>());
+        updateCellVoronoi(cellKey.child<0, 1, 1>());
+        updateCellVoronoi(cellKey.child<1, 0, 0>());
+        updateCellVoronoi(cellKey.child<1, 0, 1>());
+        updateCellVoronoi(cellKey.child<1, 1, 0>());
+        updateCellVoronoi(cellKey.child<1, 1, 1>());
         return;
     }
 

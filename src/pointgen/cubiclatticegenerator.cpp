@@ -4,7 +4,9 @@
 
 namespace pointgen {
 
-CubicLatticeGenerator::CubicLatticeGenerator(game::GameContext &context, const SsProtocol::Config::CubicLatticeGenerator *config) {
+CubicLatticeGenerator::CubicLatticeGenerator(game::GameContext &context, const SsProtocol::Config::CubicLatticeGenerator *config)
+    : PointGenerator(true)
+{
     (void) context;
     (void) config;
 }

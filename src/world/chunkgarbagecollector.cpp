@@ -4,6 +4,7 @@
 
 #include "schemas/config_client_generated.h"
 #include "world/hashtreeworld.h"
+#include "render/meshupdater.h"
 
 namespace world {
 
@@ -27,6 +28,7 @@ void ChunkGarbageCollector::tick(game::TickerContext &tickerContext) {
 
 void ChunkGarbageCollector::collect() {
     HashTreeWorld &hashTreeWorld = context.get<HashTreeWorld>();
+    render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
 
     std::size_t numBuckets = hashTreeWorld.getMap().bucket_count();
     static thread_local std::default_random_engine generator(456);
@@ -41,10 +43,14 @@ void ChunkGarbageCollector::collect() {
         // Gotta do this here so erases don't invalidate it
         it++;
 
-        if (hashTreeWorld.shouldSubdiv(cell->first)) {
-            hashTreeWorld.removeChunk(cell);
-        } else if (!hashTreeWorld.shouldSubdiv(cell->first.parent())) {
-            hashTreeWorld.removeChunk(cell);
+        if (cell->second.isLeaf()) {
+            if (hashTreeWorld.shouldSubdiv(cell->first)) {
+//                meshUpdater.clearChunkGeometry(cell->second);
+//                hashTreeWorld.removeChunk(cell);
+            } else if (!hashTreeWorld.shouldSubdiv(cell->first.grandParent<3>())) {
+                meshUpdater.clearChunkGeometry(cell->second);
+                hashTreeWorld.removeChunk(cell);
+            }
         }
     }
 }

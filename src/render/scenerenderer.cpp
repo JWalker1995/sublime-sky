@@ -29,8 +29,8 @@ SceneRenderer::SceneRenderer(game::GameContext &context, const SsProtocol::Confi
     glEnable(GL_DEPTH_TEST);
     //glDisable(GL_DEPTH_TEST);
 
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CCW);
+//    glEnable(GL_CULL_FACE);
+//    glFrontFace(GL_CCW);
 
     glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
 
