@@ -1,7 +1,5 @@
 {
 	"seed": 1234,
-	"lattice_generator_type": "CubicLatticeGenerator",
-	"lattice_generator": {},
 	"world_generator_type": "ExternalWorldGenerator",
 	"world_generator": {}
 }

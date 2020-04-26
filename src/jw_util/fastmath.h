@@ -127,7 +127,7 @@ public:
     }
 #endif
 
-    template <unsigned int exp, typename T>
+    template <typename T, unsigned int exp>
     static T pow(T num)
     {
         if (exp == 0) {return static_cast<T>(1);}

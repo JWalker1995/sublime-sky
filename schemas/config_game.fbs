@@ -8,18 +8,11 @@ struct Vec3_f {
     z: float;
 }
 
-table CubicLatticeGenerator {}
-table RSquaredLatticeGenerator {}
-union LatticeGenerator { CubicLatticeGenerator, RSquaredLatticeGenerator }
-
-table SimpleWorldGenerator {}
 table ExternalWorldGenerator {}
-union WorldGenerator { SimpleWorldGenerator, ExternalWorldGenerator }
+union WorldGenerator { ExternalWorldGenerator }
 
 table Game {
     seed: uint64;
-
-    lattice_generator: LatticeGenerator;
 
     world_generator: WorldGenerator;
 }

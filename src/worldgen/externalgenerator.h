@@ -15,7 +15,7 @@ class ExternalGenerator : public WorldGenerator {
 public:
     ExternalGenerator(game::GameContext &context, const SsProtocol::Config::ExternalWorldGenerator *config);
 
-    void generate(spatial::CellKey cube, const pointgen::Chunk *points);
+    void generate(spatial::CellKey cube);
 
     void handleResponse(const SsProtocol::TerrainChunk *chunk, unsigned int materialOffset);
 

@@ -17,16 +17,12 @@
 #include "game/cameraflycontroller.h"
 #include "network/connectionmanager.h"
 #include "render/raycaster.h"
-#include "pointgen/cubiclatticegenerator.h"
-#include "pointgen/rsquaredlatticegenerator.h"
-#include "worldgen/simplegenerator.h"
 #include "worldgen/externalgenerator.h"
 #include "network/baseconnection.h"
 #include "game/digger.h"
 #include "material/materialeditor.h"
-#include "world/hashtreeworld.h"
+#include "world/world.h"
 #include "util/refset.h"
-#include "render/depthbufferprocessor.h"
 #include "world/chunkgarbagecollector.h"
 
 namespace game {
@@ -57,11 +53,8 @@ void MainLoop::load() {
     if (clientConfig.mesh_generator()) {
         context.construct<render::MeshUpdater>(clientConfig.mesh_generator());
     }
-    if (clientConfig.depth_buffer_processor()) {
-        context.construct<render::DepthBufferProcessor>(clientConfig.depth_buffer_processor());
-    }
-    if (clientConfig.hash_tree_world()) {
-        context.construct<world::HashTreeWorld>(clientConfig.hash_tree_world());
+    if (clientConfig.world()) {
+        context.construct<world::World>(clientConfig.world());
     }
     if (clientConfig.chunk_garbage_collector()) {
         context.construct<world::ChunkGarbageCollector>(clientConfig.chunk_garbage_collector());
@@ -70,24 +63,9 @@ void MainLoop::load() {
         context.construct<network::ConnectionManager>(clientConfig.network());
     }
 
-    switch (gameConfig.lattice_generator_type()) {
-        case SsProtocol::Config::LatticeGenerator_NONE:
-            context.get<spdlog::logger>().warn("No lattice_generator property in game config. You will probably get a fatal error later on.");
-            break;
-        case SsProtocol::Config::LatticeGenerator_CubicLatticeGenerator:
-            context.construct<pointgen::PointGenerator, pointgen::CubicLatticeGenerator>(gameConfig.lattice_generator_as_CubicLatticeGenerator());
-            break;
-        case SsProtocol::Config::LatticeGenerator_RSquaredLatticeGenerator:
-            context.construct<pointgen::PointGenerator, pointgen::RSquaredLatticeGenerator>(gameConfig.lattice_generator_as_RSquaredLatticeGenerator());
-            break;
-    }
-
     switch (gameConfig.world_generator_type()) {
         case SsProtocol::Config::WorldGenerator_NONE:
             context.get<spdlog::logger>().warn("No world_generator property in game config. You will probably get a fatal error later on.");
-            break;
-        case SsProtocol::Config::WorldGenerator_SimpleWorldGenerator:
-            context.construct<worldgen::WorldGenerator, worldgen::SimpleGenerator>(gameConfig.world_generator_as_SimpleWorldGenerator());
             break;
         case SsProtocol::Config::WorldGenerator_ExternalWorldGenerator:
             context.construct<worldgen::WorldGenerator, worldgen::ExternalGenerator>(gameConfig.world_generator_as_ExternalWorldGenerator());

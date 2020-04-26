@@ -10,7 +10,7 @@ template <typename Type, std::size_t blockSize = 1024 * 64>
 class Pool {
 private:
     static constexpr unsigned int floorLog2(unsigned long long x) {
-        return sizeof(unsigned long long) * CHAR_BIT - __builtin_clzll(x) - 1;
+        return sizeof(unsigned long long) * CHAR_BIT - 1 - __builtin_clzll(x);
     }
 
     static constexpr std::size_t tryNumItems = blockSize < sizeof(Type) ? 1 : blockSize / sizeof(Type);
@@ -57,9 +57,6 @@ public:
         assert(type);
         type->Type::~Type();
         freed.push_back(const_cast<Type *>(type));
-    }
-
-    void cleanup() {
     }
 
 private:

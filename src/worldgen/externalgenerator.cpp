@@ -8,8 +8,6 @@
 #include "network/messagebuilder.h"
 #include "schemas/message_generated.h"
 #include "network/connectionpoolspecialized.h"
-#include "world/hashtreeworld.h"
-#include "particle/particlemanager.h"
 #include "util/pool.h"
 
 // TODO: Remove
@@ -21,11 +19,10 @@ ExternalGenerator::ExternalGenerator(game::GameContext &context, const SsProtoco
     : context(context)
 {
     (void) config;
-
-    assert(pointgen::Chunk::size == world::Chunk::size);
 }
 
-void ExternalGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *points) {
+void ExternalGenerator::generate(spatial::CellKey cube) {
+    /*
     spatial::UintCoord c0 = cube.getCoord<0, 0, 0>();
     spatial::UintCoord c1 = cube.getCoord<1, 1, 1>();
     context.get<spdlog::logger>().trace("Requesting size:{} cube generation: ({}, {}, {}) : ({}, {}, {})", cube.sizeLog2, c0.x, c0.y, c0.z, c1.x, c1.y, c1.z);
@@ -48,9 +45,11 @@ void ExternalGenerator::generate(spatial::CellKey cube, const pointgen::Chunk *p
     lock.getBuilder().Finish(message);
 
     context.get<network::ConnectionPoolSpecialized<SsProtocol::Capabilities_GenerateTerrainChunk>>().send(lock.getBuilder().GetBufferPointer(), lock.getBuilder().GetSize());
+    */
 }
 
 void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, unsigned int materialOffset) {
+    /*
     world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
     render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
 
@@ -90,30 +89,6 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
                 cell->second.chunk->cells[i][j][k].materialIndex = materialIndex;
                 bool isNotGas = !hashTreeWorld.isGas(materialIndex);
                 hasNonGas |= isNotGas;
-
-                /*
-                if (isNotGas) {
-                    glm::vec3 basePos = pointChunk->points[i][j][k];
-
-                    for (unsigned int x = 0; x < 1; x++) {
-                        glm::vec3 position = basePos + glm::vec3(dist(gen), dist(gen), dist(gen));
-
-                        render::SceneManager::PointMutator point = meshUpdater.getMeshHandle().createPoint();
-
-                        point.shared.materialIndex = static_cast<unsigned int>(materialIndex);
-
-                        assert(!std::isnan(position.x));
-                        point.shared.position[0] = position.x;
-                        point.shared.position[1] = position.y;
-                        point.shared.position[2] = position.z;
-
-                        glm::vec3 normal(1.0f);
-                        point.shared.normal[0] = normal.x;
-                        point.shared.normal[1] = normal.y;
-                        point.shared.normal[2] = normal.z;
-                    }
-                }
-                */
             }
         }
     }
@@ -123,26 +98,6 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
 #endif
 
     context.get<world::HashTreeWorld>().updateGasMasks(&cell->second);
-
-    /*
-    if (hasNonGas) {
-        unsigned int vertIndices[8];
-        for (unsigned int i = 0; i < 2; i++) {
-            for (unsigned int j = 0; j < 2; j++) {
-                for (unsigned int k = 0; k < 2; k++) {
-                    render::SceneManager::VertMutator vert = context.get<render::MeshUpdater>().getMeshHandle().createVert();
-                    vert.shared.setPoint(cell->first.getCoord(i, j, k).toPoint());
-                    vertIndices[i * 4 + j * 2 + k] = vert.index;
-                }
-            }
-        }
-        for (unsigned int i = 0; i < 100; i++) {
-            render::SceneManager::FaceMutator face = context.get<render::MeshUpdater>().getMeshHandle().createFace();
-            face.shared.verts[0] = vertIndices[rand() % 8];
-            face.shared.verts[1] = vertIndices[rand() % 8];
-            face.shared.verts[2] = vertIndices[rand() % 8];
-        }
-    }
     */
 }
 

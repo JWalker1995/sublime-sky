@@ -23,13 +23,7 @@ table MeshGenerator {
     ungenerated_retry_delay: uint;
 }
 
-table DepthBufferProcessor {
-    num_pixel_buffer_objects: uint;
-    num_threads: uint;
-    num_work_parts: uint;
-}
-
-table HashTreeWorld {
+table World {
     view_chunk_lock_size_log2: uint;
     view_chunk_subdiv_offset_log2: int;
 }
@@ -64,8 +58,7 @@ table Client {
     window: Window;
     render: Render;
     mesh_generator: MeshGenerator;
-    depth_buffer_processor: DepthBufferProcessor;
-    hash_tree_world: HashTreeWorld;
+    world: World;
     material_editor: MaterialEditor;
     raycaster: Raycaster;
     chunk_garbage_collector: ChunkGarbageCollector;

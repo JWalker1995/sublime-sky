@@ -7,7 +7,6 @@
 #include "render/imguirenderer.h"
 #include "render/camera.h"
 #include "render/meshupdater.h"
-#include "world/hashtreeworld.h"
 #include "world/timemanager.h"
 
 namespace render {
@@ -80,6 +79,7 @@ void RayCaster::castNew() {
 }
 
 void RayCaster::castRay(glm::vec3 origin, glm::vec3 dir) {
+    /*
     world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
     render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
 
@@ -102,6 +102,7 @@ void RayCaster::castRay(glm::vec3 origin, glm::vec3 dir) {
 
         case world::HashTreeWorld::RaytestResult::HitDistanceLimit: break;
     }
+    */
 }
 
 

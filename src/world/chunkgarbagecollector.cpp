@@ -3,7 +3,6 @@
 #include <random>
 
 #include "schemas/config_client_generated.h"
-#include "world/hashtreeworld.h"
 #include "render/meshupdater.h"
 
 namespace world {
@@ -27,6 +26,7 @@ void ChunkGarbageCollector::tick(game::TickerContext &tickerContext) {
 }
 
 void ChunkGarbageCollector::collect() {
+    /*
     HashTreeWorld &hashTreeWorld = context.get<HashTreeWorld>();
     render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
 
@@ -53,6 +53,7 @@ void ChunkGarbageCollector::collect() {
             }
         }
     }
+    */
 }
 
 }

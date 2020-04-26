@@ -4,7 +4,6 @@
 #include "graphics/imgui.h"
 #include "render/imguirenderer.h"
 #include "render/camera.h"
-#include "world/hashtreeworld.h"
 #include "render/meshupdater.h"
 
 namespace game {

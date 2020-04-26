@@ -23,7 +23,18 @@ public:
         // This is different because the pool's destructor finishing without getting Dep.
 
         // To fix this, we ask Type to construct any dependencies here:
-        Type::initializeDependencies(context);
+        initializeDependencies<Type>(context, 0);
+    }
+
+private:
+    template <typename Type2>
+    static auto initializeDependencies(game::GameContext &context, int) -> decltype(Type2::initializeDependencies(context), void()) {
+        Type2::initializeDependencies(context);
+    }
+
+    template <typename Type2>
+    static void initializeDependencies(game::GameContext &context, long) {
+        (void) context;
     }
 };
 

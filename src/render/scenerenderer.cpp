@@ -5,7 +5,6 @@
 //#include "render/program/pointclouddepthprogram.h"
 //#include "render/program/pointcloudcolorprogram.h"
 //#include "render/program/pixelmatchfetcherprogram.h"
-#include "render/depthbufferprocessor.h"
 #include "application/window.h"
 #include "render/imguirenderer.h"
 

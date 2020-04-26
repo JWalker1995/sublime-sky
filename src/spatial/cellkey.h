@@ -31,6 +31,27 @@ struct CellKey {
     unsigned int sizeLog2; // TODO: Try unsigned char
 
 
+    // You MUST NOT execute any methods other than equality testing or hashing on this CellKey while extra data is stored.
+
+    void storeExtra(unsigned int extra) {
+        static constexpr unsigned int bitsSizeLog2 = sizeof(unsigned long long) * __CHAR_BIT__ - __builtin_clzll(UintCoord::maxSizeLog2);
+        assert((static_cast<std::uint64_t>(extra) << bitsSizeLog2) < (static_cast<std::uint64_t>(1) << (sizeof(sizeLog2) * __CHAR_BIT__)));
+
+        assert((sizeLog2 >> bitsSizeLog2) == 0);
+        sizeLog2 |= extra << bitsSizeLog2;
+    }
+
+    unsigned int getExtra() {
+        static constexpr unsigned int bitsSizeLog2 = sizeof(unsigned long long) * __CHAR_BIT__ - __builtin_clzll(UintCoord::maxSizeLog2);
+        return sizeLog2 >> bitsSizeLog2;
+    }
+
+    void clearExtra() {
+        static constexpr unsigned int bitsSizeLog2 = sizeof(unsigned long long) * __CHAR_BIT__ - __builtin_clzll(UintCoord::maxSizeLog2);
+        sizeLog2 &= (static_cast<decltype(sizeLog2)>(1) << bitsSizeLog2) - 1;
+    }
+
+
     static CellKey makeRoot() {
         CellKey root;
         root.cellCoord.x = 0;
@@ -77,6 +98,8 @@ struct CellKey {
     }
 
     static UintCoord maskCoord(UintCoord coord, unsigned int sizeLog2) {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         UintCoord::AxisType mask = ~((static_cast<UintCoord::AxisType>(1) << sizeLog2) - 1);
         UintCoord res;
         res.x = coord.x & mask;
@@ -101,6 +124,8 @@ struct CellKey {
     }
 
     CellKey parent() const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         CellKey res;
         res.cellCoord.x = cellCoord.x >> 1;
         res.cellCoord.y = cellCoord.y >> 1;
@@ -112,6 +137,8 @@ struct CellKey {
 
     template <unsigned int levels>
     CellKey grandParent() const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         CellKey res;
         res.cellCoord.x = cellCoord.x >> levels;
         res.cellCoord.y = cellCoord.y >> levels;
@@ -124,6 +151,8 @@ struct CellKey {
     template <bool dx, bool dy, bool dz>
     CellKey child() const {
         assert(sizeLog2 >= 1);
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         CellKey res;
         res.cellCoord.x = (cellCoord.x << 1) | dx;
         res.cellCoord.y = (cellCoord.y << 1) | dy;
@@ -136,6 +165,8 @@ struct CellKey {
     template <unsigned int levels>
     CellKey grandChild(UintCoord::AxisType dx, UintCoord::AxisType dy, UintCoord::AxisType dz) const {
         assert(sizeLog2 >= levels);
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         CellKey res;
         res.cellCoord.x = (cellCoord.x << levels) + dx;
         res.cellCoord.y = (cellCoord.y << levels) + dy;
@@ -147,6 +178,8 @@ struct CellKey {
 
     template <signed int dx, signed int dy, signed int dz>
     CellKey sibling() const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         CellKey res;
         res.cellCoord.x = cellCoord.x + dx;
         res.cellCoord.y = cellCoord.y + dy;
@@ -156,6 +189,8 @@ struct CellKey {
     }
 
     CellKey sibling(signed int dx, signed int dy, signed int dz) const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         CellKey res;
         res.cellCoord.x = cellCoord.x + dx;
         res.cellCoord.y = cellCoord.y + dy;
@@ -166,6 +201,8 @@ struct CellKey {
 
     template <signed int dx, signed int dy, signed int dz>
     UintCoord siblingCoord() const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         UintCoord res = getCoord<(dx > 0), (dy > 0), (dz > 0)>();
         if (dx < 0) {res.x--;}
         if (dy < 0) {res.y--;}
@@ -174,11 +211,15 @@ struct CellKey {
     }
 
     UintCoord::AxisType getSize() const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         return static_cast<UintCoord::AxisType>(1) << sizeLog2;
     }
 
     template <signed int dx, signed int dy, signed int dz>
     UintCoord getCoord() const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         UintCoord res;
         res.x = (cellCoord.x + dx) << sizeLog2;
         res.y = (cellCoord.y + dy) << sizeLog2;
@@ -187,6 +228,8 @@ struct CellKey {
     }
 
     UintCoord getCoord(signed int dx, signed int dy, signed int dz) const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         UintCoord res;
         res.x = (cellCoord.x + dx) << sizeLog2;
         res.y = (cellCoord.y + dy) << sizeLog2;
@@ -195,6 +238,8 @@ struct CellKey {
     }
 
     glm::vec3 getPoint(glm::vec3 inner) const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         glm::vec3 point = getCoord<0, 0, 0>().toPoint();
         point.x += std::ldexp(inner.x, sizeLog2);
         point.y += std::ldexp(inner.y, sizeLog2);
@@ -203,6 +248,8 @@ struct CellKey {
     }
 
     bool contains(UintCoord coord) const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         return true
                 && coord.x >> sizeLog2 == cellCoord.x
                 && coord.y >> sizeLog2 == cellCoord.y
@@ -210,6 +257,8 @@ struct CellKey {
     }
 
     bool surfaceContains(UintCoord coord) const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         return true
                 && (coord.x == cellCoord.x << sizeLog2 || coord.x == (cellCoord.x + 1) << sizeLog2)
                 && (coord.y == cellCoord.y << sizeLog2 || coord.y == (cellCoord.y + 1) << sizeLog2)
@@ -217,6 +266,8 @@ struct CellKey {
     }
 
     glm::vec3 constrainPointInside(glm::vec3 point) const {
+        assert(sizeLog2 <= UintCoord::maxSizeLog2);
+
         glm::vec3 min = getCoord<0, 0, 0>().toPoint();
         glm::vec3 max = getCoord<1, 1, 1>().toPoint();
 
