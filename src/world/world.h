@@ -18,6 +18,10 @@ public:
 
     void tick(game::TickerContext &tickerContext);
 
+    Node *getRoot() {
+        return &root;
+    }
+
 private:
     Node root;
 

@@ -69,7 +69,7 @@ void BaseConnection::recv(const std::uint8_t *data, std::size_t size) {
 
     switch (message->message_type()) {
         case SsProtocol::MessageUnion_InitResponse: handleInitResponse(message->message_as_InitResponse()); break;
-        case SsProtocol::MessageUnion_TerrainChunk: handleTerrainChunk(message->message_as_TerrainChunk()); break;
+        case SsProtocol::MessageUnion_TerrainMessage: handleTerrainMessage(message->message_as_TerrainMessage()); break;
         default: context.log(game::GameContext::LogLevel::Warning, "Received message with unexpected type: " + std::to_string(message->message_type()));
     }
 }
@@ -89,28 +89,21 @@ void BaseConnection::handleInitResponse(const SsProtocol::InitResponse *msg) {
     setCapabilities((msg->capabilities() & ~SsProtocol::Capabilities_Connected) | (getCapabilities() & SsProtocol::Capabilities_Connected));
 
     if (msg->materials()) {
-        materialOffset = context.get<material::MaterialManager>().registerMaterials(msg->materials());
-        materialCount = msg->materials()->size();
+        materialMap = context.get<material::MaterialManager>().registerMaterials(msg->materials());
     }
 }
 
-void BaseConnection::handleTerrainChunk(const SsProtocol::TerrainChunk *msg) {
-    if (materialCount == 0) {
+void BaseConnection::handleTerrainMessage(const SsProtocol::TerrainMessage *msg) {
+    if (materialMap.empty()) {
         context.log(game::GameContext::LogLevel::Warning, "Received TerrainChunk message but no materials yet; skipping message.");
         return;
     }
 
-    auto it = msg->cell_materials()->cbegin();
-    while (it != msg->cell_materials()->cend()) {
-        if (*it >= materialCount) {
-            context.log(game::GameContext::LogLevel::Warning, "Received TerrainChunk message with material index beyond InitResponse::materials array; skipping: " + std::to_string(*it));
-            return;
-        }
-        it++;
-    }
+    worldgen::ExternalGenerator &gen = context.get<worldgen::ExternalGenerator>();
 
-    worldgen::ExternalGenerator &gen = dynamic_cast<worldgen::ExternalGenerator &>(context.get<worldgen::WorldGenerator>());
-    gen.handleResponse(msg, materialOffset);
+    for (const SsProtocol::TerrainChunk *chunk : *msg->chunks()) {
+        gen.handleResponse(chunk, materialMap);
+    }
 }
 
 }

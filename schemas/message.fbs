@@ -67,32 +67,19 @@ table InitResponse {
     materials: [Material];
 }
 
-table Particle {
-    position: Vec3_f;
-    velocity: Vec3_f;
-    mass: float;
-
-    type: uint32;
-}
-
 table TerrainChunk {
     cell_size_log2: uint8;
     cell_coord: Vec3_u32;
+    is_rigid_body: bool;
 
-    cell_positions: [Vec3_f];
     cell_materials: [uint32];
-    particles: [Particle];
 }
 
-table EnvironmentChunk {
-    cell_size_log2: uint8;
-    cell_coord: Vec3_u32;
-
-    cell_positions: [Vec3_f];
-    cell_environments: [Environment];
+table TerrainMessage {
+    chunks: [TerrainChunk];
 }
 
-union MessageUnion { InitRequest, InitResponse, TerrainChunk, EnvironmentChunk }
+union MessageUnion { InitRequest, InitResponse, TerrainMessage }
 
 table Message {
     message: MessageUnion;

@@ -39,28 +39,11 @@ class TerrainChunk(object):
         return None
 
     # TerrainChunk
-    def CellPositions(self, j):
+    def IsRigidBody(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
-            x = self._tab.Vector(o)
-            x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 12
-            from SsProtocol.Vec3_f import Vec3_f
-            obj = Vec3_f()
-            obj.Init(self._tab.Bytes, x)
-            return obj
-        return None
-
-    # TerrainChunk
-    def CellPositionsLength(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
-        if o != 0:
-            return self._tab.VectorLen(o)
-        return 0
-
-    # TerrainChunk
-    def CellPositionsIsNone(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
-        return o == 0
+            return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
+        return False
 
     # TerrainChunk
     def CellMaterials(self, j):
@@ -89,38 +72,10 @@ class TerrainChunk(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
         return o == 0
 
-    # TerrainChunk
-    def Particles(self, j):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
-        if o != 0:
-            x = self._tab.Vector(o)
-            x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
-            x = self._tab.Indirect(x)
-            from SsProtocol.Particle import Particle
-            obj = Particle()
-            obj.Init(self._tab.Bytes, x)
-            return obj
-        return None
-
-    # TerrainChunk
-    def ParticlesLength(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
-        if o != 0:
-            return self._tab.VectorLen(o)
-        return 0
-
-    # TerrainChunk
-    def ParticlesIsNone(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
-        return o == 0
-
-def TerrainChunkStart(builder): builder.StartObject(5)
+def TerrainChunkStart(builder): builder.StartObject(4)
 def TerrainChunkAddCellSizeLog2(builder, cellSizeLog2): builder.PrependUint8Slot(0, cellSizeLog2, 0)
 def TerrainChunkAddCellCoord(builder, cellCoord): builder.PrependStructSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(cellCoord), 0)
-def TerrainChunkAddCellPositions(builder, cellPositions): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(cellPositions), 0)
-def TerrainChunkStartCellPositionsVector(builder, numElems): return builder.StartVector(12, numElems, 4)
+def TerrainChunkAddIsRigidBody(builder, isRigidBody): builder.PrependBoolSlot(2, isRigidBody, 0)
 def TerrainChunkAddCellMaterials(builder, cellMaterials): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(cellMaterials), 0)
 def TerrainChunkStartCellMaterialsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def TerrainChunkAddParticles(builder, particles): builder.PrependUOffsetTRelativeSlot(4, flatbuffers.number_types.UOffsetTFlags.py_type(particles), 0)
-def TerrainChunkStartParticlesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def TerrainChunkEnd(builder): return builder.EndObject()

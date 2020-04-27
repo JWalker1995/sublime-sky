@@ -9,52 +9,57 @@
 #include "schemas/message_generated.h"
 #include "network/connectionpoolspecialized.h"
 #include "util/pool.h"
-
-// TODO: Remove
-#include "render/meshupdater.h"
+#include "world/world.h"
 
 namespace worldgen {
 
 ExternalGenerator::ExternalGenerator(game::GameContext &context, const SsProtocol::Config::ExternalWorldGenerator *config)
-    : context(context)
+    : TickableBase(context)
 {
     (void) config;
+
+    context.provideInstance<ExternalGenerator>(this);
+}
+
+ExternalGenerator::~ExternalGenerator() {
+    context.removeInstance<ExternalGenerator>();
+}
+
+void ExternalGenerator::tick(game::TickerContext &tickerContext) {
+    (void) tickerContext;
+
+    network::MessageBuilder::Lock lock(context);
+
+    static thread_local std::vector<flatbuffers::Offset<SsProtocol::TerrainChunk>> terrainChunks;
+    assert(terrainChunks.empty());
+
+    for (spatial::CellKey cube : generateQueue) {
+        SsProtocol::Vec3_u32 cellCoord(cube.cellCoord.x, cube.cellCoord.y, cube.cellCoord.z);
+        terrainChunks.push_back(SsProtocol::CreateTerrainChunk(lock.getBuilder(), cube.sizeLog2, &cellCoord));
+    }
+    generateQueue.clear();
+
+    auto terrainChunksVec = lock.getBuilder().CreateVector(terrainChunks);
+    terrainChunks.clear();
+
+    auto terrainMessage = SsProtocol::CreateTerrainMessage(lock.getBuilder(), terrainChunksVec);
+    auto message = SsProtocol::CreateMessage(lock.getBuilder(), SsProtocol::MessageUnion_TerrainMessage, terrainMessage.Union());
+    lock.getBuilder().Finish(message);
+
+    context.get<network::ConnectionPoolSpecialized<SsProtocol::Capabilities_GenerateTerrainChunk>>().send(lock.getBuilder().GetBufferPointer(), lock.getBuilder().GetSize());
 }
 
 void ExternalGenerator::generate(spatial::CellKey cube) {
-    /*
+    // TODO: Batch requests up and send in a ticker
+
     spatial::UintCoord c0 = cube.getCoord<0, 0, 0>();
     spatial::UintCoord c1 = cube.getCoord<1, 1, 1>();
     context.get<spdlog::logger>().trace("Requesting size:{} cube generation: ({}, {}, {}) : ({}, {}, {})", cube.sizeLog2, c0.x, c0.y, c0.z, c1.x, c1.y, c1.z);
 
-    network::MessageBuilder::Lock lock(context);
-
-    SsProtocol::Vec3_u32 cellCoord(cube.cellCoord.x, cube.cellCoord.y, cube.cellCoord.z);
-    SsProtocol::Vec3_f cellsPositions[pointgen::Chunk::size][pointgen::Chunk::size][pointgen::Chunk::size];
-    for (unsigned int i = 0; i < pointgen::Chunk::size; i++) {
-        for (unsigned int j = 0; j < pointgen::Chunk::size; j++) {
-            for (unsigned int k = 0; k < pointgen::Chunk::size; k++) {
-                glm::vec3 pt = points->points[i][j][k];
-                cellsPositions[i][j][k] = SsProtocol::Vec3_f(pt.x, pt.y, pt.z);
-            }
-        }
-    }
-    auto cellsVec = lock.getBuilder().CreateVectorOfStructs(&cellsPositions[0][0][0], pointgen::Chunk::size * pointgen::Chunk::size * pointgen::Chunk::size);
-    auto chunkCommand = SsProtocol::CreateTerrainChunk(lock.getBuilder(), cube.sizeLog2, &cellCoord, cellsVec);
-    auto message = SsProtocol::CreateMessage(lock.getBuilder(), SsProtocol::MessageUnion_TerrainChunk, chunkCommand.Union());
-    lock.getBuilder().Finish(message);
-
-    context.get<network::ConnectionPoolSpecialized<SsProtocol::Capabilities_GenerateTerrainChunk>>().send(lock.getBuilder().GetBufferPointer(), lock.getBuilder().GetSize());
-    */
+    generateQueue.push_back(cube);
 }
 
-void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, unsigned int materialOffset) {
-    /*
-    world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
-    render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
-
-    assert(materialOffset != static_cast<unsigned int>(-1));
-
+void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, const std::vector<unsigned int> &materialMap) {
     spatial::CellKey cube;
     cube.sizeLog2 = chunk->cell_size_log2();
     cube.cellCoord.x = chunk->cell_coord()->x();
@@ -65,40 +70,98 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, un
     spatial::UintCoord c1 = cube.getCoord<1, 1, 1>();
     context.get<spdlog::logger>().trace("Received size:{} cube generation: ({}, {}, {}) : ({}, {}, {})", cube.sizeLog2, c0.x, c0.y, c0.z, c1.x, c1.y, c1.z);
 
-    world::HashTreeWorld::Cell *cell = context.get<world::HashTreeWorld>().findNodeMatching(cube);
-    if (!cell) {
+    unsigned int chunkSizeLog2 = (sizeof(unsigned long long) * CHAR_BIT - 1 - __builtin_clzll(chunk->cell_materials()->size())) / 3;
+    static constexpr std::size_t chunkSize0 = 1;
+    std::size_t chunkSize1 = static_cast<std::size_t>(1) << (chunkSizeLog2 * 1);
+    std::size_t chunkSize2 = static_cast<std::size_t>(1) << (chunkSizeLog2 * 2);
+    std::size_t chunkSize3 = static_cast<std::size_t>(1) << (chunkSizeLog2 * 3);
+
+    if (chunk->cell_materials()->size() != chunkSize3) {
+        context.get<spdlog::logger>().error("Received TerrainChunk::cell_materials with size {}, which is not a valid octree size (must be a integral power of 8). Skipping chunk.", chunk->cell_materials()->size());
         return;
     }
 
-    if (!cell->second.chunk) {
-        cell->second.chunk = context.get<util::Pool<world::Chunk>>().alloc();
-    }
+    struct CreatingVisitor {
+        CreatingVisitor(game::GameContext &context)
+            : context(context)
+        {}
 
-    const pointgen::Chunk *pointChunk = hashTreeWorld.getChunkPoints(cell);
+        void beforeEnterChild(world::Node *node, unsigned int childIndex) {
+            (void) childIndex;
 
-    bool hasNonGas = false;
-
-    static thread_local std::default_random_engine gen;
-    std::normal_distribution<float> dist(0.0f, 1.0f);
-
-    const std::uint32_t *ptPtr = chunk->cell_materials()->data();
-    for (unsigned int i = 0; i < pointgen::Chunk::size; i++) {
-        for (unsigned int j = 0; j < pointgen::Chunk::size; j++) {
-            for (unsigned int k = 0; k < pointgen::Chunk::size; k++) {
-                world::MaterialIndex materialIndex = static_cast<world::MaterialIndex>(materialOffset + *ptPtr++);
-                cell->second.chunk->cells[i][j][k].materialIndex = materialIndex;
-                bool isNotGas = !hashTreeWorld.isGas(materialIndex);
-                hasNonGas |= isNotGas;
+            if (node->isLeaf) {
+                node->setBranch(context);
             }
         }
+
+        game::GameContext &context;
+    };
+    CreatingVisitor visitor(context);
+    world::Node *node = context.get<world::World>().getRoot()->getChild<CreatingVisitor &>(cube, visitor);
+
+    if (chunk->is_rigid_body()) {
+        // TODO
+//        node->isRigidBody = true;
     }
 
-#ifndef NDEBUG
-    cell->second.constantMaterialIndex = static_cast<world::MaterialIndex>(-1);
-#endif
+    const std::uint32_t *matPtr = chunk->cell_materials()->data();
+    unsigned int countBadMaterials = 0;
 
-    context.get<world::HashTreeWorld>().updateGasMasks(&cell->second);
-    */
+    unsigned int stack[32];
+    unsigned int stackPos = chunkSizeLog2;
+    stack[stackPos] = 0;
+    while (true) {
+        while (stackPos > 0) {
+            if (node->isLeaf) {
+                node->setBranch(context);
+            }
+            node = node->children;
+
+            stack[--stackPos] = 0;
+        }
+
+        unsigned int matIdx;
+        if (*matPtr < materialMap.size()) {
+            matIdx = *matPtr;
+        } else {
+            matIdx = 0;
+            countBadMaterials++;
+        }
+
+        assert(node->isLeaf);
+        node->materialIndex = static_cast<world::MaterialIndex>(materialMap[matIdx]);
+
+        incStackEntry:
+        switch (++stack[stackPos]) {
+            case 1: matPtr += chunkSize0 << stackPos; break;
+            case 2: matPtr += (chunkSize1 - chunkSize0) << stackPos; break;
+            case 3: matPtr += chunkSize0 << stackPos; break;
+            case 4: matPtr += (chunkSize2 - chunkSize1 - chunkSize0) << stackPos; break;
+            case 5: matPtr += chunkSize0 << stackPos; break;
+            case 6: matPtr += (chunkSize1 - chunkSize0) << stackPos; break;
+            case 7: matPtr += chunkSize0 << stackPos; break;
+            case 8:
+                matPtr -= (chunkSize2 + chunkSize1 + chunkSize0) << stackPos;
+
+                if (stackPos == chunkSizeLog2) {
+                    goto finished;
+                }
+
+                stackPos++;
+                node = node->parent;
+
+                goto incStackEntry;
+        }
+
+        node++;
+    }
+    finished:
+
+    assert(matPtr == chunk->cell_materials()->data());
+
+    if (countBadMaterials > 0) {
+        context.get<spdlog::logger>().warn("Received {} materials with invalid indices. They were replaced with material 0.", countBadMaterials);
+    }
 }
 
 }

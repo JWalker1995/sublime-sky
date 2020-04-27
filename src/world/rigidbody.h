@@ -1,6 +1,13 @@
 #pragma once
 
+#include <vector>
+#include <unordered_map>
+
 #include "geometry/transform.h"
+#include "spatial/cellkey.h"
+#include "render/scenemanager.h"
+
+namespace game { class GameContext; }
 
 namespace world {
 
@@ -19,7 +26,20 @@ public:
     // glm::vec3 angularVelocity;
     // glm::mat3x3 inertiaMatrix;
 
-    unsigned int meshIndex;
+    render::SceneManager::MeshHandle meshHandle;
+    std::unordered_map<spatial::UintCoord, unsigned int, spatial::UintCoord::Hasher> vertIndices;
+    std::vector<Node *> changeMaterialQueue;
+
+
+    RigidBody(game::GameContext &context);
+
+    void tick(game::GameContext &context, float dt);
+
+private:
+    template <unsigned int faceIdIndex>
+    void updateFaces(Node *node, bool isOpaque);
+
+    unsigned int lookupVertex(spatial::UintCoord coord);
 };
 
 }

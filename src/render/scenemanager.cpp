@@ -54,7 +54,7 @@ void SceneManager::createNullMaterial() {
     nullMaterial.shared.shininess = 1.0f;
 
     nullMaterial.local.name = "_ss_null";
-    nullMaterial.local.phase = graphics::MaterialLocal::Phase::Solid;
+    nullMaterial.local.phase = graphics::MaterialLocal::Phase::Unknown;
     nullMaterial.local.mass = 1.0f;
 }
 

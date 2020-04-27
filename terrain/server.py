@@ -19,18 +19,6 @@ import SsProtocol.Vec4_f as SsVec4_f
 
 from generate import generate_materials, generate_terrain
 
-# Kinda hacky but it works
-def CellPositionsAsNumpy(chunk):
-    cellPositionsIndex = 8
-    o = flatbuffers.number_types.UOffsetTFlags.py_type(chunk._tab.Offset(cellPositionsIndex))
-    if o == 0:
-        raise Exception('No cellPositions entry present')
-    offset = chunk._tab.Vector(o)
-    length = chunk._tab.VectorLen(o) * 3
-    numpy_dtype = flatbuffers.number_types.to_numpy_type(flatbuffers.number_types.Float32Flags)
-    arr = flatbuffers.encode.GetVectorAsNumpy(numpy_dtype, chunk._tab.Bytes, length, offset)
-    return arr.reshape((-1, 3))
-
 def serialize_material(builder, material):
     name = builder.CreateString(material['name'])
 
@@ -86,12 +74,13 @@ async def connection_loop(conn, path):
 
                 builder.Finish(message)
                 await conn.send(builder.Output())
-            elif msg_type == SsMessageUnion.MessageUnion.TerrainChunk:
+            elif msg_type == SsMessageUnion.MessageUnion.TerrainMessage:
                 builder = flatbuffers.Builder(1024)
 
-                chunk = SsTerrainChunk.TerrainChunk()
-                chunk.Init(msg.Message().Bytes, msg.Message().Pos)
-                cell_positions = CellPositionsAsNumpy(chunk)
+                message = SsTerrainMessage.TerrainMessage()
+                message.Init(msg.Message().Bytes, msg.Message().Pos)
+
+                
 
                 cell_types = generate_terrain(seed, cell_positions)
                 assert len(cell_types.shape) == 1

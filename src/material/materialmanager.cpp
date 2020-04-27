@@ -16,23 +16,15 @@ void MaterialManager::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
 }
 
-unsigned int MaterialManager::registerMaterials(const flatbuffers::Vector<flatbuffers::Offset<SsProtocol::Material>> *newMaterials) {
+std::vector<unsigned int> MaterialManager::registerMaterials(const flatbuffers::Vector<flatbuffers::Offset<SsProtocol::Material>> *newMaterials) {
     render::SceneManager &sceneManager = context.get<render::SceneManager>();
 
-    unsigned int firstIndex = static_cast<unsigned int>(-1);
-    unsigned int nextIndex;
-
+    std::vector<unsigned int> mapping;
     for (unsigned int i = 0; i < newMaterials->size(); i++) {
         const SsProtocol::Material *inMat = newMaterials->Get(i);
 
         render::SceneManager::MaterialMutator material = sceneManager.createMaterial();
-        if (i == 0) {
-            firstIndex = material.index;
-            nextIndex = material.index;
-        }
-
-        assert(material.index == nextIndex);
-        nextIndex++;
+        mapping.push_back(material.index);
 
         material.local.phase = [](SsProtocol::MaterialPhase phase) {
             switch (phase) {
@@ -71,7 +63,8 @@ unsigned int MaterialManager::registerMaterials(const flatbuffers::Vector<flatbu
         material.shared.shininess = inMat->shininess();
     }
 
-    return firstIndex;
+    assert(mapping.size() == newMaterials->size());
+    return mapping;
 }
 
 void MaterialManager::createGeneratingMaterial() {
@@ -99,7 +92,7 @@ void MaterialManager::createGeneratingMaterial() {
     generatingMaterial.shared.shininess = 1.0f;
 
     generatingMaterial.local.name = "_ss_generating";
-    generatingMaterial.local.phase = graphics::MaterialLocal::Phase::Solid;
+    generatingMaterial.local.phase = graphics::MaterialLocal::Phase::Unknown;
     generatingMaterial.local.mass = 1.0f;
 }
 

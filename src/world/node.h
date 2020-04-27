@@ -4,6 +4,8 @@
 #include "spatial/cellkey.h"
 #include "world/materialindex.h"
 
+namespace game { class GameContext; }
+
 namespace world {
 
 class Material {};
@@ -12,11 +14,21 @@ class Node {
 public:
     // TODO: Could probably use pointer packing here
 
-    bool isLeaf;
-    bool isRigidBody;
-    spatial::CubeRotation rotation;
+    bool isLeaf = true;
+    bool isRigidBody = false;
+    spatial::CubeRotation rotation = spatial::CubeRotation::identity();
 
-    Node *parent;
+    // TODO: Probably can remove this since we have RigidBody::vertIndices now
+    unsigned int faceIds[6] = {
+        static_cast<unsigned int>(-1),
+        static_cast<unsigned int>(-1),
+        static_cast<unsigned int>(-1),
+        static_cast<unsigned int>(-1),
+        static_cast<unsigned int>(-1),
+        static_cast<unsigned int>(-1),
+    };
+
+    Node *parent = 0;
 
     union {
         // If branch
@@ -28,6 +40,13 @@ public:
         };
     };
 
+
+    Node() {
+        materialIndex = MaterialIndex::Null;
+    }
+
+
+    void setBranch(game::GameContext &context);
 
     spatial::CellKey getCellKey() const {
         if (parent) {
@@ -48,8 +67,35 @@ public:
             (void) childIndex;
         }
     };
+
+    template <typename VisitorType = NullVisitor>
+    Node *getChild(spatial::CellKey cellKey, VisitorType visitor = VisitorType()) {
+        if (cellKey.sizeLog2 == spatial::UintCoord::maxSizeLog2) {
+            return this;
+        }
+
+        unsigned int childIndex = 0
+                | ((cellKey.cellCoord.x >> spatial::UintCoord::maxSizeLog2) << 2)
+                | ((cellKey.cellCoord.y >> spatial::UintCoord::maxSizeLog2) << 1)
+                | ((cellKey.cellCoord.z >> spatial::UintCoord::maxSizeLog2) << 0);
+        assert(childIndex < 8);
+
+        visitor.beforeEnterChild(this, childIndex);
+
+        if (isLeaf) {
+            return this;
+        } else {
+            cellKey.cellCoord.x <<= 1;
+            cellKey.cellCoord.y <<= 1;
+            cellKey.cellCoord.z <<= 1;
+            cellKey.sizeLog2++;
+
+            return children[childIndex].getChild<VisitorType>(cellKey, visitor);
+        }
+    }
+
     template <signed int dx, signed int dy, signed int dz, typename VisitorType = NullVisitor>
-    Node *getSibling(VisitorType visitor) {
+    Node *getSibling(VisitorType visitor = VisitorType()) {
         static_assert((-1) >> 1 == -1, "Unexpected signed right shift behavior");
 
         if (dx == 0 && dy == 0 && dz == 0) {
@@ -61,6 +107,7 @@ public:
         assert(thisIndex < 8);
 
         visitor.beforeEnterParent(this);
+
         Node *ps;
         switch (thisIndex) {
             case 0: ps = parent->getSibling<((dx+0) >> 1), ((dy+0) >> 1), ((dz+0) >> 1), VisitorType>(visitor); break;
@@ -74,9 +121,14 @@ public:
         }
 
         unsigned int childIndex = thisIndex ^ (dx % 2 ? 4 : 0) ^ (dy % 2 ? 2 : 0) ^ (dz % 2 ? 1 : 0);
+
         visitor.beforeEnterChild(ps, childIndex);
 
-        return ps->children + childIndex;
+        if (ps->isLeaf) {
+            return ps;
+        } else {
+            return ps->children + childIndex;
+        }
     }
 };
 

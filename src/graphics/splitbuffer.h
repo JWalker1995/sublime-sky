@@ -106,15 +106,15 @@ public:
     }
 
     Viewer view(unsigned int index) const {
-        assert(index != static_cast<unsigned int>(-1));
+        assert(index < sharedData.size());
         return Viewer(index, sharedData[index], localData[index]);
     }
     Reader read(unsigned int index) {
-        assert(index != static_cast<unsigned int>(-1));
+        assert(index < sharedData.size());
         return Reader(index, sharedData[index], localData[index]);
     }
     Mutator mutate(unsigned int index) {
-        assert(index != static_cast<unsigned int>(-1));
+        assert(index < sharedData.size());
         remoteBuffer.flag_index(index);
         return Mutator(index, sharedData[index], localData[index]);
     }

@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cstdlib>
+#include <vector>
 
 #include "jw_util/baseexception.h"
 
 namespace SsProtocol { struct InitResponse; }
-namespace SsProtocol { struct TerrainChunk; }
+namespace SsProtocol { struct TerrainMessage; }
 
 namespace game { class GameContext; }
 
@@ -57,13 +58,12 @@ private:
     unsigned int waitTicks = 0;
     unsigned int waitTicksBackoff = 1;
 
-    unsigned int materialOffset = static_cast<unsigned int>(-1);
-    unsigned int materialCount = 0;
+    std::vector<unsigned int> materialMap;
 
     void callConnect();
 
     void handleInitResponse(const SsProtocol::InitResponse *msg);
-    void handleTerrainChunk(const SsProtocol::TerrainChunk *msg);
+    void handleTerrainMessage(const SsProtocol::TerrainMessage *msg);
 };
 
 }

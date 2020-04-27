@@ -57,8 +57,6 @@ private:
     CellKeyComparator cellKeyComparator;
     std::priority_queue<spatial::CellKey, std::vector<spatial::CellKey>, CellKeyComparator &> cellUpdateQueue;
     std::queue<spatial::CellKey> delayedCellUpdateQueue;
-
-    std::unordered_map<spatial::CellKey, std::array<unsigned int, 2>, spatial::CellKeyHasher> faceIndices;
 };
 
 }

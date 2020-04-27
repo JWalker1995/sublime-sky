@@ -33,6 +33,7 @@ public:
     unsigned int originalIndex = static_cast<unsigned int>(-1);
 
     enum class Phase {
+        Unknown,
         Solid,
         Liquid,
         Gas,
