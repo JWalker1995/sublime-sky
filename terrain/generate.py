@@ -5,6 +5,8 @@ import pyfastnoisesimd as fns
 def generate_materials(seed):
 	return [
 		{
+			'special': 'REGENERATE',
+		}, {
 			'name': 'Air',
 			'phase': 'gas',
 			'mass': 1.0,
@@ -87,33 +89,44 @@ def generate_materials(seed):
 		{'name': 'Black Rubber', 'phase': 'solid', 'mass': 1.0, 'render_model': 'blinn', 'color_ambient': [0.02, 0.02, 0.02, 1.0], 'color_diffuse': [0.01, 0.01, 0.01, 1.0], 'color_specular': [0.4, 0.4, 0.4, 1.0], 'shininess': 10},
 	]
 
-def generate_terrain(seed, points):
-	coords = fns.empty_coords(points.shape[0])
-	coords[:] = points.T / 16.0
+def generate_terrain(seed, cubes):
+	for c in cubes:
+		if c['size_log2'] > 4:
+			yield {
+				**c,
+				'cell_types': [0],
+			}
+		else:
+			axis = np.arange(1 << c['size_log2'])
+			pts = np.stack(np.meshgrid(axis, axis, axis), -1).reshape(-1, 3)
 
-	# Cellular, PerlinFractal, ValueFractal, Cubic, Simplex, WhiteNoise, CubicFractal, SimplexFractal, Perlin, Value
+			coords = fns.empty_coords(pts.shape[0])
+			coords[:] = pts.T / 1.0
 
-	noise = fns.Noise(seed=seed, numWorkers=1)
-	noise.frequency = 0.02
-	noise.noiseType = fns.NoiseType.SimplexFractal
-	noise.fractal.octaves = 4
-	noise.fractal.lacunarity = 2.1
-	noise.fractal.gain = 0.45
-	noise.perturb.perturbType = fns.PerturbType.NoPerturb
-	noise_values = noise.genFromCoords(coords)
+			# Cellular, PerlinFractal, ValueFractal, Cubic, Simplex, WhiteNoise, CubicFractal, SimplexFractal, Perlin, Value
 
-	# Create an empty array of air
-	res = np.full(points.shape[:1], 0, dtype=np.uint32)
+			noise = fns.Noise(seed=seed, numWorkers=1)
+			noise.frequency = 0.02
+			noise.noiseType = fns.NoiseType.SimplexFractal
+			noise.fractal.octaves = 4
+			noise.fractal.lacunarity = 2.1
+			noise.fractal.gain = 0.45
+			noise.perturb.perturbType = fns.PerturbType.NoPerturb
+			noise_values = noise.genFromCoords(coords)
 
-	norms = np.linalg.norm(points, axis=-1)
+			# Create an empty array of air
+			res = np.full(pts.shape[:1], 1, dtype=np.uint32)
 
-	# Assign water
-	res[norms < 1000.0] = 2
+			# Assign water
+			res[pts[:, 2] < 0.0] = 3
 
-	# Assign dirt
-	res[norms + noise_values * 500.0 < 1000.0] = 1
+			# Assign dirt
+			res[pts[:, 2] + noise_values * 5.0 < 0.0] = 2
 
-	# # Assign clouds
-	# res[(points[:, 2] - 110) ** 2 * 1e-1 + noise_values * 100 < -60.0] = 3
+			# # Assign clouds
+			# res[(pts[:, 2] - 110) ** 2 * 1e-1 + noise_values * 100 < -60.0] = 3
 
-	return res
+			return {
+				**c,
+				'cell_types': res,
+			}

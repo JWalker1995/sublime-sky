@@ -23,6 +23,11 @@ std::vector<unsigned int> MaterialManager::registerMaterials(const flatbuffers::
     for (unsigned int i = 0; i < newMaterials->size(); i++) {
         const SsProtocol::Material *inMat = newMaterials->Get(i);
 
+        if (inMat->flags() & SsProtocol::MaterialFlags::MaterialFlags_Regenerate) {
+            mapping.push_back(static_cast<unsigned int>(world::MaterialIndex::Null));
+            continue;
+        }
+
         render::SceneManager::MaterialMutator material = sceneManager.createMaterial();
         mapping.push_back(material.index);
 

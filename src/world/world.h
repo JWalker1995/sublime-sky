@@ -18,6 +18,11 @@ public:
 
     void tick(game::TickerContext &tickerContext);
 
+    struct RaycastResponse {};
+    RaycastResponse raycast(glm::vec3 origin, glm::vec3 dir, float distanceLimit);
+
+//    bool shouldSubdiv(spatial::CellKey cellKey) const;
+
     Node *getRoot() {
         return &root;
     }
@@ -26,6 +31,13 @@ private:
     Node root;
 
     std::vector<RigidBody> rigidBodies;
+
+    signed int viewChunkSubdivOffsetLog2;
+    unsigned int viewChunkLockSizeLog2;
+
+    spatial::UintCoord cameraCoord;
+    spatial::UintCoord calcCameraCoord();
+
 
     template <signed int dx, signed int dy, signed int dz>
     void moveRigidBody(RigidBody &body) {
@@ -49,6 +61,8 @@ private:
         *dst = *body.node;
         dst->parent = parent;
     }
+
+//    signed int guessViewChunkSizeLog2(spatial::UintCoord coord) const;
 };
 
 }

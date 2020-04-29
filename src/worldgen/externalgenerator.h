@@ -27,6 +27,8 @@ public:
 
 private:
     std::vector<spatial::CellKey> generateQueue;
+
+    void sendEnqueuedGenerationRequests();
 };
 
 }

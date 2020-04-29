@@ -1,13 +1,21 @@
 #include "world.h"
 
+#include <queue>
+
 #include "schemas/config_client_generated.h"
 
 #include "util/pool.h"
+#include "render/camera.h"
+#include "worldgen/worldgenerator.h"
+#include "spatial/raydrawer.h"
 
 namespace world {
 
 World::World(game::GameContext &context, const SsProtocol::Config::World *config)
     : TickableBase(context)
+    , viewChunkSubdivOffsetLog2(config->view_chunk_subdiv_offset_log2())
+    , viewChunkLockSizeLog2(config->view_chunk_lock_size_log2())
+    , cameraCoord(calcCameraCoord())
 {
     (void) config;
 
@@ -60,8 +68,112 @@ void World::tick(game::TickerContext &tickerContext) {
     static constexpr float dt = 0.01f;
 
     for (RigidBody &body : rigidBodies) {
-//        body.tick(context, dt);
+        body.tick(context, dt);
     }
 }
+
+World::RaycastResponse World::raycast(glm::vec3 origin, glm::vec3 dir, float distanceLimit) {
+    struct CellRayCollision {
+        float collisionDistance;
+        spatial::CellKey cellKey;
+        Node *node;
+
+        bool operator<(const CellRayCollision &other) const {
+            return collisionDistance < other.collisionDistance;
+        }
+    };
+    std::priority_queue<CellRayCollision> cellQueue;
+
+    CellRayCollision init;
+    init.collisionDistance = 0.0f;
+    init.cellKey = spatial::CellKey::makeRoot();
+    init.node = &root;
+    cellQueue.push(init);
+
+    do {
+        spatial::CellKey parentKey = cellQueue.top().cellKey;
+        Node *parentNode = cellQueue.top().node;
+        cellQueue.pop();
+
+        if (parentNode->isLeaf) {
+            if (parentNode->materialIndex == MaterialIndex::Null) {
+                context.get<worldgen::WorldGenerator>().generate(parentKey);
+                RaycastResponse resp;
+                return resp;
+            } else if (parentNode->materialIndex == MaterialIndex::Generating) {
+                RaycastResponse resp;
+                return resp;
+            } else if (context.get<render::SceneManager>().readMaterial(static_cast<unsigned int>(parentNode->materialIndex)).local.phase != graphics::MaterialLocal::Phase::Gas) {
+                RaycastResponse resp;
+                return resp;
+            } else {
+                continue;
+            }
+        }
+
+        for (unsigned int i = 0; i < 2; i++) {
+            for (unsigned int j = 0; j < 2; j++) {
+                for (unsigned int k = 0; k < 2; k++) {
+                    CellRayCollision child;
+                    child.cellKey = parentKey.grandChild<1>(i, j, k);
+
+                    glm::vec3 nearCorner = child.cellKey.getCoord(dir.x <= 0, dir.y <= 0, dir.z <= 0).toPoint();
+                    glm::vec3 farCorner = child.cellKey.getCoord(dir.x > 0, dir.y > 0, dir.z > 0).toPoint();
+                    glm::vec3 entryTimes = (nearCorner - origin) / dir;
+                    glm::vec3 exitTimes = (farCorner - origin) / dir;
+                    child.collisionDistance = glm::max(entryTimes.x, glm::max(entryTimes.y, entryTimes.z));
+                    if (child.collisionDistance <= distanceLimit) {
+                        float exitDistance = glm::min(exitTimes.x, glm::min(exitTimes.y, exitTimes.z));
+
+                        if (child.collisionDistance < exitDistance) {
+                            child.node = parentNode->children + i * 4 + j * 2 + k * 1;
+                            cellQueue.push(child);
+                        }
+                    }
+                }
+            }
+        }
+    } while (!cellQueue.empty());
+
+    RaycastResponse resp;
+    return resp;
+}
+
+spatial::UintCoord World::calcCameraCoord() {
+    return spatial::UintCoord::fromPoint(context.get<render::Camera>().getEyePos());
+}
+
+/*
+bool World::shouldSubdiv(spatial::CellKey cellKey) const {
+    if (cellKey.sizeLog2 == 0) {
+        return false;
+    }
+
+    signed int desiredSizeLog2 = guessViewChunkSizeLog2(cellKey.child<1, 1, 1>().getCoord<0, 0, 0>());
+    return static_cast<signed int>(cellKey.sizeLog2) > desiredSizeLog2;
+}
+
+signed int World::guessViewChunkSizeLog2(spatial::UintCoord coord) const {
+    if (viewChunkLockSizeLog2) {
+        return viewChunkLockSizeLog2;
+    }
+
+    spatial::UintCoord::SignedAxisType dx = coord.x - cameraCoord.x;
+    spatial::UintCoord::SignedAxisType dy = coord.y - cameraCoord.y;
+    spatial::UintCoord::SignedAxisType dz = coord.z - cameraCoord.z;
+    std::uint64_t dSqX = static_cast<std::int64_t>(dx) * static_cast<std::int64_t>(dx);
+    std::uint64_t dSqY = static_cast<std::int64_t>(dy) * static_cast<std::int64_t>(dy);
+    std::uint64_t dSqZ = static_cast<std::int64_t>(dz) * static_cast<std::int64_t>(dz);
+    std::uint64_t dSq = dSqX + dSqY + dSqZ;
+
+    if (!dSq) {
+        return viewChunkSubdivOffsetLog2;
+    }
+
+    unsigned int numSigBits = sizeof(dSq) * CHAR_BIT - __builtin_clzll(dSq);
+    signed int desiredSizeLog2 = static_cast<signed int>(numSigBits / 2) + viewChunkSubdivOffsetLog2;
+    return desiredSizeLog2;
+}
+*/
 
 }

@@ -28,14 +28,31 @@ ExternalGenerator::~ExternalGenerator() {
 void ExternalGenerator::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
 
+    if (!generateQueue.empty()) {
+        sendEnqueuedGenerationRequests();
+    }
+}
+
+void ExternalGenerator::generate(spatial::CellKey cube) {
+    spatial::UintCoord c0 = cube.getCoord<0, 0, 0>();
+    spatial::UintCoord c1 = cube.getCoord<1, 1, 1>();
+    context.get<spdlog::logger>().trace("Requesting size:{} cube generation: ({}, {}, {}) : ({}, {}, {})", cube.sizeLog2, c0.x, c0.y, c0.z, c1.x, c1.y, c1.z);
+
+    generateQueue.push_back(cube);
+    if (generateQueue.size() >= 16) {
+        sendEnqueuedGenerationRequests();
+    }
+}
+
+void ExternalGenerator::sendEnqueuedGenerationRequests() {
     network::MessageBuilder::Lock lock(context);
 
     static thread_local std::vector<flatbuffers::Offset<SsProtocol::TerrainChunk>> terrainChunks;
     assert(terrainChunks.empty());
 
     for (spatial::CellKey cube : generateQueue) {
-        SsProtocol::Vec3_u32 cellCoord(cube.cellCoord.x, cube.cellCoord.y, cube.cellCoord.z);
-        terrainChunks.push_back(SsProtocol::CreateTerrainChunk(lock.getBuilder(), cube.sizeLog2, &cellCoord));
+        SsProtocol::Vec3_u32 coord(cube.cellCoord.x, cube.cellCoord.y, cube.cellCoord.z);
+        terrainChunks.push_back(SsProtocol::CreateTerrainChunk(lock.getBuilder(), cube.sizeLog2, &coord));
     }
     generateQueue.clear();
 
@@ -49,22 +66,12 @@ void ExternalGenerator::tick(game::TickerContext &tickerContext) {
     context.get<network::ConnectionPoolSpecialized<SsProtocol::Capabilities_GenerateTerrainChunk>>().send(lock.getBuilder().GetBufferPointer(), lock.getBuilder().GetSize());
 }
 
-void ExternalGenerator::generate(spatial::CellKey cube) {
-    // TODO: Batch requests up and send in a ticker
-
-    spatial::UintCoord c0 = cube.getCoord<0, 0, 0>();
-    spatial::UintCoord c1 = cube.getCoord<1, 1, 1>();
-    context.get<spdlog::logger>().trace("Requesting size:{} cube generation: ({}, {}, {}) : ({}, {}, {})", cube.sizeLog2, c0.x, c0.y, c0.z, c1.x, c1.y, c1.z);
-
-    generateQueue.push_back(cube);
-}
-
 void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, const std::vector<unsigned int> &materialMap) {
     spatial::CellKey cube;
-    cube.sizeLog2 = chunk->cell_size_log2();
-    cube.cellCoord.x = chunk->cell_coord()->x();
-    cube.cellCoord.y = chunk->cell_coord()->y();
-    cube.cellCoord.z = chunk->cell_coord()->z();
+    cube.sizeLog2 = chunk->size_log2();
+    cube.cellCoord.x = chunk->coord()->x();
+    cube.cellCoord.y = chunk->coord()->y();
+    cube.cellCoord.z = chunk->coord()->z();
 
     spatial::UintCoord c0 = cube.getCoord<0, 0, 0>();
     spatial::UintCoord c1 = cube.getCoord<1, 1, 1>();
@@ -103,6 +110,8 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, co
         // TODO
 //        node->isRigidBody = true;
     }
+
+    // TODO: When you receive responses here that are too small (shouldSubdiv(...) == false), then maybe propagate into larger cells
 
     const std::uint32_t *matPtr = chunk->cell_materials()->data();
     unsigned int countBadMaterials = 0;

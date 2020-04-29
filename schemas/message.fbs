@@ -35,6 +35,10 @@ table Environment {
     screen_gamma: float = 2.2;
 }
 
+enum MaterialFlags: uint64 (bit_flags) {
+    Regenerate,
+}
+
 enum MaterialPhase: uint8 {
     Solid,
     Liquid,
@@ -48,6 +52,8 @@ enum MaterialRenderModel: uint32 {
 }
 
 table Material {
+    flags: MaterialFlags;
+
     name: string;
 
     phase: MaterialPhase;
@@ -68,8 +74,8 @@ table InitResponse {
 }
 
 table TerrainChunk {
-    cell_size_log2: uint8;
-    cell_coord: Vec3_u32;
+    size_log2: uint8;
+    coord: Vec3_u32;
     is_rigid_body: bool;
 
     cell_materials: [uint32];
