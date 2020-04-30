@@ -57,6 +57,11 @@ public:
         return UintCoord(x - other.x, y - other.y, z - other.z);
     }
 
+    glm::vec3 constrainPointInside(glm::vec3 point) const {
+        (void) point;
+        return toPoint();
+    }
+
     static UintCoord middle(const UintCoord &a, const UintCoord &b) {
         return UintCoord((a.x >> 1) + (b.x >> 1), (a.y >> 1) + (b.y >> 1), (a.z >> 1) + (b.z >> 1));
     }

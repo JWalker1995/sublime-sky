@@ -3,6 +3,7 @@
 #include "render/scenemanager.h"
 #include "render/camera.h"
 #include "world/node.h"
+#include "worldgen/worldgenerator.h"
 
 namespace world {
 
@@ -46,30 +47,53 @@ void RigidBody::tick(game::GameContext &context, float dt) {
     }
 
     render::SceneManager &sceneManager = context.get<render::SceneManager>();
-    meshHandle.mutateMesh().shared.transform = context.get<render::Camera>().getTransform() * curTrans;
+    meshHandle.mutateMesh().shared.transform = context.get<render::Camera>().getTransform();
 
     for (Node *node : changeMaterialQueue) {
-        if (node->isLeaf) {
+        if (node->isLeaf && node->materialIndex != MaterialIndex::Null && node->materialIndex != MaterialIndex::Generating) {
             render::SceneManager::MaterialReader material = sceneManager.readMaterial(static_cast<unsigned int>(node->materialIndex));
             bool isOpaque = material.local.phase != graphics::MaterialLocal::Phase::Gas;
-            updateFaces<0>(node, isOpaque);
-            updateFaces<1>(node, isOpaque);
-            updateFaces<2>(node, isOpaque);
-            updateFaces<3>(node, isOpaque);
-            updateFaces<4>(node, isOpaque);
-            updateFaces<5>(node, isOpaque);
+            updateFaces<0>(context, node, isOpaque);
+            updateFaces<1>(context, node, isOpaque);
+            updateFaces<2>(context, node, isOpaque);
+            updateFaces<3>(context, node, isOpaque);
+            updateFaces<4>(context, node, isOpaque);
+            updateFaces<5>(context, node, isOpaque);
         }
     }
     changeMaterialQueue.clear();
 }
 
 template <unsigned int faceIdIndex>
-void RigidBody::updateFaces(Node *node, bool isOpaque) {
+void RigidBody::updateFaces(game::GameContext &context, Node *node, bool isOpaque) {
+    struct CreatingVisitor {
+        CreatingVisitor(game::GameContext &context)
+            : context(context)
+        {}
+
+        void beforeEnterParent(Node *node) {
+            (void) node;
+        }
+
+        void beforeEnterChild(Node *node, unsigned int childIndex) {
+            (void) childIndex;
+
+            if (node->isLeaf && node->materialIndex == MaterialIndex::Null) {
+                node->materialIndex = MaterialIndex::Generating;
+                context.get<worldgen::WorldGenerator>().generate(node->getCellKey());
+            }
+        }
+
+        game::GameContext &context;
+    };
+
+    CreatingVisitor visitor(context);
     Node *sibling = node->getSibling<
             faceIdIndex / 3 == 0 ? faceIdIndex % 2 ? +1 : -1 : 0,
             faceIdIndex / 3 == 1 ? faceIdIndex % 2 ? +1 : -1 : 0,
-            faceIdIndex / 3 == 2 ? faceIdIndex % 2 ? +1 : -1 : 0
-        >();
+            faceIdIndex / 3 == 2 ? faceIdIndex % 2 ? +1 : -1 : 0,
+            CreatingVisitor
+        >(visitor);
 
     bool isSiblingOpaque;
     if (sibling->isLeaf) {
@@ -114,6 +138,7 @@ void RigidBody::updateFaces(Node *node, bool isOpaque) {
                 break;
             }
         }
+        assert(j < 4);
 
         render::SceneManager::VertMutator baseVert = meshHandle.mutateVert(vi[j]);
         baseVert.shared.materialIndex = static_cast<unsigned int>(node->materialIndex);

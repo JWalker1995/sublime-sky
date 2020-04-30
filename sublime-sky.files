@@ -181,6 +181,9 @@ src/spatial/alignedcube.h
 src/spatial/cellkey.h
 src/spatial/cuberotation.cpp
 src/spatial/cuberotation.h
+src/spatial/eyepostracker.cpp
+src/spatial/eyepostracker.h
+src/spatial/eyepriorityqueue.h
 src/spatial/hashtree.h
 src/spatial/octree.h
 src/spatial/pointspatialindex.h

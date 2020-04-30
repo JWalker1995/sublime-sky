@@ -4,6 +4,7 @@
 
 #include "spdlog/logger.h"
 
+#include "schemas/config_game_generated.h"
 #include "game/gamecontext.h"
 #include "network/messagebuilder.h"
 #include "schemas/message_generated.h"
@@ -15,9 +16,10 @@ namespace worldgen {
 
 ExternalGenerator::ExternalGenerator(game::GameContext &context, const SsProtocol::Config::ExternalWorldGenerator *config)
     : TickableBase(context)
+    , generateQueue(context)
+    , maxRequestChunks(config->max_request_chunks())
+    , maxPendingRequests(config->max_pending_requests())
 {
-    (void) config;
-
     context.provideInstance<ExternalGenerator>(this);
 }
 
@@ -28,9 +30,7 @@ ExternalGenerator::~ExternalGenerator() {
 void ExternalGenerator::tick(game::TickerContext &tickerContext) {
     (void) tickerContext;
 
-    if (!generateQueue.empty()) {
-        sendEnqueuedGenerationRequests();
-    }
+    sendEnqueuedGenerationRequests();
 }
 
 void ExternalGenerator::generate(spatial::CellKey cube) {
@@ -38,23 +38,27 @@ void ExternalGenerator::generate(spatial::CellKey cube) {
     spatial::UintCoord c1 = cube.getCoord<1, 1, 1>();
     context.get<spdlog::logger>().trace("Requesting size:{} cube generation: ({}, {}, {}) : ({}, {}, {})", cube.sizeLog2, c0.x, c0.y, c0.z, c1.x, c1.y, c1.z);
 
-    generateQueue.push_back(cube);
-    if (generateQueue.size() >= 16) {
-        sendEnqueuedGenerationRequests();
-    }
+    generateQueue.push(cube);
 }
 
 void ExternalGenerator::sendEnqueuedGenerationRequests() {
+    if (generateQueue.empty() || pendingRequestCount >= maxPendingRequests) {
+        return;
+    }
+
     network::MessageBuilder::Lock lock(context);
 
     static thread_local std::vector<flatbuffers::Offset<SsProtocol::TerrainChunk>> terrainChunks;
     assert(terrainChunks.empty());
 
-    for (spatial::CellKey cube : generateQueue) {
+    unsigned int i = 0;
+    while (i++ < maxRequestChunks && !generateQueue.empty()) {
+        spatial::CellKey cube = generateQueue.top();
+        generateQueue.pop();
+
         SsProtocol::Vec3_u32 coord(cube.cellCoord.x, cube.cellCoord.y, cube.cellCoord.z);
         terrainChunks.push_back(SsProtocol::CreateTerrainChunk(lock.getBuilder(), cube.sizeLog2, &coord));
     }
-    generateQueue.clear();
 
     auto terrainChunksVec = lock.getBuilder().CreateVector(terrainChunks);
     terrainChunks.clear();
@@ -97,6 +101,7 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, co
             (void) childIndex;
 
             if (node->isLeaf) {
+                assert(false);
                 node->setBranch(context);
             }
         }
@@ -105,29 +110,80 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, co
     };
     CreatingVisitor visitor(context);
     world::Node *node = context.get<world::World>().getRoot()->getChild<CreatingVisitor &>(cube, visitor);
+    assert(node->isLeaf);
+    assert(node->materialIndex == world::MaterialIndex::Generating);
 
     if (chunk->is_rigid_body()) {
         // TODO
 //        node->isRigidBody = true;
     }
 
+    world::RigidBody *rigidBody = node->getClosestRigidBody();
+    assert(rigidBody);
+
     // TODO: When you receive responses here that are too small (shouldSubdiv(...) == false), then maybe propagate into larger cells
 
     const std::uint32_t *matPtr = chunk->cell_materials()->data();
     unsigned int countBadMaterials = 0;
 
-    unsigned int stack[32];
-    unsigned int stackPos = chunkSizeLog2;
-    stack[stackPos] = 0;
-    while (true) {
-        while (stackPos > 0) {
-            if (node->isLeaf) {
-                node->setBranch(context);
-            }
-            node = node->children;
+    if (chunkSizeLog2 > 0) {
+        unsigned int stack[32];
+        unsigned int stackPos = chunkSizeLog2;
+        while (true) {
+            while (stackPos > 0) {
+                if (node->isLeaf) {
+                    node->setBranch(context);
+                }
+                node = node->children;
 
-            stack[--stackPos] = 0;
+                stack[--stackPos] = 0;
+            }
+
+            unsigned int matIdx;
+            if (*matPtr < materialMap.size()) {
+                matIdx = *matPtr;
+            } else {
+                matIdx = 0;
+                countBadMaterials++;
+            }
+
+            assert(node->isLeaf);
+            node->materialIndex = static_cast<world::MaterialIndex>(materialMap[matIdx]);
+            if (node->materialIndex != world::MaterialIndex::Null) {
+                assert(node->materialIndex != world::MaterialIndex::Generating);
+                rigidBody->changeMaterialQueue.push_back(node);
+            }
+
+            incStackEntry:
+            assert(stackPos < chunkSizeLog2);
+            switch (++stack[stackPos]) {
+                case 1: matPtr += chunkSize0 << stackPos; break;
+                case 2: matPtr += (chunkSize1 - chunkSize0) << stackPos; break;
+                case 3: matPtr += chunkSize0 << stackPos; break;
+                case 4: matPtr += (chunkSize2 - chunkSize1 - chunkSize0) << stackPos; break;
+                case 5: matPtr += chunkSize0 << stackPos; break;
+                case 6: matPtr += (chunkSize1 - chunkSize0) << stackPos; break;
+                case 7: matPtr += chunkSize0 << stackPos; break;
+                case 8:
+                    matPtr -= (chunkSize2 + chunkSize1 + chunkSize0) << stackPos;
+
+                    stackPos++;
+                    if (stackPos == chunkSizeLog2) {
+                        goto finished;
+                    }
+
+                    node = node->parent;
+
+                    goto incStackEntry;
+            }
+
+            node++;
         }
+        finished:
+
+        assert(matPtr == chunk->cell_materials()->data());
+    } else {
+        // Short-circuit, with an extra check
 
         unsigned int matIdx;
         if (*matPtr < materialMap.size()) {
@@ -140,33 +196,10 @@ void ExternalGenerator::handleResponse(const SsProtocol::TerrainChunk *chunk, co
         assert(node->isLeaf);
         node->materialIndex = static_cast<world::MaterialIndex>(materialMap[matIdx]);
 
-        incStackEntry:
-        switch (++stack[stackPos]) {
-            case 1: matPtr += chunkSize0 << stackPos; break;
-            case 2: matPtr += (chunkSize1 - chunkSize0) << stackPos; break;
-            case 3: matPtr += chunkSize0 << stackPos; break;
-            case 4: matPtr += (chunkSize2 - chunkSize1 - chunkSize0) << stackPos; break;
-            case 5: matPtr += chunkSize0 << stackPos; break;
-            case 6: matPtr += (chunkSize1 - chunkSize0) << stackPos; break;
-            case 7: matPtr += chunkSize0 << stackPos; break;
-            case 8:
-                matPtr -= (chunkSize2 + chunkSize1 + chunkSize0) << stackPos;
-
-                if (stackPos == chunkSizeLog2) {
-                    goto finished;
-                }
-
-                stackPos++;
-                node = node->parent;
-
-                goto incStackEntry;
+        if (node->materialIndex == world::MaterialIndex::Null) {
+            context.get<spdlog::logger>().warn("Terrain generator set entire requested area to regenerate. This will likely cause an infinite loop.");
         }
-
-        node++;
     }
-    finished:
-
-    assert(matPtr == chunk->cell_materials()->data());
 
     if (countBadMaterials > 0) {
         context.get<spdlog::logger>().warn("Received {} materials with invalid indices. They were replaced with material 0.", countBadMaterials);

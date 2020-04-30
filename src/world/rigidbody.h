@@ -37,7 +37,7 @@ public:
 
 private:
     template <unsigned int faceIdIndex>
-    void updateFaces(Node *node, bool isOpaque);
+    void updateFaces(game::GameContext &context, Node *node, bool isOpaque);
 
     unsigned int lookupVertex(spatial::UintCoord coord);
 };

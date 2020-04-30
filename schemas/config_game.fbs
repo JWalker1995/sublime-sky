@@ -8,7 +8,11 @@ struct Vec3_f {
     z: float;
 }
 
-table ExternalWorldGenerator {}
+table ExternalWorldGenerator {
+	max_request_chunks: uint;
+	max_pending_requests: uint;
+}
+
 union WorldGenerator { ExternalWorldGenerator }
 
 table Game {

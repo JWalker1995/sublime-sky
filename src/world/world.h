@@ -30,7 +30,7 @@ public:
 private:
     Node root;
 
-    std::vector<RigidBody> rigidBodies;
+    std::deque<RigidBody> rigidBodies;
 
     signed int viewChunkSubdivOffsetLog2;
     unsigned int viewChunkLockSizeLog2;

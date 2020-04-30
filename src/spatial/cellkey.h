@@ -53,6 +53,8 @@ struct CellKey {
 
 
     static CellKey makeRoot() {
+        // Note that this does not contain the full space of uint32s, so that all coords can be calculated.
+
         CellKey root;
         root.cellCoord.x = 0;
         root.cellCoord.y = 0;
@@ -84,17 +86,6 @@ struct CellKey {
 #ifdef NDEBUG
         __builtin_unreachable();
 #endif
-
-        /*
-        if (coord1 == coord2) {
-            CellKey res;
-            res.cellCoord = coord1;
-            res.sizeLog2 = 0;
-            return res;
-        }
-
-        (coord1.x ^ coord2.x) | (coord1.y ^ coord2.y) | (coord1.z ^ coord2.z)
-        */
     }
 
     static UintCoord maskCoord(UintCoord coord, unsigned int sizeLog2) {

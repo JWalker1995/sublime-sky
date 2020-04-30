@@ -85,12 +85,12 @@ void CameraFlyController::tick(game::TickerContext &tickerContext) {
 void CameraFlyController::tickModeCreative() {
     velocity -= upDir * 0.5f;
     tickPhysicalCamera();
-    upDir = glm::normalize(position);
+//    upDir = glm::normalize(position);
 }
 
 void CameraFlyController::tickModeSpectator() {
     tickPhysicalCamera();
-    upDir = glm::normalize(position);
+//    upDir = glm::normalize(position);
 }
 
 void CameraFlyController::tickModeOrbital() {

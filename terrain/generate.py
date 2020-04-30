@@ -94,11 +94,15 @@ def generate_terrain(seed, cubes):
 		if c['size_log2'] > 4:
 			yield {
 				**c,
-				'cell_types': [0],
+				'cell_types': np.array([0] * 8, dtype=np.uint32),
 			}
 		else:
 			axis = np.arange(1 << c['size_log2'])
-			pts = np.stack(np.meshgrid(axis, axis, axis), -1).reshape(-1, 3)
+			ox = (c['coord'].X() << c['size_log2']) - 0x35555555
+			oy = (c['coord'].Y() << c['size_log2']) - 0x35555555
+			oz = (c['coord'].Z() << c['size_log2']) - 0x35555555
+			print('generated ' + str((1 << c['size_log2'], ox, oy, oz)))
+			pts = np.stack(np.meshgrid(axis + ox, axis + oy, axis + oz), -1).reshape(-1, 3)
 
 			coords = fns.empty_coords(pts.shape[0])
 			coords[:] = pts.T / 1.0
@@ -118,15 +122,15 @@ def generate_terrain(seed, cubes):
 			res = np.full(pts.shape[:1], 1, dtype=np.uint32)
 
 			# Assign water
-			res[pts[:, 2] < 0.0] = 3
+			# res[pts[:, 2] < 0.0] = 3
 
 			# Assign dirt
-			res[pts[:, 2] + noise_values * 5.0 < 0.0] = 2
+			res[pts[:, 2] + noise_values * 10.0 < 0.0] = 2
 
 			# # Assign clouds
 			# res[(pts[:, 2] - 110) ** 2 * 1e-1 + noise_values * 100 < -60.0] = 3
 
-			return {
+			yield {
 				**c,
 				'cell_types': res,
 			}

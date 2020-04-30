@@ -19,6 +19,7 @@ World::World(game::GameContext &context, const SsProtocol::Config::World *config
 {
     (void) config;
 
+    /*
     spatial::CellKey objKey = spatial::CellKey::fromCoord(spatial::UintCoord::fromPoint(glm::vec3(0.0f, 0.0f, 0.0f)), 4);
     spatial::CellKey curKey = spatial::CellKey::makeRoot();
     Node *curNode = &root;
@@ -60,6 +61,18 @@ World::World(game::GameContext &context, const SsProtocol::Config::World *config
     body.velocity = glm::vec3(0.0f, 0.0f, 0.0f);
     body.changeMaterialQueue.push_back(curNode);
     rigidBodies.push_back(body);
+    */
+
+
+    RigidBody body(context);
+    body.parent = 0;
+    body.node = &root;
+    body.mass = 0.0f;
+    body.transform.translate = glm::vec3(0.0f, 0.0f, 0.0f);
+    body.transform.rotate = glm::mat3x3(1.0f);
+    body.velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+    rigidBodies.push_back(body);
+    root.rigidBody = &rigidBodies.back();
 }
 
 void World::tick(game::TickerContext &tickerContext) {
@@ -73,13 +86,18 @@ void World::tick(game::TickerContext &tickerContext) {
 }
 
 World::RaycastResponse World::raycast(glm::vec3 origin, glm::vec3 dir, float distanceLimit) {
+    static constexpr float distanceOffset = 0.0f;
+
+    dir /= glm::length(dir);
+
     struct CellRayCollision {
         float collisionDistance;
         spatial::CellKey cellKey;
         Node *node;
 
         bool operator<(const CellRayCollision &other) const {
-            return collisionDistance < other.collisionDistance;
+            // Sort by least to greatest
+            return collisionDistance > other.collisionDistance;
         }
     };
     std::priority_queue<CellRayCollision> cellQueue;
@@ -97,6 +115,7 @@ World::RaycastResponse World::raycast(glm::vec3 origin, glm::vec3 dir, float dis
 
         if (parentNode->isLeaf) {
             if (parentNode->materialIndex == MaterialIndex::Null) {
+                parentNode->materialIndex = MaterialIndex::Generating;
                 context.get<worldgen::WorldGenerator>().generate(parentKey);
                 RaycastResponse resp;
                 return resp;
@@ -125,7 +144,7 @@ World::RaycastResponse World::raycast(glm::vec3 origin, glm::vec3 dir, float dis
                     if (child.collisionDistance <= distanceLimit) {
                         float exitDistance = glm::min(exitTimes.x, glm::min(exitTimes.y, exitTimes.z));
 
-                        if (child.collisionDistance < exitDistance) {
+                        if (exitDistance >= distanceOffset && child.collisionDistance < exitDistance) {
                             child.node = parentNode->children + i * 4 + j * 2 + k * 1;
                             cellQueue.push(child);
                         }

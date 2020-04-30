@@ -8,14 +8,13 @@ namespace game { class GameContext; }
 
 namespace world {
 
-class Material {};
+class RigidBody;
 
 class Node {
 public:
     // TODO: Could probably use pointer packing here
 
     bool isLeaf = true;
-    bool isRigidBody = false;
     spatial::CubeRotation rotation = spatial::CubeRotation::identity();
 
     // TODO: Probably can remove this since we have RigidBody::vertIndices now
@@ -27,6 +26,8 @@ public:
         static_cast<unsigned int>(-1),
         static_cast<unsigned int>(-1),
     };
+
+    RigidBody *rigidBody = 0;
 
     Node *parent = 0;
 
@@ -52,9 +53,20 @@ public:
         if (parent) {
             spatial::CellKey parentKey = parent->getCellKey();
             unsigned int index = this - parent->children;
-            return parentKey.grandChild<1>(index & 4, index & 2, index & 1);
+            assert(index < 8);
+            return parentKey.grandChild<1>((index >> 2) & 1, (index >> 1) & 1, (index >> 0) & 1);
         } else {
             return spatial::CellKey::makeRoot();
+        }
+    }
+
+    RigidBody *getClosestRigidBody() const {
+        if (rigidBody) {
+            return rigidBody;
+        } else if (parent) {
+            return parent->getClosestRigidBody();
+        } else {
+            return 0;
         }
     }
 
@@ -74,10 +86,14 @@ public:
             return this;
         }
 
+        unsigned int bit = spatial::UintCoord::maxSizeLog2 - 1 - cellKey.sizeLog2;
+        assert((cellKey.cellCoord.x >> bit) < 2);
+        assert((cellKey.cellCoord.y >> bit) < 2);
+        assert((cellKey.cellCoord.z >> bit) < 2);
         unsigned int childIndex = 0
-                | ((cellKey.cellCoord.x >> spatial::UintCoord::maxSizeLog2) << 2)
-                | ((cellKey.cellCoord.y >> spatial::UintCoord::maxSizeLog2) << 1)
-                | ((cellKey.cellCoord.z >> spatial::UintCoord::maxSizeLog2) << 0);
+                | ((cellKey.cellCoord.x >> bit) << 2)
+                | ((cellKey.cellCoord.y >> bit) << 1)
+                | ((cellKey.cellCoord.z >> bit) << 0);
         assert(childIndex < 8);
 
         visitor.beforeEnterChild(this, childIndex);
@@ -85,9 +101,10 @@ public:
         if (isLeaf) {
             return this;
         } else {
-            cellKey.cellCoord.x <<= 1;
-            cellKey.cellCoord.y <<= 1;
-            cellKey.cellCoord.z <<= 1;
+            spatial::UintCoord::AxisType mask = ~(static_cast<spatial::UintCoord::AxisType>(1) << bit);
+            cellKey.cellCoord.x &= mask;
+            cellKey.cellCoord.y &= mask;
+            cellKey.cellCoord.z &= mask;
             cellKey.sizeLog2++;
 
             return children[childIndex].getChild<VisitorType>(cellKey, visitor);

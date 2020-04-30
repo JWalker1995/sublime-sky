@@ -1,9 +1,8 @@
 #pragma once
 
-#include <vector>
-
 #include "worldgen/worldgenerator.h"
 #include "game/tickercontext.h"
+#include "spatial/eyepriorityqueue.h"
 
 namespace SsProtocol {
 namespace Config { struct ExternalWorldGenerator; }
@@ -26,7 +25,11 @@ public:
     void handleResponse(const SsProtocol::TerrainChunk *chunk, const std::vector<unsigned int> &materialMap);
 
 private:
-    std::vector<spatial::CellKey> generateQueue;
+    spatial::EyePriorityQueue<spatial::CellKey> generateQueue;
+    unsigned int pendingRequestCount = 0;
+
+    const unsigned int maxRequestChunks;
+    const unsigned int maxPendingRequests;
 
     void sendEnqueuedGenerationRequests();
 };

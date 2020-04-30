@@ -48,7 +48,7 @@ def serialize_material(builder, material):
         SsMaterial.MaterialAddShininess(builder, material['shininess'])
         return SsMaterial.MaterialEnd(builder)
 
-def serialize_terrain_chun(builder, chunk):
+def serialize_terrain_chunk(builder, chunk):
     cell_types = chunk['cell_types']
     size_log2 = chunk['size_log2']
     coord = chunk['coord']

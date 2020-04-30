@@ -1,5 +1,8 @@
 {
 	"seed": 1234,
 	"world_generator_type": "ExternalWorldGenerator",
-	"world_generator": {}
+	"world_generator": {
+		"max_request_chunks": 16,
+		"max_pending_requests": 4
+	}
 }

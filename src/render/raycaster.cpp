@@ -8,6 +8,7 @@
 #include "render/camera.h"
 #include "render/meshupdater.h"
 #include "world/timemanager.h"
+#include "world/world.h"
 
 namespace render {
 
@@ -79,30 +80,27 @@ void RayCaster::castNew() {
 }
 
 void RayCaster::castRay(glm::vec3 origin, glm::vec3 dir) {
-    /*
-    world::HashTreeWorld &hashTreeWorld = context.get<world::HashTreeWorld>();
-    render::MeshUpdater &meshUpdater = context.get<render::MeshUpdater>();
+    world::World &w = context.get<world::World>();
 
-    world::HashTreeWorld::RaytestResult res = hashTreeWorld.testViewRay(origin, dir, 2000.0f);
+    world::World::RaycastResponse res = w.raycast(origin, dir, 2000.0f);
 
-    switch (res.result) {
-        case world::HashTreeWorld::RaytestResult::HitSurface: {
-            spatial::CellKey chunkKey = res.surfaceHitCell.grandParent<world::Chunk::sizeLog2>();
-            if (hashTreeWorld.shouldSubdiv(chunkKey)) {
-                world::HashTreeWorld::Cell *chunk = hashTreeWorld.findNodeMatching(chunkKey);
-                meshUpdater.clearChunkGeometry(chunk->second);
-                hashTreeWorld.removeChunk(chunk);
-            }
-            meshUpdater.enqueueCellUpdate(res.surfaceHitCell);
-        } break;
+//    switch (res.result) {
+//        case world::HashTreeWorld::RaytestResult::HitSurface: {
+//            spatial::CellKey chunkKey = res.surfaceHitCell.grandParent<world::Chunk::sizeLog2>();
+//            if (hashTreeWorld.shouldSubdiv(chunkKey)) {
+//                world::HashTreeWorld::Cell *chunk = hashTreeWorld.findNodeMatching(chunkKey);
+//                meshUpdater.clearChunkGeometry(chunk->second);
+//                hashTreeWorld.removeChunk(chunk);
+//            }
+//            meshUpdater.enqueueCellUpdate(res.surfaceHitCell);
+//        } break;
 
-        case world::HashTreeWorld::RaytestResult::HitGenerating: {
-            retryRays.emplace_back(origin, dir);
-        } break;
+//        case world::HashTreeWorld::RaytestResult::HitGenerating: {
+//            retryRays.emplace_back(origin, dir);
+//        } break;
 
-        case world::HashTreeWorld::RaytestResult::HitDistanceLimit: break;
-    }
-    */
+//        case world::HashTreeWorld::RaytestResult::HitDistanceLimit: break;
+//    }
 }
 
 
